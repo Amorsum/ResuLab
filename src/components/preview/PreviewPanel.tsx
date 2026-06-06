@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { usePdfExport } from '../../hooks/usePdfExport';
 import { useResume } from '../../hooks/useResume';
 import PreviewToolbar from './PreviewToolbar';
@@ -24,23 +24,9 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
   const exportError = externalError ?? internalError;
   const onExport = externalOnExport || internalExport;
 
-  // 移动端滚动容器 ref，用于自动居中
-  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  // 移动端：计算居中偏移量，使 794px 宽内容在视口内居中
   const mobileScale = Math.min(0.50, (window.innerWidth - 24) / 794);
-
-  // 移动端进入预览时，自动滚动到居中位置
-  useEffect(() => {
-    if (hideToolbar && mobileScrollRef.current) {
-      const container = mobileScrollRef.current;
-      // 计算使 794px 宽内容在视口内居中的 scrollLeft
-      const contentWidth = 794; // TemplateBase .a4-preview width
-      const containerWidth = container.clientWidth;
-      const centerOffset = (contentWidth - containerWidth) / 2;
-      if (centerOffset > 0) {
-        container.scrollLeft = centerOffset;
-      }
-    }
-  }, [hideToolbar]);
+  const mobileCenterOffset = Math.max(0, (794 - window.innerWidth) / 2);
 
   /** 智能一页：自动调整排版使内容缩放到一页内 */
   const smartFit = useCallback(() => {
@@ -114,8 +100,10 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
 
       {/* 预览区域 */}
       {hideToolbar ? (
-        <div ref={mobileScrollRef} className="flex-1 overflow-auto bg-gray-100 pt-2">
-          <TemplateRenderer previewRef={previewRef} scale={mobileScale} />
+        <div className="flex-1 overflow-auto bg-gray-100 pt-2">
+          <div style={{ marginLeft: -mobileCenterOffset, marginRight: -mobileCenterOffset }}>
+            <TemplateRenderer previewRef={previewRef} scale={mobileScale} />
+          </div>
         </div>
       ) : (
         <div className="flex-1 overflow-auto bg-gray-100 flex justify-center pt-2">
