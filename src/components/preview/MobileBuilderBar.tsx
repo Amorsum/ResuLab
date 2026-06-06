@@ -10,6 +10,18 @@ interface MobileBuilderBarProps {
   onSmartFit?: () => void;
 }
 
+const ACCENT_PRESETS = [
+  { color: '#2563eb', name: '蓝色' },
+  { color: '#4f46e5', name: '靛蓝' },
+  { color: '#059669', name: '翠绿' },
+  { color: '#d97706', name: '琥珀' },
+  { color: '#dc2626', name: '红色' },
+  { color: '#7c3aed', name: '紫色' },
+  { color: '#0891b2', name: '青色' },
+  { color: '#4a5568', name: '灰蓝' },
+  { color: '#1f2937', name: '墨黑' },
+];
+
 const FONT_OPTIONS: { value: FontFamily; label: string }[] = [
   { value: 'songti', label: '宋体' },
   { value: 'yahei', label: '雅黑' },
@@ -26,7 +38,7 @@ function marginLabel(m: number) {
 }
 
 export default function MobileBuilderBar({ view, onSwitchView, onExport, isExporting, onSmartFit }: MobileBuilderBarProps) {
-  const { resume, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort } = useResume();
+  const { resume, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort } = useResume();
   const [showSettings, setShowSettings] = useState(false);
 
   if (view === 'form') {
@@ -49,7 +61,7 @@ export default function MobileBuilderBar({ view, onSwitchView, onExport, isExpor
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setShowSettings(false)}>
           <div
-            className="w-full bg-white rounded-t-2xl px-5 py-5 max-h-[60vh] overflow-y-auto"
+            className="w-full bg-white rounded-t-2xl px-5 pt-5 pb-12 max-h-[60vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -59,6 +71,24 @@ export default function MobileBuilderBar({ view, onSwitchView, onExport, isExpor
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
+            </div>
+
+            {/* 主题色 */}
+            <div className="mb-4">
+              <span className="text-xs text-gray-400 mb-1.5 block">主题色</span>
+              <div className="flex gap-2 flex-wrap">
+                {ACCENT_PRESETS.map(({ color, name }) => (
+                  <button
+                    key={color}
+                    onClick={() => setAccentColor(color)}
+                    title={name}
+                    className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                      resume.accentColor === color ? 'border-gray-700 scale-110' : 'border-gray-200'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* 字体 */}

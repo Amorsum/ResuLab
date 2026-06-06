@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePdfExport } from '../../hooks/usePdfExport';
 import { useResume } from '../../hooks/useResume';
 import PreviewToolbar from './PreviewToolbar';
@@ -23,6 +23,24 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
   const isExporting = externalExporting ?? internalExporting;
   const exportError = externalError ?? internalError;
   const onExport = externalOnExport || internalExport;
+
+  // 移动端滚动容器 ref，用于自动居中
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const mobileScale = Math.min(0.50, (window.innerWidth - 24) / 794);
+
+  // 移动端进入预览时，自动滚动到居中位置
+  useEffect(() => {
+    if (hideToolbar && mobileScrollRef.current) {
+      const container = mobileScrollRef.current;
+      // 计算使 794px 宽内容在视口内居中的 scrollLeft
+      const contentWidth = 794; // TemplateBase .a4-preview width
+      const containerWidth = container.clientWidth;
+      const centerOffset = (contentWidth - containerWidth) / 2;
+      if (centerOffset > 0) {
+        container.scrollLeft = centerOffset;
+      }
+    }
+  }, [hideToolbar]);
 
   /** 智能一页：自动调整排版使内容缩放到一页内 */
   const smartFit = useCallback(() => {
@@ -95,11 +113,17 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
       )}
 
       {/* 预览区域 */}
-      <div className={`flex-1 bg-gray-100 flex justify-center pt-2 ${hideToolbar ? 'overflow-x-hidden overflow-y-auto' : 'overflow-auto'}`}>
-        <div style={hideToolbar ? { width: '100%', overflow: 'hidden' } : { minWidth: '794px' }}>
-          <TemplateRenderer previewRef={previewRef} scale={hideToolbar ? Math.min(0.55, (window.innerWidth - 32) / 794) : scale} />
+      {hideToolbar ? (
+        <div ref={mobileScrollRef} className="flex-1 overflow-auto bg-gray-100 pt-2">
+          <TemplateRenderer previewRef={previewRef} scale={mobileScale} />
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 overflow-auto bg-gray-100 flex justify-center pt-2">
+          <div style={{ minWidth: '794px' }}>
+            <TemplateRenderer previewRef={previewRef} scale={scale} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
