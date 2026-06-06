@@ -29,10 +29,11 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 | `src/constants/skillOptions.ts` | 技能类别定义和预设 |
 | `src/utils/pdfExport.ts` | PDF 导出核心逻辑 |
 | `src/components/form/FormPanel.tsx` | 表单面板（组装所有区域） |
-| `src/components/preview/PreviewPanel.tsx` | 预览面板（含智能一页逻辑） |
-| `src/components/preview/PreviewToolbar.tsx` | 工具栏（模板/主题色/排版设置/智能功能/缩放/导出） |
+| `src/components/preview/PreviewPanel.tsx` | 预览面板（含智能一页逻辑、桌面/移动端双模式） |
+| `src/components/preview/PreviewToolbar.tsx` | 桌面端工具栏（模板/主题色/排版设置/智能功能/缩放/导出） |
+| `src/components/preview/MobileBuilderBar.tsx` | 移动端底部导航栏（编辑/预览切换、智能功能、排版弹出抽屉、导出） |
 | `src/templates/` | 三个模板组件 + TemplateBase |
-| `.github/workflows/deploy.yml` | GitHub Actions 自动部署配置 |
+| `.github/workflows/deploy.yml` | GitHub Actions 自动部署配置（含 SPA 404 修复） |
 
 ## 核心架构
 
@@ -92,6 +93,27 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 - 旧 `pageMargin` (`'narrow'/'normal'/'wide'`) → 对应数字 (`5/15/25`)
 - 旧 `lineHeight` (unitless ≤3，如 `1.6`) → `Math.round(v * 14)` 转为 px
 
+## 移动端架构
+
+在 `< lg` (1024px) 断点以下切换为单视图模式：
+
+```
+桌面端 (lg+)                      移动端 (< lg)
+┌─────────┬──────────┐           ┌──────────────┐    ┌──────────────┐
+│ FormPanel │ Preview  │           │  FormPanel   │    │  PreviewPanel │
+│  (440px)  │  Panel   │           │  (全屏)       │    │  (全屏)      │
+│           │ (flex-1) │           │              │    │              │
+│           │          │           │  [预览简历]    │ → │  [底部工具栏] │
+└─────────┴──────────┘           └──────────────┘    └──────────────┘
+```
+
+关键实现：
+- `BuilderPage` 用 `mobileView` 状态切换表单/预览视图
+- 移动端预览使用 `transformOrigin: 'top left'` + 缩放 0.43，保证简历在任何手机屏幕上完整显示
+- `MobileBuilderBar` 固定底部，表单模式显示"预览简历"按钮，预览模式显示编辑/智能一页/排序/排版/导出
+- 排版设置以底部抽屉（Bottom Sheet）形式弹出，包含字体/字号/行距/页边距/主题色
+- `TemplateBase` 接受可选 `transformOrigin` prop，桌面端 `'top center'`，移动端 `'top left'`
+
 ## 部署
 
 GitHub Actions 监听 `main` 分支 push → 自动 `npm ci && npm run build` → 将 `dist/` 推送到 `gh-pages` 分支 → GitHub Pages 配合自定义域名 `resulab.amorsum.top`。
@@ -104,3 +126,4 @@ GitHub Actions 监听 `main` 分支 push → 自动 `npm ci && npm run build` �
 - 照片裁剪为 3:4 竖长方形证件照比例，最大高度 300px
 - 头像存储为 base64 data URL（压缩质量 0.85）
 - PDF 导出使用 2x 缩放截图 → JPEG 0.95 → jsPDF A4 自动分页，导出前临时设置裁剪
+- SPA 路由刷新 404 修复：构建后 `cp dist/index.html dist/404.html`，让 GitHub Pages 用 404.html 响应所有路由
