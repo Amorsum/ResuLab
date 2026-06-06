@@ -43,7 +43,7 @@ export default function ClassicTemplate({ data }: Props) {
     }}>
       {/* ========== 左侧边栏 ========== */}
       {showSidebar && (
-        <div className="w-[230px] bg-[#f0f4f8] flex-shrink-0" style={{ padding: `${mg.y}px ${mg.x}px` }}>
+        <div className="w-[230px] bg-[#f0f4f8] flex-shrink-0 break-words" style={{ padding: `${mg.y}px ${mg.x}px` }}>
           {/* 照片 */}
           {p.avatar && (
             <div className="text-center mb-6">
@@ -77,8 +77,8 @@ export default function ClassicTemplate({ data }: Props) {
                       {items.map((s) => (
                         <div key={s.id}>
                           <div className="flex justify-between mb-1" style={{ fontSize: '0.85em' }}>
-                            <span className="text-gray-700">{s.skillName}</span>
-                            <span className="text-gray-400" style={{ fontSize: '0.93em' }}>{s.level}</span>
+                            <span className="text-gray-700 min-w-0 break-words">{s.skillName}</span>
+                            <span className="text-gray-400 flex-shrink-0 ml-1" style={{ fontSize: '0.93em' }}>{s.level}</span>
                           </div>
                           <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
                             <div className="h-full rounded-full"
