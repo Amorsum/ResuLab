@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { ResumeContext } from '../context/ResumeContext';
-import type { ResumeData, ArraySectionName, TemplateId, FontFamily, PageMargin } from '../types/resume';
+import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../types/resume';
 import type { ResumeAction } from '../context/resumeReducer';
 import { generateId, createEmptyResume } from '../constants/defaultResume';
 
@@ -55,7 +55,7 @@ export function useResume() {
     setLineHeight: (payload: number) =>
       dispatch({ type: 'SET_LINE_HEIGHT', payload }),
 
-    setPageMargin: (payload: PageMargin) =>
+    setPageMargin: (payload: number) =>
       dispatch({ type: 'SET_PAGE_MARGIN', payload }),
 
     // ---- 智能功能 ----

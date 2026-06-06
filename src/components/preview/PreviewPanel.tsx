@@ -14,8 +14,31 @@ export function PreviewPanel() {
     const el = previewRef.current;
     if (!el) return;
 
-    // 测量 A4 内容实际高度
+    // 临时解除外层和内层的裁剪限制，测量真实内容高度
+    const prevOverflow = el.style.overflow;
+    const prevMaxHeight = el.style.maxHeight;
+    el.style.overflow = 'visible';
+    el.style.maxHeight = 'none';
+
+    // 内层模板根元素也可能有裁剪
+    const inner = el.firstElementChild as HTMLElement | null;
+    const innerPrevOverflow = inner?.style.overflow;
+    const innerPrevMaxHeight = inner?.style.maxHeight;
+    if (inner) {
+      inner.style.overflow = 'visible';
+      inner.style.maxHeight = 'none';
+    }
+
     const scrollH = el.scrollHeight;
+
+    // 恢复裁剪样式
+    el.style.overflow = prevOverflow;
+    el.style.maxHeight = prevMaxHeight;
+    if (inner) {
+      inner.style.overflow = innerPrevOverflow || '';
+      inner.style.maxHeight = innerPrevMaxHeight || '';
+    }
+
     const targetH = 1123; // A4 高度
 
     if (scrollH <= targetH + 10) return; // 已在一页内（+10 容差）
@@ -23,9 +46,10 @@ export function PreviewPanel() {
     const ratio = targetH / scrollH;
     const { fontSize, lineHeight, pageMargin } = resume;
 
-    // 1. 先尝试缩页边距
-    if (pageMargin !== 'narrow' && ratio < 0.95) {
-      setPageMargin('narrow');
+    // 1. 先尝试缩页边距（逐步减小，最小到 5）
+    if (pageMargin > 5 && ratio < 0.95) {
+      const newMargin = Math.max(5, pageMargin - 5);
+      setPageMargin(newMargin);
     }
 
     // 2. 按比例缩小字号（clamp 12~18）
@@ -34,9 +58,9 @@ export function PreviewPanel() {
       setFontSize(newFontSize);
     }
 
-    // 3. 按比例缩小行距（clamp 1.4~2.0）
-    if (ratio < 0.85 && lineHeight > 1.4) {
-      const newLineHeight = Math.max(1.4, +(lineHeight * ratio).toFixed(1));
+    // 3. 按比例缩小行距（clamp 12~28）
+    if (ratio < 0.85 && lineHeight > 12) {
+      const newLineHeight = Math.max(12, Math.round(lineHeight * ratio));
       setLineHeight(newLineHeight);
     }
   }, [previewRef, resume, setFontSize, setLineHeight, setPageMargin]);

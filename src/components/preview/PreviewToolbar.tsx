@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useResume } from '../../hooks/useResume';
 import { TEMPLATE_LIST } from '../../constants/templates';
-import type { FontFamily, PageMargin } from '../../types/resume';
+import type { FontFamily } from '../../types/resume';
 
 // 预设主题色
 const ACCENT_PRESETS = [
@@ -16,19 +16,20 @@ const ACCENT_PRESETS = [
   { color: '#1f2937', name: '墨黑' },
 ];
 
-const FONT_OPTIONS: { value: FontFamily; label: string; style: string }[] = [
-  { value: 'default', label: '默认', style: 'font-sans' },
-  { value: 'serif', label: '宋体', style: 'font-serif' },
-  { value: 'mono', label: '等宽', style: 'font-mono' },
+const FONT_OPTIONS: { value: FontFamily; label: string; fontFamily: string }[] = [
+  { value: 'songti', label: '宋体', fontFamily: '"SimSun", "宋体", serif' },
+  { value: 'yahei', label: '微软雅黑', fontFamily: '"Microsoft YaHei", "微软雅黑", sans-serif' },
+  { value: 'kaiti', label: '楷体', fontFamily: '"KaiTi", "楷体", serif' },
+  { value: 'fangsong', label: '仿宋', fontFamily: '"FangSong", "仿宋", serif' },
 ];
 
 const FONT_SIZES = [12, 13, 14, 15, 16, 17, 18];
-const LINE_HEIGHTS = [1.4, 1.5, 1.6, 1.8, 2.0];
-const MARGIN_OPTIONS: { value: PageMargin; label: string; px: string }[] = [
-  { value: 'narrow', label: '紧凑', px: '40px' },
-  { value: 'normal', label: '标准', px: '60px' },
-  { value: 'wide', label: '宽松', px: '80px' },
-];
+const LINE_HEIGHTS = [12, 14, 16, 18, 20, 22, 24, 26, 28];
+
+function marginLabel(m: number) {
+  const labels: Record<number, string> = { 5: '很窄', 10: '偏窄', 15: '标准', 20: '偏宽', 25: '很宽' };
+  return labels[m] || `${m}`;
+}
 
 interface PreviewToolbarProps {
   scale: number;
@@ -109,7 +110,7 @@ export default function PreviewToolbar({
             onClick={smartSort}
             className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg border border-gray-200
                        text-gray-500 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-colors"
-            title="将教育、工作、项目经历按时间从新到旧排序"
+            title="将教育、工作、项目经历按时间从远到近排序"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19,12 12,19 5,12"/>
@@ -171,11 +172,12 @@ export default function PreviewToolbar({
               <button
                 key={f.value}
                 onClick={() => setFontFamily(f.value)}
-                className={`px-2 py-0.5 text-xs rounded border transition-colors ${f.style} ${
+                className={`px-2 py-0.5 text-xs rounded border transition-colors ${
                   resume.fontFamily === f.value
                     ? 'border-primary-500 bg-primary-50 text-primary-700'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
+                style={{ fontFamily: f.fontFamily }}
               >
                 {f.label}
               </button>
@@ -205,7 +207,7 @@ export default function PreviewToolbar({
               className="text-xs border border-gray-200 rounded px-1.5 py-0.5 text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               {LINE_HEIGHTS.map((h) => (
-                <option key={h} value={h}>{h}x</option>
+                <option key={h} value={h}>{h}px</option>
               ))}
             </select>
           </div>
@@ -213,17 +215,17 @@ export default function PreviewToolbar({
           {/* 页边距 */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-gray-400">页边距</span>
-            {MARGIN_OPTIONS.map((m) => (
+            {[5, 10, 15, 20, 25].map((m) => (
               <button
-                key={m.value}
-                onClick={() => setPageMargin(m.value)}
+                key={m}
+                onClick={() => setPageMargin(m)}
                 className={`px-2 py-0.5 text-xs rounded border transition-colors ${
-                  resume.pageMargin === m.value
+                  resume.pageMargin === m
                     ? 'border-primary-500 bg-primary-50 text-primary-700'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
               >
-                {m.label}
+                {marginLabel(m)}
               </button>
             ))}
           </div>

@@ -3,10 +3,10 @@ import type { ResumeData } from '../types/resume';
 export const createEmptyResume = (): ResumeData => ({
   templateId: 'classic',
   accentColor: '#2563eb',
-  fontFamily: 'default',
+  fontFamily: 'yahei',
   fontSize: 14,
-  lineHeight: 1.6,
-  pageMargin: 'normal',
+  lineHeight: 22,
+  pageMargin: 15,
   lastModified: Date.now(),
   personalInfo: {
     fullName: '',

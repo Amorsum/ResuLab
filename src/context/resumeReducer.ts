@@ -1,4 +1,4 @@
-import type { ResumeData, ArraySectionName, TemplateId, FontFamily, PageMargin } from '../types/resume';
+import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../types/resume';
 import { generateId, createEmptyResume } from '../constants/defaultResume';
 
 // ===================== Action 类型 =====================
@@ -16,7 +16,7 @@ export type ResumeAction =
   | { type: 'SET_FONT_FAMILY'; payload: FontFamily }
   | { type: 'SET_FONT_SIZE'; payload: number }
   | { type: 'SET_LINE_HEIGHT'; payload: number }
-  | { type: 'SET_PAGE_MARGIN'; payload: PageMargin }
+  | { type: 'SET_PAGE_MARGIN'; payload: number }
   | { type: 'SMART_SORT' }
   | { type: 'LOAD_RESUME'; payload: ResumeData }
   | { type: 'RESET_ALL' };
@@ -133,9 +133,9 @@ export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeDa
     case 'SMART_SORT': {
       const sortByDate = <T extends { startDate: string; isCurrent: boolean }>(items: T[]): T[] => {
         return [...items].sort((a, b) => {
-          if (a.isCurrent && !b.isCurrent) return -1;
-          if (!a.isCurrent && b.isCurrent) return 1;
-          return (b.startDate || '').localeCompare(a.startDate || '');
+          if (a.isCurrent && !b.isCurrent) return 1;
+          if (!a.isCurrent && b.isCurrent) return -1;
+          return (a.startDate || '').localeCompare(b.startDate || '');
         });
       };
       return {

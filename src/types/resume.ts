@@ -18,9 +18,9 @@ export type SkillLevel =
 
 export type JobType = '' | '全职' | '兼职' | '实习';
 
-export type FontFamily = 'default' | 'serif' | 'mono';
+export type FontFamily = 'songti' | 'yahei' | 'kaiti' | 'fangsong';
 
-export type PageMargin = 'normal' | 'narrow' | 'wide';
+export type PageMargin = number;
 
 // ===================== 核心实体 =====================
 
