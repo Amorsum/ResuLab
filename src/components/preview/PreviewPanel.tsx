@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePdfExport } from '../../hooks/usePdfExport';
 import { useResume } from '../../hooks/useResume';
 import PreviewToolbar from './PreviewToolbar';
@@ -22,8 +22,28 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
   const exportError = externalError ?? internalError;
   const onExport = externalOnExport || internalExport;
 
-  // 移动端缩放：使简历宽度适配屏幕
-  const mobileScale = Math.min(0.50, (window.innerWidth - 24) / 794);
+  // 移动端：缩放使简历宽度适配屏幕（留 16px 边距保证完整显示）
+  const mobileScale = Math.min(0.45, (window.innerWidth - 32) / 794);
+
+  // 移动端：模板懒加载完成后自动滚到中间
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!hideToolbar) return;
+    // 等 lazy 模板渲染完成后滚到中间
+    const el = mobileScrollRef.current;
+    if (!el) return;
+    let attempts = 0;
+    const tryScroll = () => {
+      attempts++;
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+      // 如果 scrollWidth 还没加载完（<794），继续尝试，最多 10 次
+      if (el.scrollWidth < 500 && attempts < 10) {
+        setTimeout(tryScroll, 200);
+      }
+    };
+    const timer = setTimeout(tryScroll, 400);
+    return () => clearTimeout(timer);
+  }, [hideToolbar, resume.templateId]);
 
   /** 智能一页：自动调整排版使内容缩放到一页内 */
   const smartFit = useCallback(() => {
@@ -97,10 +117,8 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
 
       {/* 预览区域 */}
       {hideToolbar ? (
-        <div className="flex-1 overflow-auto bg-gray-100 pt-2" style={{ textAlign: 'center' }}>
-          <div style={{ display: 'inline-block', textAlign: 'left' }}>
-            <TemplateRenderer previewRef={previewRef} scale={mobileScale} />
-          </div>
+        <div ref={mobileScrollRef} className="flex-1 overflow-auto bg-gray-100 pt-2">
+          <TemplateRenderer previewRef={previewRef} scale={mobileScale} />
         </div>
       ) : (
         <div className="flex-1 overflow-auto bg-gray-100 flex justify-center pt-2">
