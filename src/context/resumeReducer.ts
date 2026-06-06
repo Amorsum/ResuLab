@@ -12,6 +12,7 @@ export type ResumeAction =
   | { type: 'MOVE_ITEM'; section: ArraySectionName; fromIndex: number; toIndex: number }
   | { type: 'SET_SELF_EVALUATION'; payload: string }
   | { type: 'SET_TEMPLATE'; payload: TemplateId }
+  | { type: 'SET_ACCENT_COLOR'; payload: string }
   | { type: 'LOAD_RESUME'; payload: ResumeData }
   | { type: 'RESET_ALL' };
 
@@ -103,6 +104,13 @@ export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeDa
         ...state,
         lastModified: Date.now(),
         templateId: action.payload,
+      };
+
+    case 'SET_ACCENT_COLOR':
+      return {
+        ...state,
+        lastModified: Date.now(),
+        accentColor: action.payload,
       };
 
     case 'LOAD_RESUME':

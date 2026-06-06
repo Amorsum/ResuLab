@@ -1,6 +1,18 @@
 import { useResume } from '../../hooks/useResume';
 import { TEMPLATE_LIST } from '../../constants/templates';
-import type { TemplateId } from '../../types/resume';
+
+// 预设主题色
+const ACCENT_PRESETS = [
+  { color: '#2563eb', name: '蓝色' },
+  { color: '#4f46e5', name: '靛蓝' },
+  { color: '#059669', name: '翠绿' },
+  { color: '#d97706', name: '琥珀' },
+  { color: '#dc2626', name: '红色' },
+  { color: '#7c3aed', name: '紫色' },
+  { color: '#0891b2', name: '青色' },
+  { color: '#4a5568', name: '灰蓝' },
+  { color: '#1f2937', name: '墨黑' },
+];
 
 interface PreviewToolbarProps {
   scale: number;
@@ -17,14 +29,14 @@ export default function PreviewToolbar({
   isExporting,
   exportError,
 }: PreviewToolbarProps) {
-  const { resume, setTemplate } = useResume();
+  const { resume, setTemplate, setAccentColor } = useResume();
 
   const zoomOut = () => onScaleChange(Math.max(0.4, scale - 0.1));
   const zoomIn = () => onScaleChange(Math.min(1.5, scale + 0.1));
-  const zoomReset = () => onScaleChange(0.65);
+  const zoomReset = () => onScaleChange(0.8);
 
   return (
-    <div className="flex items-center justify-between px-5 py-2.5 bg-white border-b border-gray-200">
+    <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-5 py-2.5 bg-white border-b border-gray-200">
       {/* 左侧：模板切换 */}
       <div className="flex items-center gap-3">
         <span className="text-xs text-gray-500 font-medium">模板：</span>
@@ -32,7 +44,7 @@ export default function PreviewToolbar({
           {TEMPLATE_LIST.map((tpl) => (
             <button
               key={tpl.id}
-              onClick={() => setTemplate(tpl.id as TemplateId)}
+              onClick={() => setTemplate(tpl.id)}
               className={`px-3 py-1 text-xs rounded-full border transition-colors ${
                 resume.templateId === tpl.id
                   ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium'
@@ -42,6 +54,27 @@ export default function PreviewToolbar({
               {tpl.name}
             </button>
           ))}
+        </div>
+
+        {/* 分隔 */}
+        <span className="w-px h-5 bg-gray-200 mx-1" />
+
+        {/* 主题色选择 */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-500 font-medium">主题色：</span>
+          <div className="flex gap-0.5">
+            {ACCENT_PRESETS.map(({ color, name }) => (
+              <button
+                key={color}
+                onClick={() => setAccentColor(color)}
+                title={name}
+                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                  resume.accentColor === color ? 'border-gray-800 scale-110' : 'border-gray-200'
+                }`}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

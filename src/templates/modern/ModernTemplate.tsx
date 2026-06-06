@@ -5,11 +5,12 @@ interface Props { data: ResumeData; }
 
 export default function ModernTemplate({ data }: Props) {
   const { personalInfo: p, jobIntention: j, education, workExperience, projects, skills, certificates, languages, selfEvaluation, socialLinks } = data;
+  const accent = data.accentColor || '#4f46e5';
 
   return (
     <div className="font-sans text-[14px] leading-relaxed text-gray-800" style={{ minHeight: '1123px' }}>
       {/* ========== 头部横幅 ========== */}
-      <div className="bg-[#4f46e5] text-white px-10 py-8">
+      <div className="text-white px-10 py-8" style={{ backgroundColor: accent }}>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             {p.fullName && <h1 className="text-[32px] font-bold tracking-wide mb-1">{p.fullName}</h1>}
@@ -50,7 +51,7 @@ export default function ModernTemplate({ data }: Props) {
       <div className="px-10 py-6 space-y-5">
         {/* 教育背景 */}
         {education.length > 0 && (
-          <ModernSection title="教育背景" accent="#4f46e5">
+          <ModernSection title="教育背景" accent={accent}>
             {education.map((edu) => (
               <div key={edu.id} className="mb-3">
                 <div className="flex justify-between items-baseline">
@@ -66,7 +67,7 @@ export default function ModernTemplate({ data }: Props) {
 
         {/* 工作经历 */}
         {workExperience.length > 0 && (
-          <ModernSection title="工作经历" accent="#4f46e5">
+          <ModernSection title="工作经历" accent={accent}>
             {workExperience.map((exp) => (
               <div key={exp.id} className="mb-4">
                 <div className="flex justify-between items-baseline">
@@ -94,7 +95,7 @@ export default function ModernTemplate({ data }: Props) {
 
         {/* 项目经历 */}
         {projects.length > 0 && (
-          <ModernSection title="项目经历" accent="#4f46e5">
+          <ModernSection title="项目经历" accent={accent}>
             {projects.map((proj) => (
               <div key={proj.id} className="mb-3">
                 <div className="flex justify-between items-baseline">
@@ -108,7 +109,8 @@ export default function ModernTemplate({ data }: Props) {
                 {proj.techStack.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {proj.techStack.map((t) => (
-                      <span key={t} className="text-[11px] px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-medium">{t}</span>
+                      <span key={t} className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: `${accent}18`, color: accent }}>{t}</span>
                     ))}
                   </div>
                 )}
@@ -164,7 +166,7 @@ export default function ModernTemplate({ data }: Props) {
 
         {/* 社交链接 */}
         {socialLinks.length > 0 && (
-          <ModernSection title="社交链接" accent="#4f46e5">
+          <ModernSection title="社交链接" accent={accent}>
             <div className="flex flex-wrap gap-x-6 gap-y-1">
               {socialLinks.map((sl) => (
                 <span key={sl.id} className="text-[13px] text-gray-600">{sl.platform}: {sl.url}</span>
@@ -175,7 +177,7 @@ export default function ModernTemplate({ data }: Props) {
 
         {/* 自我评价 */}
         {selfEvaluation && (
-          <ModernSection title="自我评价" accent="#4f46e5">
+          <ModernSection title="自我评价" accent={accent}>
             <p className="text-[13px] text-gray-600 whitespace-pre-line">{selfEvaluation}</p>
           </ModernSection>
         )}

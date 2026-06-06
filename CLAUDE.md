@@ -40,13 +40,14 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 ## 数据模型
 
 `ResumeData` 包含:
+- `templateId` — 当前模板 ID
+- `accentColor` — 主题色（默认 #2563eb，可通过 toolbar 9 色预设切换）
 - `personalInfo` — 基本信息（姓名/性别/出生/电话/邮箱/城市/头像/职位/年限）
 - `jobIntention` — 求职意向
 - `education[]`, `workExperience[]`, `projects[]` — 经历类数组
 - `skills[]`, `certificates[]`, `languages[]` — 技能类数组
 - `selfEvaluation` — 自我评价
 - `socialLinks[]` — 社交链接
-- `templateId` — 当前模板 ID
 
 所有数组项带 `id: string`（UUID）。
 

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useResume } from '../hooks/useResume';
 import type { TemplateId } from '../types/resume';
 import { FormPanel } from '../components/form/FormPanel';
@@ -7,14 +7,26 @@ import { PreviewPanel } from '../components/preview/PreviewPanel';
 
 export default function BuilderPage() {
   const { templateId } = useParams<{ templateId: string }>();
-  const { setTemplate } = useResume();
+  const { resume, setTemplate } = useResume();
+  const navigate = useNavigate();
+  const initialized = useRef(false);
 
-  // URL 参数中指定模板时切换
+  // 首次加载时：URL 有模板参数 → 同步到 state
   useEffect(() => {
-    if (templateId && ['classic', 'modern', 'minimal'].includes(templateId)) {
+    if (!initialized.current && templateId && ['classic', 'modern', 'minimal'].includes(templateId)) {
       setTemplate(templateId as TemplateId);
     }
-  }, [templateId, setTemplate]);
+    initialized.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId]);
+
+  // 模板切换时：state 变化 → 同步到 URL
+  useEffect(() => {
+    if (initialized.current) {
+      navigate(`/builder/${resume.templateId}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resume.templateId]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">

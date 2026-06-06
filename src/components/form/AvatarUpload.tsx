@@ -23,24 +23,21 @@ export default function AvatarUpload({ value, onChange }: AvatarUploadProps) {
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
-        // 缩小到最大 300x300
+        // Step 1: 中心裁剪为正方形（避免圆形头像变形）
+        const { width: naturalW, height: naturalH } = img;
+        const squareSize = Math.min(naturalW, naturalH);
+        const sx = (naturalW - squareSize) / 2;
+        const sy = (naturalH - squareSize) / 2;
+
+        // Step 2: 缩放到最大 300x300
         const maxSize = 300;
-        let { width, height } = img;
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = (height / width) * maxSize;
-            width = maxSize;
-          } else {
-            width = (width / height) * maxSize;
-            height = maxSize;
-          }
-        }
+        const finalSize = Math.min(squareSize, maxSize);
 
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = finalSize;
+        canvas.height = finalSize;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
+        ctx?.drawImage(img, sx, sy, squareSize, squareSize, 0, 0, finalSize, finalSize);
         onChange(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.src = ev.target?.result as string;

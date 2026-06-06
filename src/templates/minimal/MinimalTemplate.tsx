@@ -5,12 +5,13 @@ interface Props { data: ResumeData; }
 
 export default function MinimalTemplate({ data }: Props) {
   const { personalInfo: p, jobIntention: j, education, workExperience, projects, skills, certificates, languages, selfEvaluation, socialLinks } = data;
+  const accent = data.accentColor || '#1f2937';
 
   return (
     <div className="font-sans text-[14px] leading-[1.7] text-gray-900 px-12 py-10" style={{ minHeight: '1123px' }}>
       {/* ========== 头部：姓名居中 ========== */}
       <header className="text-center mb-10">
-        {p.fullName && <h1 className="text-[30px] font-light tracking-[4px] text-gray-900 mb-2">{p.fullName}</h1>}
+        {p.fullName && <h1 className="text-[30px] font-light tracking-[4px] mb-2" style={{ color: accent }}>{p.fullName}</h1>}
         {(p.jobTitle || j.desiredPosition) && (
           <p className="text-[15px] text-gray-500 font-light tracking-wide">
             {j.desiredPosition || p.jobTitle}
@@ -39,7 +40,7 @@ export default function MinimalTemplate({ data }: Props) {
 
       {/* ========== 教育背景 ========== */}
       {education.length > 0 && (
-        <MinimalSection title="教育背景">
+        <MinimalSection accent={accent} title="教育背景">
           {education.map((edu) => (
             <div key={edu.id} className="mb-3">
               <div className="flex justify-between items-baseline">
@@ -55,7 +56,7 @@ export default function MinimalTemplate({ data }: Props) {
 
       {/* ========== 工作经历 ========== */}
       {workExperience.length > 0 && (
-        <MinimalSection title="工作经历">
+        <MinimalSection accent={accent} title="工作经历">
           {workExperience.map((exp) => (
             <div key={exp.id} className="mb-4">
               <div className="flex justify-between items-baseline">
@@ -81,7 +82,7 @@ export default function MinimalTemplate({ data }: Props) {
 
       {/* ========== 项目经历 ========== */}
       {projects.length > 0 && (
-        <MinimalSection title="项目经历">
+        <MinimalSection accent={accent} title="项目经历">
           {projects.map((proj) => (
             <div key={proj.id} className="mb-3">
               <div className="flex justify-between items-baseline">
@@ -102,7 +103,7 @@ export default function MinimalTemplate({ data }: Props) {
 
       {/* ========== 技能 ========== */}
       {skills.length > 0 && (
-        <MinimalSection title="技能">
+        <MinimalSection accent={accent} title="技能">
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             {skills.map((s) => (
               <span key={s.id} className="text-[13px] text-gray-600">
@@ -115,7 +116,7 @@ export default function MinimalTemplate({ data }: Props) {
 
       {/* ========== 证书 + 语言 + 社交 ========== */}
       {(certificates.length > 0 || languages.length > 0 || socialLinks.length > 0) && (
-        <MinimalSection title="其他信息">
+        <MinimalSection accent={accent} title="其他信息">
           <div className="space-y-1 text-[13px] text-gray-600">
             {certificates.map((c) => (
               <p key={c.id}>{c.name}{c.issuer ? ` — ${c.issuer}` : ''}{c.date ? ` (${c.date})` : ''}</p>
@@ -132,7 +133,7 @@ export default function MinimalTemplate({ data }: Props) {
 
       {/* ========== 自我评价 ========== */}
       {selfEvaluation && (
-        <MinimalSection title="自我评价">
+        <MinimalSection accent={accent} title="自我评价">
           <p className="text-[13px] text-gray-600 whitespace-pre-line">{selfEvaluation}</p>
         </MinimalSection>
       )}
@@ -140,13 +141,13 @@ export default function MinimalTemplate({ data }: Props) {
   );
 }
 
-function MinimalSection({ title, children }: { title: string; children: React.ReactNode }) {
+function MinimalSection({ title, accent, children }: { title: string; accent: string; children: React.ReactNode }) {
   return (
     <section className="mb-6">
-      <h3 className="text-[11px] font-medium uppercase tracking-[3px] text-gray-400 mb-3">
+      <h3 className="text-[11px] font-medium uppercase tracking-[3px] mb-3" style={{ color: `${accent}99` }}>
         {title}
       </h3>
-      <hr className="border-gray-200 mb-3" />
+      <hr className="mb-3" style={{ borderColor: `${accent}33` }} />
       {children}
     </section>
   );

@@ -5,6 +5,7 @@ interface Props { data: ResumeData; }
 
 export default function ClassicTemplate({ data }: Props) {
   const { personalInfo: p, jobIntention: j, education, workExperience, projects, skills, certificates, languages, selfEvaluation, socialLinks } = data;
+  const accent = data.accentColor || '#4a5568';
 
   const showSidebar = p.avatar || p.phone || p.email || p.city || skills.length > 0 || languages.length > 0;
 
@@ -23,7 +24,7 @@ export default function ClassicTemplate({ data }: Props) {
 
           {/* 基本信息 */}
           <div className="mb-6">
-            <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-[#4a5568] mb-3 border-b border-[#cbd5e0] pb-1">联系方式</h3>
+            <h3 className="text-[11px] font-bold uppercase tracking-[2px] mb-3 border-b border-[#cbd5e0] pb-1" style={{ color: accent }}>联系方式</h3>
             <div className="space-y-2 text-[13px] text-gray-600">
               {p.phone && <p>📱 {p.phone}</p>}
               {p.email && <p>✉️ {p.email}</p>}
@@ -35,7 +36,7 @@ export default function ClassicTemplate({ data }: Props) {
           {/* 技能 */}
           {skills.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-[#4a5568] mb-3 border-b border-[#cbd5e0] pb-1">专业技能</h3>
+              <h3 className="text-[11px] font-bold uppercase tracking-[2px] mb-3 border-b border-[#cbd5e0] pb-1" style={{ color: accent }}>专业技能</h3>
               <div className="space-y-2">
                 {skills.map((s) => (
                   <div key={s.id}>
@@ -44,8 +45,8 @@ export default function ClassicTemplate({ data }: Props) {
                       <span className="text-gray-400 text-[11px]">{s.level}</span>
                     </div>
                     <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#4a5568] rounded-full"
-                        style={{ width: s.level === '精通' ? '90%' : s.level === '熟练' ? '70%' : s.level === '掌握' ? '50%' : '30%' }} />
+                      <div className="h-full rounded-full"
+                        style={{ backgroundColor: accent, width: s.level === '精通' ? '90%' : s.level === '熟练' ? '70%' : s.level === '掌握' ? '50%' : '30%' }} />
                     </div>
                   </div>
                 ))}
@@ -56,7 +57,7 @@ export default function ClassicTemplate({ data }: Props) {
           {/* 语言 */}
           {languages.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-[#4a5568] mb-3 border-b border-[#cbd5e0] pb-1">语言能力</h3>
+              <h3 className="text-[11px] font-bold uppercase tracking-[2px] mb-3 border-b border-[#cbd5e0] pb-1" style={{ color: accent }}>语言能力</h3>
               <div className="space-y-1.5">
                 {languages.map((l) => (
                   <div key={l.id} className="flex justify-between text-[13px]">
@@ -71,7 +72,7 @@ export default function ClassicTemplate({ data }: Props) {
           {/* 社交链接 */}
           {socialLinks.length > 0 && (
             <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-[#4a5568] mb-3 border-b border-[#cbd5e0] pb-1">社交链接</h3>
+              <h3 className="text-[11px] font-bold uppercase tracking-[2px] mb-3 border-b border-[#cbd5e0] pb-1" style={{ color: accent }}>社交链接</h3>
               <div className="space-y-1.5 text-[12px]">
                 {socialLinks.map((sl) => (
                   <p key={sl.id} className="text-gray-600 truncate">{sl.platform}: {sl.url}</p>
@@ -87,13 +88,13 @@ export default function ClassicTemplate({ data }: Props) {
         {/* 姓名 + 职位 */}
         <div className="mb-6">
           {p.fullName && <h1 className="text-[28px] font-bold text-[#2d3748] tracking-wide mb-1">{p.fullName}</h1>}
-          {p.jobTitle && <p className="text-[15px] text-[#4a5568]">{p.jobTitle}{p.yearsOfExperience ? ` | ${p.yearsOfExperience}年经验` : ''}</p>}
+          {p.jobTitle && <p className="text-[15px]" style={{ color: accent }}>{p.jobTitle}{p.yearsOfExperience ? ` | ${p.yearsOfExperience}年经验` : ''}</p>}
           {j.desiredPosition && <p className="text-[13px] text-gray-500 mt-0.5">求职意向：{j.desiredPosition}{j.desiredCity ? ` · ${j.desiredCity}` : ''}{j.expectedSalary ? ` · ${j.expectedSalary}` : ''}</p>}
         </div>
 
         {/* 教育背景 */}
         {education.length > 0 && (
-          <Section title="教育背景">
+          <Section accent={accent} title="教育背景">
             {education.map((edu) => (
               <div key={edu.id} className="mb-3">
                 <div className="flex justify-between items-baseline">
@@ -109,7 +110,7 @@ export default function ClassicTemplate({ data }: Props) {
 
         {/* 工作经历 */}
         {workExperience.length > 0 && (
-          <Section title="工作经历">
+          <Section accent={accent} title="工作经历">
             {workExperience.map((exp) => (
               <div key={exp.id} className="mb-4">
                 <div className="flex justify-between items-baseline">
@@ -122,7 +123,7 @@ export default function ClassicTemplate({ data }: Props) {
                   <ul className="mt-1.5 space-y-0.5">
                     {exp.highlights.map((h, i) => (
                       <li key={i} className="text-[13px] text-gray-600 flex gap-1.5">
-                        <span className="text-[#4a5568]">•</span> {h}
+                      <span style={{ color: accent }}>•</span> {h}
                       </li>
                     ))}
                   </ul>
@@ -134,7 +135,7 @@ export default function ClassicTemplate({ data }: Props) {
 
         {/* 项目经历 */}
         {projects.length > 0 && (
-          <Section title="项目经历">
+          <Section accent={accent} title="项目经历">
             {projects.map((proj) => (
               <div key={proj.id} className="mb-3">
                 <div className="flex justify-between items-baseline">
@@ -157,7 +158,7 @@ export default function ClassicTemplate({ data }: Props) {
 
         {/* 证书 */}
         {certificates.length > 0 && (
-          <Section title="证书奖项">
+          <Section accent={accent} title="证书奖项">
             <div className="flex flex-wrap gap-x-6 gap-y-1">
               {certificates.map((cert) => (
                 <span key={cert.id} className="text-[13px] text-gray-600">
@@ -170,7 +171,7 @@ export default function ClassicTemplate({ data }: Props) {
 
         {/* 自我评价 */}
         {selfEvaluation && (
-          <Section title="自我评价">
+          <Section accent={accent} title="自我评价">
             <p className="text-[13px] text-gray-600 whitespace-pre-line">{selfEvaluation}</p>
           </Section>
         )}
@@ -180,10 +181,11 @@ export default function ClassicTemplate({ data }: Props) {
 }
 
 /** 简历区域小标题 */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, accent, children }: { title: string; accent: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
-      <h3 className="text-[13px] font-bold text-[#4a5568] uppercase tracking-[2px] border-b-2 border-[#4a5568] pb-1 mb-3">
+      <h3 className="text-[13px] font-bold uppercase tracking-[2px] border-b-2 pb-1 mb-3"
+        style={{ color: accent, borderColor: accent }}>
         {title}
       </h3>
       {children}

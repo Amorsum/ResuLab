@@ -108,6 +108,7 @@ export interface SocialLink {
 
 export interface ResumeData {
   templateId: TemplateId;
+  accentColor: string;
   lastModified: number;
   personalInfo: PersonalInfo;
   jobIntention: JobIntention;

@@ -42,6 +42,9 @@ export function useResume() {
     setTemplate: (payload: TemplateId) =>
       dispatch({ type: 'SET_TEMPLATE', payload }),
 
+    setAccentColor: (payload: string) =>
+      dispatch({ type: 'SET_ACCENT_COLOR', payload }),
+
     loadResume: (payload: ResumeData) =>
       dispatch({ type: 'LOAD_RESUME', payload }),
 

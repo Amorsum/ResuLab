@@ -4,7 +4,7 @@ import PreviewToolbar from './PreviewToolbar';
 import TemplateRenderer from './TemplateRenderer';
 
 export function PreviewPanel() {
-  const [scale, setScale] = useState(0.65);
+  const [scale, setScale] = useState(0.8);
   const { previewRef, exportPdf, isExporting, error } = usePdfExport();
 
   return (
