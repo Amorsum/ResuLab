@@ -23,21 +23,35 @@ export default function AvatarUpload({ value, onChange }: AvatarUploadProps) {
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
-        // Step 1: 中心裁剪为正方形（避免圆形头像变形）
+        // Step 1: 裁剪为 3:4 竖长证件照比例
         const { width: naturalW, height: naturalH } = img;
-        const squareSize = Math.min(naturalW, naturalH);
-        const sx = (naturalW - squareSize) / 2;
-        const sy = (naturalH - squareSize) / 2;
+        const TARGET_RATIO = 3 / 4; // 宽:高
 
-        // Step 2: 缩放到最大 300x300
-        const maxSize = 300;
-        const finalSize = Math.min(squareSize, maxSize);
+        let cropW: number, cropH: number;
+        const imageRatio = naturalW / naturalH;
+
+        if (imageRatio > TARGET_RATIO) {
+          // 图片偏宽 → 裁剪左右
+          cropH = naturalH;
+          cropW = naturalH * TARGET_RATIO;
+        } else {
+          // 图片偏高 → 裁剪上下
+          cropW = naturalW;
+          cropH = naturalW / TARGET_RATIO;
+        }
+        const sx = (naturalW - cropW) / 2;
+        const sy = (naturalH - cropH) / 2;
+
+        // Step 2: 缩放到合适大小（最大高度 300px）
+        const maxHeight = 300;
+        const finalH = Math.min(cropH, maxHeight);
+        const finalW = finalH * TARGET_RATIO;
 
         const canvas = document.createElement('canvas');
-        canvas.width = finalSize;
-        canvas.height = finalSize;
+        canvas.width = finalW;
+        canvas.height = finalH;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, sx, sy, squareSize, squareSize, 0, 0, finalSize, finalSize);
+        ctx?.drawImage(img, sx, sy, cropW, cropH, 0, 0, finalW, finalH);
         onChange(canvas.toDataURL('image/jpeg', 0.85));
       };
       img.src = ev.target?.result as string;
@@ -52,7 +66,7 @@ export default function AvatarUpload({ value, onChange }: AvatarUploadProps) {
         {/* 预览 */}
         <div
           onClick={() => inputRef.current?.click()}
-          className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300
+          className="w-[72px] h-[96px] rounded-lg border-2 border-dashed border-gray-300
                      flex items-center justify-center overflow-hidden cursor-pointer
                      hover:border-primary-400 transition-colors flex-shrink-0"
         >

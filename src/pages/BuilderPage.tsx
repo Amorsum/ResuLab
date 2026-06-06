@@ -31,7 +31,7 @@ export default function BuilderPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
       {/* 左侧: 表单面板 */}
-      <div className="w-[480px] flex-shrink-0">
+      <div className="w-[440px] flex-shrink-0">
         <FormPanel />
       </div>
 

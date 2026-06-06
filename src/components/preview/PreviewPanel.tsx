@@ -4,7 +4,7 @@ import PreviewToolbar from './PreviewToolbar';
 import TemplateRenderer from './TemplateRenderer';
 
 export function PreviewPanel() {
-  const [scale, setScale] = useState(0.8);
+  const [scale, setScale] = useState(1.1);
   const { previewRef, exportPdf, isExporting, error } = usePdfExport();
 
   return (
@@ -19,7 +19,7 @@ export function PreviewPanel() {
       />
 
       {/* 预览区域 */}
-      <div className="flex-1 overflow-auto bg-gray-200 p-4 flex justify-center">
+      <div className="flex-1 overflow-auto bg-gray-100 flex justify-center pt-2">
         <div style={{ minWidth: '794px' }}>
           <TemplateRenderer previewRef={previewRef} scale={scale} />
         </div>

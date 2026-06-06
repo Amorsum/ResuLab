@@ -18,7 +18,7 @@ export default function ClassicTemplate({ data }: Props) {
           {p.avatar && (
             <div className="text-center mb-6">
               <img src={p.avatar} alt={p.fullName}
-                className="w-[100px] h-[100px] rounded-full object-cover mx-auto border-2 border-white shadow" />
+                className="w-[90px] h-[120px] rounded-lg object-cover mx-auto border-2 border-white shadow" />
             </div>
           )}
 

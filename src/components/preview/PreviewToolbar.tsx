@@ -33,7 +33,7 @@ export default function PreviewToolbar({
 
   const zoomOut = () => onScaleChange(Math.max(0.4, scale - 0.1));
   const zoomIn = () => onScaleChange(Math.min(1.5, scale + 0.1));
-  const zoomReset = () => onScaleChange(0.8);
+  const zoomReset = () => onScaleChange(1.1);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-5 py-2.5 bg-white border-b border-gray-200">

@@ -23,7 +23,7 @@ export default function ModernTemplate({ data }: Props) {
           </div>
           {p.avatar && (
             <img src={p.avatar} alt={p.fullName}
-              className="w-[80px] h-[80px] rounded-full object-cover border-2 border-white/30 flex-shrink-0" />
+              className="w-[72px] h-[96px] rounded-lg object-cover border-2 border-white/30 flex-shrink-0" />
           )}
         </div>
 
