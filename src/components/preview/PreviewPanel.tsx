@@ -5,7 +5,6 @@ import PreviewToolbar from './PreviewToolbar';
 import TemplateRenderer from './TemplateRenderer';
 
 interface PreviewPanelProps {
-  /** 移动端模式：隐藏工具栏，使用外部传入的 ref 和导出 */
   previewRef?: React.RefObject<HTMLDivElement>;
   isExporting?: boolean;
   exportError?: string | null;
@@ -18,15 +17,13 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
   const { previewRef: internalRef, exportPdf: internalExport, isExporting: internalExporting, error: internalError } = usePdfExport();
   const { resume, setFontSize, setLineHeight, setPageMargin } = useResume();
 
-  // 移动端使用外部传入，桌面端使用内部
   const previewRef = externalRef || internalRef;
   const isExporting = externalExporting ?? internalExporting;
   const exportError = externalError ?? internalError;
   const onExport = externalOnExport || internalExport;
 
-  // 移动端：计算居中偏移量，使 794px 宽内容在视口内居中
+  // 移动端缩放：使简历宽度适配屏幕
   const mobileScale = Math.min(0.50, (window.innerWidth - 24) / 794);
-  const mobileCenterOffset = Math.max(0, (794 - window.innerWidth) / 2);
 
   /** 智能一页：自动调整排版使内容缩放到一页内 */
   const smartFit = useCallback(() => {
@@ -100,8 +97,8 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
 
       {/* 预览区域 */}
       {hideToolbar ? (
-        <div className="flex-1 overflow-auto bg-gray-100 pt-2">
-          <div style={{ marginLeft: -mobileCenterOffset, marginRight: -mobileCenterOffset }}>
+        <div className="flex-1 overflow-auto bg-gray-100 pt-2" style={{ textAlign: 'center' }}>
+          <div style={{ display: 'inline-block', textAlign: 'left' }}>
             <TemplateRenderer previewRef={previewRef} scale={mobileScale} />
           </div>
         </div>
