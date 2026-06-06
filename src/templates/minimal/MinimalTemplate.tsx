@@ -3,12 +3,18 @@ import { formatDateRange } from '../../utils/dateFormat';
 
 interface Props { data: ResumeData; }
 
+const FONT_CLASS: Record<string, string> = { default: 'font-sans', serif: 'font-serif', mono: 'font-mono' };
+const MARGIN_PX: Record<string, { x: number; y: number }> = { narrow: { x: 48, y: 40 }, normal: { x: 64, y: 56 }, wide: { x: 80, y: 72 } };
+
 export default function MinimalTemplate({ data }: Props) {
   const { personalInfo: p, jobIntention: j, education, workExperience, projects, skills, certificates, languages, selfEvaluation, socialLinks } = data;
   const accent = data.accentColor || '#1f2937';
+  const fontClass = FONT_CLASS[data.fontFamily] || 'font-sans';
+  const mg = MARGIN_PX[data.pageMargin] || MARGIN_PX.normal;
 
   return (
-    <div className="font-sans text-[14px] leading-[1.7] text-gray-900 px-12 py-10" style={{ minHeight: '1123px' }}>
+    <div className={`text-gray-900 ${fontClass}`}
+      style={{ minHeight: '1123px', fontSize: `${data.fontSize}px`, lineHeight: data.lineHeight, padding: `${mg.y}px ${mg.x}px` }}>
       {/* ========== 头部：姓名居中 ========== */}
       <header className="text-center mb-10">
         {p.fullName && <h1 className="text-[30px] font-light tracking-[4px] mb-2" style={{ color: accent }}>{p.fullName}</h1>}

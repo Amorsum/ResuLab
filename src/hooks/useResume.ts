@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { ResumeContext } from '../context/ResumeContext';
-import type { ResumeData, ArraySectionName, TemplateId } from '../types/resume';
+import type { ResumeData, ArraySectionName, TemplateId, FontFamily, PageMargin } from '../types/resume';
 import type { ResumeAction } from '../context/resumeReducer';
 import { generateId, createEmptyResume } from '../constants/defaultResume';
 
@@ -44,6 +44,22 @@ export function useResume() {
 
     setAccentColor: (payload: string) =>
       dispatch({ type: 'SET_ACCENT_COLOR', payload }),
+
+    // ---- 排版设置 ----
+    setFontFamily: (payload: FontFamily) =>
+      dispatch({ type: 'SET_FONT_FAMILY', payload }),
+
+    setFontSize: (payload: number) =>
+      dispatch({ type: 'SET_FONT_SIZE', payload }),
+
+    setLineHeight: (payload: number) =>
+      dispatch({ type: 'SET_LINE_HEIGHT', payload }),
+
+    setPageMargin: (payload: PageMargin) =>
+      dispatch({ type: 'SET_PAGE_MARGIN', payload }),
+
+    // ---- 智能功能 ----
+    smartSort: () => dispatch({ type: 'SMART_SORT' }),
 
     loadResume: (payload: ResumeData) =>
       dispatch({ type: 'LOAD_RESUME', payload }),

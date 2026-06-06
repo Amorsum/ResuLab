@@ -3,14 +3,20 @@ import { formatDateRange } from '../../utils/dateFormat';
 
 interface Props { data: ResumeData; }
 
+const FONT_CLASS: Record<string, string> = { default: 'font-sans', serif: 'font-serif', mono: 'font-mono' };
+const MARGIN_PX: Record<string, { x: number; y: number }> = { narrow: { x: 32, y: 48 }, normal: { x: 40, y: 64 }, wide: { x: 64, y: 80 } };
+
 export default function ModernTemplate({ data }: Props) {
   const { personalInfo: p, jobIntention: j, education, workExperience, projects, skills, certificates, languages, selfEvaluation, socialLinks } = data;
   const accent = data.accentColor || '#4f46e5';
+  const fontClass = FONT_CLASS[data.fontFamily] || 'font-sans';
+  const mg = MARGIN_PX[data.pageMargin] || MARGIN_PX.normal;
 
   return (
-    <div className="font-sans text-[14px] leading-relaxed text-gray-800" style={{ minHeight: '1123px' }}>
+    <div className={`text-gray-800 ${fontClass}`}
+      style={{ minHeight: '1123px', fontSize: `${data.fontSize}px`, lineHeight: data.lineHeight }}>
       {/* ========== 头部横幅 ========== */}
-      <div className="text-white px-10 py-8" style={{ backgroundColor: accent }}>
+      <div className="text-white" style={{ backgroundColor: accent, padding: `${mg.y}px ${mg.x}px` }}>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             {p.fullName && <h1 className="text-[32px] font-bold tracking-wide mb-1">{p.fullName}</h1>}
@@ -48,7 +54,7 @@ export default function ModernTemplate({ data }: Props) {
       </div>
 
       {/* ========== 主体内容 ========== */}
-      <div className="px-10 py-6 space-y-5">
+      <div className="space-y-5" style={{ padding: `${mg.y}px ${mg.x}px` }}>
         {/* 教育背景 */}
         {education.length > 0 && (
           <ModernSection title="教育背景" accent={accent}>

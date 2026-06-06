@@ -3,17 +3,24 @@ import { formatMonth, formatDateRange } from '../../utils/dateFormat';
 
 interface Props { data: ResumeData; }
 
+/** 排版辅助 */
+const FONT_CLASS: Record<string, string> = { default: 'font-sans', serif: 'font-serif', mono: 'font-mono' };
+const MARGIN_PX: Record<string, { x: number; y: number }> = { narrow: { x: 32, y: 48 }, normal: { x: 40, y: 64 }, wide: { x: 64, y: 80 } };
+
 export default function ClassicTemplate({ data }: Props) {
   const { personalInfo: p, jobIntention: j, education, workExperience, projects, skills, certificates, languages, selfEvaluation, socialLinks } = data;
   const accent = data.accentColor || '#4a5568';
+  const fontClass = FONT_CLASS[data.fontFamily] || 'font-sans';
+  const mg = MARGIN_PX[data.pageMargin] || MARGIN_PX.normal;
 
   const showSidebar = p.avatar || p.phone || p.email || p.city || skills.length > 0 || languages.length > 0;
 
   return (
-    <div className="flex font-sans text-[14px] leading-relaxed text-gray-800" style={{ minHeight: '1123px' }}>
+    <div className={`flex text-gray-800 ${fontClass}`}
+      style={{ minHeight: '1123px', fontSize: `${data.fontSize}px`, lineHeight: data.lineHeight }}>
       {/* ========== 左侧边栏 ========== */}
       {showSidebar && (
-        <div className="w-[230px] bg-[#f0f4f8] px-5 py-8 flex-shrink-0">
+        <div className="w-[230px] bg-[#f0f4f8] flex-shrink-0" style={{ padding: `${mg.y}px ${mg.x}px` }}>
           {/* 照片 */}
           {p.avatar && (
             <div className="text-center mb-6">
@@ -84,7 +91,7 @@ export default function ClassicTemplate({ data }: Props) {
       )}
 
       {/* ========== 右侧主体 ========== */}
-      <div className="flex-1 px-8 py-8">
+      <div className="flex-1" style={{ padding: `${mg.y}px ${mg.x}px` }}>
         {/* 姓名 + 职位 */}
         <div className="mb-6">
           {p.fullName && <h1 className="text-[28px] font-bold text-[#2d3748] tracking-wide mb-1">{p.fullName}</h1>}

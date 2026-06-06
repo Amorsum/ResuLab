@@ -18,6 +18,10 @@ export type SkillLevel =
 
 export type JobType = '' | '全职' | '兼职' | '实习';
 
+export type FontFamily = 'default' | 'serif' | 'mono';
+
+export type PageMargin = 'normal' | 'narrow' | 'wide';
+
 // ===================== 核心实体 =====================
 
 export interface PersonalInfo {
@@ -109,6 +113,10 @@ export interface SocialLink {
 export interface ResumeData {
   templateId: TemplateId;
   accentColor: string;
+  fontFamily: FontFamily;
+  fontSize: number;
+  lineHeight: number;
+  pageMargin: PageMargin;
   lastModified: number;
   personalInfo: PersonalInfo;
   jobIntention: JobIntention;

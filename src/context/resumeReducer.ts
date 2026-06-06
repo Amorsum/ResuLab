@@ -1,4 +1,4 @@
-import type { ResumeData, ArraySectionName, TemplateId } from '../types/resume';
+import type { ResumeData, ArraySectionName, TemplateId, FontFamily, PageMargin } from '../types/resume';
 import { generateId, createEmptyResume } from '../constants/defaultResume';
 
 // ===================== Action 类型 =====================
@@ -13,6 +13,11 @@ export type ResumeAction =
   | { type: 'SET_SELF_EVALUATION'; payload: string }
   | { type: 'SET_TEMPLATE'; payload: TemplateId }
   | { type: 'SET_ACCENT_COLOR'; payload: string }
+  | { type: 'SET_FONT_FAMILY'; payload: FontFamily }
+  | { type: 'SET_FONT_SIZE'; payload: number }
+  | { type: 'SET_LINE_HEIGHT'; payload: number }
+  | { type: 'SET_PAGE_MARGIN'; payload: PageMargin }
+  | { type: 'SMART_SORT' }
   | { type: 'LOAD_RESUME'; payload: ResumeData }
   | { type: 'RESET_ALL' };
 
@@ -112,6 +117,35 @@ export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeDa
         lastModified: Date.now(),
         accentColor: action.payload,
       };
+
+    case 'SET_FONT_FAMILY':
+      return { ...state, lastModified: Date.now(), fontFamily: action.payload };
+
+    case 'SET_FONT_SIZE':
+      return { ...state, lastModified: Date.now(), fontSize: action.payload };
+
+    case 'SET_LINE_HEIGHT':
+      return { ...state, lastModified: Date.now(), lineHeight: action.payload };
+
+    case 'SET_PAGE_MARGIN':
+      return { ...state, lastModified: Date.now(), pageMargin: action.payload };
+
+    case 'SMART_SORT': {
+      const sortByDate = <T extends { startDate: string; isCurrent: boolean }>(items: T[]): T[] => {
+        return [...items].sort((a, b) => {
+          if (a.isCurrent && !b.isCurrent) return -1;
+          if (!a.isCurrent && b.isCurrent) return 1;
+          return (b.startDate || '').localeCompare(a.startDate || '');
+        });
+      };
+      return {
+        ...state,
+        lastModified: Date.now(),
+        education: sortByDate(state.education),
+        workExperience: sortByDate(state.workExperience),
+        projects: sortByDate(state.projects),
+      };
+    }
 
     case 'LOAD_RESUME':
       return action.payload;

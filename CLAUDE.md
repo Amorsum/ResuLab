@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中填写简历信息、实时预览、选择模板、导出 PDF。所有数据存储在 localStorage。
+ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中填写简历信息、实时预览、选择模板、自定义排版（字体/字号/行距/页边距/主题色）、使用智能功能（智能一页/智能排序）、导出 PDF。所有数据存储在 localStorage。
 
 ## 技术栈
 
@@ -25,7 +25,8 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 | `src/constants/templates.ts` | 模板注册表 (`TEMPLATES` record) |
 | `src/utils/pdfExport.ts` | PDF 导出核心逻辑 |
 | `src/components/form/FormPanel.tsx` | 表单面板（组装所有区域） |
-| `src/components/preview/PreviewPanel.tsx` | 预览面板 |
+| `src/components/preview/PreviewPanel.tsx` | 预览面板（含智能一页逻辑） |
+| `src/components/preview/PreviewToolbar.tsx` | 工具栏（模板/主题色/排版设置/智能功能/缩放/导出） |
 | `src/templates/` | 三个模板组件 + TemplateBase |
 
 ## 核心架构
@@ -40,11 +41,15 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 ## 数据模型
 
 `ResumeData` 包含:
-- `templateId` — 当前模板 ID
-- `accentColor` — 主题色（默认 #2563eb，可通过 toolbar 9 色预设切换）
+- `templateId` — 当前模板 ID（classic/modern/minimal）
+- `accentColor` — 主题色（默认 #2563eb，9 色预设可选）
+- `fontFamily` — 字体（default/serif/mono）
+- `fontSize` — 字号（12-18px，默认 14）
+- `lineHeight` — 行距（1.4-2.0，默认 1.6）
+- `pageMargin` — 页边距（narrow/normal/wide，默认 normal）
 - `personalInfo` — 基本信息（姓名/性别/出生/电话/邮箱/城市/头像/职位/年限）
 - `jobIntention` — 求职意向
-- `education[]`, `workExperience[]`, `projects[]` — 经历类数组
+- `education[]`, `workExperience[]`, `projects[]` — 经历类数组（支持智能排序）
 - `skills[]`, `certificates[]`, `languages[]` — 技能类数组
 - `selfEvaluation` — 自我评价
 - `socialLinks[]` — 社交链接
@@ -65,10 +70,27 @@ npm run dev        # 启动开发服务器 (localhost:3000)
 npm run build      # 生产构建
 ```
 
+## 排版系统
+
+模板通过 `ResumeData` 中的排版字段动态渲染：
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `fontFamily` | `'default'\|'serif'\|'mono'` | `'default'` | 映射到 Tailwind font-sans/font-serif/font-mono |
+| `fontSize` | `number` | `14` | 12-18px |
+| `lineHeight` | `number` | `1.6` | 1.4-2.0 |
+| `pageMargin` | `'narrow'\|'normal'\|'wide'` | `'normal'` | 映射到具体 px 值（模板内部 MARGIN_PX 表） |
+
+## 智能功能
+
+- **智能一页** (`PreviewPanel.smartFit`)：测量 A4 内容实际高度 → 按溢出比例缩小字号 → 缩页边距 → 缩行距（clamp 到最小值）
+- **智能排序** (`SMART_SORT` action)：教育/工作/项目经历按 startDate 降序排列（"至今"优先）
+
 ## 注意事项
 
-- Node.js 需提前安装（winget install OpenJS.NodeJS.LTS）
+- Node.js 需提前安装（推荐 v24 LTS）
 - 模板必须在 A4 尺寸 (794×1123px) 内渲染
-- 模板使用 Tailwind 类，避免外部 CSS
-- 头像存储为 base64 data URL（限制 300×300px，压缩质量 0.85）
+- 模板使用 `data.fontSize` / `data.lineHeight` 动态值代替硬编码
+- 照片裁剪为 3:4 竖长方形证件照比例，最大高度 300px
+- 头像存储为 base64 data URL（压缩质量 0.85）
 - PDF 导出使用 2x 缩放截图 → JPEG 0.95 → jsPDF A4 自动分页
