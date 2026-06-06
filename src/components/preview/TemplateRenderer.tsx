@@ -4,7 +4,7 @@ import { TEMPLATES } from '../../constants/templates';
 import TemplateBase from '../../templates/TemplateBase';
 
 interface TemplateRendererProps {
-  previewRef: React.Ref<HTMLDivElement>;
+  previewRef: React.RefObject<HTMLDivElement | null>;
   scale: number;
 }
 

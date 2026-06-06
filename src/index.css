@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iPhone 底部安全区域适配 */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @layer base {
   * {
     margin: 0;

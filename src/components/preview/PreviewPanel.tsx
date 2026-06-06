@@ -4,10 +4,25 @@ import { useResume } from '../../hooks/useResume';
 import PreviewToolbar from './PreviewToolbar';
 import TemplateRenderer from './TemplateRenderer';
 
-export function PreviewPanel() {
+interface PreviewPanelProps {
+  /** 移动端模式：隐藏工具栏，使用外部传入的 ref 和导出 */
+  previewRef?: React.RefObject<HTMLDivElement>;
+  isExporting?: boolean;
+  exportError?: string | null;
+  onExport?: () => void;
+  hideToolbar?: boolean;
+}
+
+export function PreviewPanel({ previewRef: externalRef, isExporting: externalExporting, exportError: externalError, onExport: externalOnExport, hideToolbar }: PreviewPanelProps) {
   const [scale, setScale] = useState(1.1);
-  const { previewRef, exportPdf, isExporting, error } = usePdfExport();
+  const { previewRef: internalRef, exportPdf: internalExport, isExporting: internalExporting, error: internalError } = usePdfExport();
   const { resume, setFontSize, setLineHeight, setPageMargin } = useResume();
+
+  // 移动端使用外部传入，桌面端使用内部
+  const previewRef = externalRef || internalRef;
+  const isExporting = externalExporting ?? internalExporting;
+  const exportError = externalError ?? internalError;
+  const onExport = externalOnExport || internalExport;
 
   /** 智能一页：自动调整排版使内容缩放到一页内 */
   const smartFit = useCallback(() => {
@@ -67,20 +82,22 @@ export function PreviewPanel() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* 工具栏 */}
-      <PreviewToolbar
-        scale={scale}
-        onScaleChange={setScale}
-        onExport={exportPdf}
-        isExporting={isExporting}
-        exportError={error}
-        onSmartFit={smartFit}
-      />
+      {/* 工具栏（桌面端显示） */}
+      {!hideToolbar && (
+        <PreviewToolbar
+          scale={scale}
+          onScaleChange={setScale}
+          onExport={onExport}
+          isExporting={isExporting}
+          exportError={exportError}
+          onSmartFit={smartFit}
+        />
+      )}
 
       {/* 预览区域 */}
-      <div className="flex-1 overflow-auto bg-gray-100 flex justify-center pt-2">
-        <div style={{ minWidth: '794px' }}>
-          <TemplateRenderer previewRef={previewRef} scale={scale} />
+      <div className={`flex-1 bg-gray-100 flex justify-center pt-2 ${hideToolbar ? 'overflow-x-hidden overflow-y-auto' : 'overflow-auto'}`}>
+        <div style={hideToolbar ? { width: '100%', overflow: 'hidden' } : { minWidth: '794px' }}>
+          <TemplateRenderer previewRef={previewRef} scale={hideToolbar ? Math.min(0.55, (window.innerWidth - 32) / 794) : scale} />
         </div>
       </div>
     </div>

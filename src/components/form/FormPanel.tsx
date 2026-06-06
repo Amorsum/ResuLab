@@ -26,7 +26,7 @@ export function FormPanel() {
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
         <div>
           <h2 className="font-bold text-gray-800">简历信息填写</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">
             上次保存：{new Date(resume.lastModified).toLocaleString('zh-CN')}
           </p>
         </div>
