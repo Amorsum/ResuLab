@@ -6,15 +6,16 @@ import TemplateBase from '../../templates/TemplateBase';
 interface TemplateRendererProps {
   previewRef: React.RefObject<HTMLDivElement | null>;
   scale: number;
+  transformOrigin?: string;
 }
 
-export default function TemplateRenderer({ previewRef, scale }: TemplateRendererProps) {
+export default function TemplateRenderer({ previewRef, scale, transformOrigin }: TemplateRendererProps) {
   const { resume } = useResume();
   const tpl = TEMPLATES[resume.templateId];
   const TemplateComponent = tpl.component;
 
   return (
-    <TemplateBase ref={previewRef} scale={scale}>
+    <TemplateBase ref={previewRef} scale={scale} transformOrigin={transformOrigin}>
       <Suspense
         fallback={
           <div className="flex items-center justify-center h-full min-h-[600px] text-gray-400">

@@ -4,17 +4,18 @@ import type { ReactNode } from 'react';
 interface TemplateBaseProps {
   children: ReactNode;
   scale?: number;
+  transformOrigin?: string;
 }
 
 const TemplateBase = forwardRef<HTMLDivElement | null, TemplateBaseProps>(
-  function TemplateBase({ children, scale = 1 }, ref) {
+  function TemplateBase({ children, scale = 1, transformOrigin = 'top center' }, ref) {
     return (
       <div
         ref={ref}
         className="a4-preview mx-auto relative"
         style={{
           transform: `scale(${scale})`,
-          transformOrigin: 'top center',
+          transformOrigin,
           marginBottom: scale < 1 ? `${-(1123 * (1 - scale))}px` : 0,
         }}
       >
