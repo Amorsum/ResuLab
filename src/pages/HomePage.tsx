@@ -42,13 +42,39 @@ export default function HomePage() {
         <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto">
           只需填写信息，选择模板，即可生成一份排版精美、重点突出的专业简历。完全免费，注册后可云端保存。
         </p>
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
           <button onClick={() => handleStart('classic')} className="btn-primary text-lg px-8 py-3">
             立即制作简历
           </button>
           <button onClick={() => navigate('/builder')} className="btn-secondary text-lg px-8 py-3">
             预览模板
           </button>
+        </div>
+        {/* 下载按钮 */}
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <a
+            href="/ResuLab_Setup.exe"
+            download
+            className="btn-secondary text-sm px-5 py-2.5 !bg-gray-900 !text-white !border-gray-900 hover:!bg-gray-800"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            下载 Windows 版
+          </a>
+          <a
+            href="/ResuLab.apk"
+            download
+            className="btn-secondary text-sm px-5 py-2.5 !bg-green-600 !text-white !border-green-600 hover:!bg-green-700"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="5" y="2" width="14" height="20" rx="2"/>
+              <line x1="12" y1="18" x2="12" y2="18.01"/>
+            </svg>
+            下载 Android 版
+          </a>
         </div>
       </section>
 
