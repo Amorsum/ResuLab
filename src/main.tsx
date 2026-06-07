@@ -17,3 +17,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// 注册 PWA Service Worker
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {
+    // Service Worker 注册失败不影响应用正常运行
+  });
+}
