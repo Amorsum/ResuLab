@@ -106,12 +106,12 @@ export default function RegisterPage() {
         {needsConfirmation && (
           <div className="section-card text-center">
             <div className="text-5xl mb-4">📧</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">验证你的邮箱</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">查收验证邮件</h2>
             <p className="text-gray-500 mb-2">
-              我们已向 <span className="font-medium text-gray-700">{email}</span> 发送了一封验证邮件
+              如果 <span className="font-medium text-gray-700">{email}</span> 尚未注册，我们将发送一封验证邮件
             </p>
             <p className="text-sm text-gray-400 mb-6">
-              请点击邮件中的链接完成注册（如未收到请检查垃圾邮件箱）
+              请点击邮件中的链接完成注册。如未收到，可能是邮箱已注册，请尝试直接登录
             </p>
             <div className="flex items-center justify-center gap-4">
               <button

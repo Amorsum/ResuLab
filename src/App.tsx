@@ -4,6 +4,7 @@ import BuilderPage from './pages/BuilderPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MyResumesPage from './pages/MyResumesPage';
+import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 export default function App() {
@@ -19,6 +20,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <MyResumesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <ProtectedRoute>
+            <AccountPage />
           </ProtectedRoute>
         }
       />

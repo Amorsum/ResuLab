@@ -13,6 +13,9 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updateEmail: (newEmail: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
 }
 
 // ===================== Context =====================
@@ -74,6 +77,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  /** 换绑邮箱 */
+  const updateEmail = useCallback(async (newEmail: string) => {
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) return { error: getChineseErrorMessage(error) };
+    return { error: null };
+  }, []);
+
+  /** 修改密码 */
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: getChineseErrorMessage(error) };
+    return { error: null };
+  }, []);
+
+  /** 注销账号 */
+  const deleteAccount = useCallback(async () => {
+    // 先删除云端简历数据
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) {
+      await supabase.from('resumes').delete().eq('user_id', session.user.id);
+    }
+    // 调用 Supabase 的 deleteUser（需要通过 Edge Function 或 Admin API）
+    // 前端无法直接删除用户，改用请求服务端
+    const { error } = await supabase.rpc('delete_user_account');
+    if (error) {
+      // 如果 RPC 不存在，尝试用 Admin API 的方式
+      console.error('注销账号失败:', error);
+      return { error: '注销功能需要后端支持，请联系管理员' };
+    }
+    return { error: null };
+  }, []);
+
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/builder`,
@@ -83,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resetPassword, updateEmail, updatePassword, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );
