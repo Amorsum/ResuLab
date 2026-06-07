@@ -16,6 +16,7 @@
 - 🔄 **智能排序** — 教育/工作/项目经历按时间从远到近自动排序
 - 🏷️ **技能分类** — 支持技能按类别（编程语言/框架/工具等）分组，简历中可视化展示
 - 💾 **本地保存** — 数据自动存入 localStorage，刷新不丢失，旧版本数据自动迁移
+- ☁️ **云端存储** — 支持邮箱注册登录，简历云端保存，多设备同步（可选）
 
 ## 技术栈
 
@@ -27,8 +28,9 @@
 | 路由 | React Router v6 |
 | 状态管理 | Context + useReducer |
 | PDF 导出 | html2canvas + jsPDF |
+| 后端服务 | Supabase（Auth + PostgreSQL + RLS） |
 | 部署 | GitHub Pages + 自定义域名 |
-| 持久化 | localStorage（300ms 防抖写入） |
+| 持久化 | localStorage（300ms 防抖写入）+ Supabase 云端同步 |
 
 ## 快速开始
 
@@ -36,12 +38,18 @@
 # 安装依赖
 npm install
 
+# 配置环境变量（云端存储功能需要）
+cp .env.example .env
+# 编辑 .env，填入 Supabase 项目 URL 和 anon key
+
 # 启动开发服务器（默认 http://localhost:3000）
 npm run dev
 
 # 构建生产版本
 npm run build
 ```
+
+> 不配置 Supabase 环境变量也可以正常使用——本地编辑、预览、PDF 导出功能不受影响，仅云端存储不可用。
 
 ## 项目结构
 
@@ -59,7 +67,7 @@ npm run build
 - [x] 智能排序
 - [x] 技能分类展示
 - [x] 在线部署
-- [ ] 用户账号系统
-- [ ] 云端存储
+- [x] 用户账号系统
+- [x] 云端存储
 - [ ] 更多模板
 - [ ] AI 简历优化建议

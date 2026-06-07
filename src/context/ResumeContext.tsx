@@ -5,7 +5,7 @@ import type { ResumeAction } from './resumeReducer';
 import { resumeReducer } from './resumeReducer';
 import { DEFAULT_RESUME } from '../constants/defaultResume';
 
-const STORAGE_KEY = 'resulab_data';
+export const STORAGE_KEY = 'resulab_data';
 
 // ===================== Context =====================
 

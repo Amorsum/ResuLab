@@ -128,6 +128,18 @@ export interface ResumeData {
   languages: Language[];
   selfEvaluation: string;
   socialLinks: SocialLink[];
+  /** 云端简历 ID（已保存到云端时有值） */
+  _cloudId?: string;
+}
+
+// ===================== 云端简历元数据 =====================
+
+/** 云端简历列表项（不含完整 data） */
+export interface CloudResumeMeta {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // ===================== 表单区域可见性 =====================

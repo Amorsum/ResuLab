@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { TEMPLATE_LIST } from '../constants/templates';
 import { useResume } from '../hooks/useResume';
+import UserMenu from '../components/layout/UserMenu';
 import type { TemplateId } from '../types/resume';
 
 export default function HomePage() {
@@ -27,9 +28,7 @@ export default function HomePage() {
             </svg>
             ResuLab
           </a>
-          <button onClick={() => handleStart()} className="btn-primary">
-            免费开始制作
-          </button>
+          <UserMenu />
         </div>
       </nav>
 
@@ -41,7 +40,7 @@ export default function HomePage() {
           <span className="text-primary-600">赢在求职起跑线</span>
         </h1>
         <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto">
-          只需填写信息，选择模板，即可生成一份排版精美、重点突出的专业简历。完全免费，无需注册。
+          只需填写信息，选择模板，即可生成一份排版精美、重点突出的专业简历。完全免费，注册后可云端保存。
         </p>
         <div className="flex items-center justify-center gap-4">
           <button onClick={() => handleStart('classic')} className="btn-primary text-lg px-8 py-3">
