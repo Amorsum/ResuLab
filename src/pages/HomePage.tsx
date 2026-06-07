@@ -51,11 +51,12 @@ export default function HomePage() {
           </button>
         </div>
         {/* 下载按钮 */}
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
+          {/* Windows — 桌面端显示 */}
           <a
-            href="/ResuLab_Setup.exe"
+            href="https://github.com/Amorsum/ResuLab/releases/latest/download/ResuLab_Setup.exe"
             download
-            className="btn-secondary text-sm px-5 py-2.5 !bg-gray-900 !text-white !border-gray-900 hover:!bg-gray-800"
+            className="hidden sm:inline-flex items-center gap-1.5 btn-secondary text-sm px-5 py-2.5 !bg-gray-900 !text-white !border-gray-900 hover:!bg-gray-800"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="3" width="20" height="14" rx="2"/>
@@ -64,10 +65,11 @@ export default function HomePage() {
             </svg>
             下载 Windows 版
           </a>
+          {/* Android — 所有端显示 */}
           <a
-            href="/ResuLab.apk"
+            href="https://github.com/Amorsum/ResuLab/releases/latest/download/ResuLab.apk"
             download
-            className="btn-secondary text-sm px-5 py-2.5 !bg-green-600 !text-white !border-green-600 hover:!bg-green-700"
+            className="inline-flex items-center gap-1.5 btn-secondary text-sm px-5 py-2.5 !bg-green-600 !text-white !border-green-600 hover:!bg-green-700"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="5" y="2" width="14" height="20" rx="2"/>

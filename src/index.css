@@ -2,9 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* iPhone 底部安全区域适配 */
+/* iPhone / Android 安全区域适配 */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Tauri 移动端状态栏留白 */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* 全局：Tauri 环境下为状态栏留空间 */
+body.tauri-mobile {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 @layer base {
@@ -18,6 +28,8 @@
     @apply bg-gray-50 text-gray-900 font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 移动端安全区域适配（桌面端值为 0，不影响） */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* 滚动条样式 */
