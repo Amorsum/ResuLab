@@ -4,6 +4,8 @@ import { useResume } from '../hooks/useResume';
 import UserMenu from '../components/layout/UserMenu';
 import type { TemplateId } from '../types/resume';
 
+const isTauriApp = '__TAURI_INTERNALS__' in window;
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { setTemplate } = useResume();
@@ -50,7 +52,8 @@ export default function HomePage() {
             预览模板
           </button>
         </div>
-        {/* 下载按钮 */}
+        {/* 下载按钮 — Tauri App 内不显示 */}
+        {!isTauriApp && (
         <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
           {/* Windows — 桌面端显示 */}
           <a
@@ -78,6 +81,7 @@ export default function HomePage() {
             下载 Android 版
           </a>
         </div>
+        )}
       </section>
 
       {/* 模板展示 */}

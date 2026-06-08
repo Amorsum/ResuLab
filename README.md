@@ -2,7 +2,7 @@
 
 > 🚀 在线体验：[resulab.amorsum.top](https://resulab.amorsum.top)
 
-在线简历制作工具，支持实时预览、多套模板、一键导出 PDF。
+在线简历制作工具，支持实时预览、多套模板、一键导出 PDF。提供 Web、Windows 桌面版、Android 版三端使用。
 
 ## 功能
 
@@ -17,6 +17,9 @@
 - 🏷️ **技能分类** — 支持技能按类别（编程语言/框架/工具等）分组，简历中可视化展示
 - 💾 **本地保存** — 数据自动存入 localStorage，刷新不丢失，旧版本数据自动迁移
 - ☁️ **云端存储** — 支持邮箱注册登录，简历云端保存，多设备同步（可选）
+- 👤 **账号管理** — 换绑邮箱、修改密码、注销账号
+- 📱 **全平台覆盖** — Web 版 / Windows 桌面版 (.exe) / Android 版 (.apk)
+- 📡 **PWA 支持** — 浏览器一键安装到桌面，离线可用
 
 ## 技术栈
 
@@ -29,7 +32,11 @@
 | 状态管理 | Context + useReducer |
 | PDF 导出 | html2canvas + jsPDF |
 | 后端服务 | Supabase（Auth + PostgreSQL + RLS） |
+| 桌面端 | Tauri v2（Rust + WebView2） |
+| 移动端 | Tauri Android（Rust + WebView） |
+| PWA | Service Worker + manifest.json |
 | 部署 | GitHub Pages + 自定义域名 |
+| 分发 | GitHub Releases（安装包下载） |
 | 持久化 | localStorage（300ms 防抖写入）+ Supabase 云端同步 |
 
 ## 快速开始
@@ -42,14 +49,31 @@ npm install
 cp .env.example .env
 # 编辑 .env，填入 Supabase 项目 URL 和 anon key
 
-# 启动开发服务器（默认 http://localhost:3000）
+# 启动 Web 开发服务器（默认 http://localhost:3000）
 npm run dev
 
-# 构建生产版本
+# 构建 Web 生产版本
 npm run build
 ```
 
 > 不配置 Supabase 环境变量也可以正常使用——本地编辑、预览、PDF 导出功能不受影响，仅云端存储不可用。
+
+### 构建桌面端 / 移动端
+
+安装包通过 GitHub Releases 分发，不提交到仓库（文件过大）。
+
+```bash
+# 前置条件：安装 Rust、Android SDK、NDK
+# 详见 src-tauri/ 目录下的配置
+
+# Windows 桌面版
+cargo-tauri build
+# 输出: src-tauri/target/release/bundle/nsis/ResuLab_x.x.x_x64-setup.exe
+
+# Android 版
+build-apk.cmd
+# 输出: public/ResuLab.apk（已签名）
+```
 
 ## 项目结构
 
@@ -69,5 +93,30 @@ npm run build
 - [x] 在线部署
 - [x] 用户账号系统
 - [x] 云端存储
+- [x] 账号管理（换绑/改密码/注销）
+- [x] Windows 桌面版
+- [x] Android 移动版
 - [ ] 更多模板
 - [ ] AI 简历优化建议
+- [ ] 应用内自动更新提示
+
+## 已知问题
+
+### v1.0.2（当前）
+
+| 问题 | 状态 | 说明 |
+|------|------|------|
+| Windows 桌面版启动白屏 | 🔧 修复中 | `main.tsx` 已添加 Tauri 环境检测跳过 Service Worker，待重新构建验证 |
+| Android 版状态栏遮挡 | 🔧 修复中 | `index.css` 已添加 `safe-area-inset-top`，待重新构建验证 |
+| App 内显示下载按钮 | 🔧 修复中 | `HomePage.tsx` 已添加 Tauri 环境判断隐藏下载按钮，待重新构建验证 |
+| Rust 编译偶尔 OOM | ⚠️ 已知 | 部分机器在 `opt-level=3` 下编译 `app_lib` 时内存不足，可尝试 `cargo-tauri build --debug` |
+| GitHub 不支持 >100MB 文件 | ✅ 已解决 | 安装包改用 GitHub Releases 分发，仓库内不提交 |
+
+### Supabase 配置清单
+
+部署前需在 Supabase Dashboard 完成：
+- [x] 邮箱登录 Provider 已启用
+- [x] SQL 建表（profiles、resumes）+ RLS 策略已执行
+- [x] `delete_user_account()` 存储过程已创建（账号注销功能）
+- [x] Site URL 已设为 `https://resulab.amorsum.top`
+- [x] Redirect URLs 已添加本地和生产地址
