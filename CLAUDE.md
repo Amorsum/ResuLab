@@ -116,7 +116,39 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 
 ## 部署
 
-GitHub Actions 监听 `main` 分支 push → 自动 `npm ci && npm run build` → 将 `dist/` 推送到 `gh-pages` 分支 → GitHub Pages 配合自定义域名 `resulab.amorsum.top`。
+- **Web**: GitHub Actions 监听 `main` 分支 push → 自动 `npm ci && npm run build` → 将 `dist/` 推送到 `gh-pages` 分支 → GitHub Pages + 自定义域名 `resulab.amorsum.top`
+- **Windows 桌面版**: `build-desktop.cmd`（`npm run build` → `cargo build --release` → `npx tauri bundle --bundles nsis`），输出 `src-tauri/target/release/bundle/nsis/ResuLab_x.x.x_x64-setup.exe`
+- **Android 版**: `build-apk.cmd`（`npm run build` → `cargo build --release --lib` × 4 targets → Gradle assemble → APK 签名），输出 `public/ResuLab.apk`
+- 安装包通过 GitHub Releases 分发，不提交到仓库
+
+## 桌面/移动端构建
+
+> **注意**: 不能使用 `cargo tauri build` 和 `cargo tauri android build`，因为它们强制启用 `tauri/custom-protocol` feature，在 Windows 上会导致 corrupt rlib 或 OOM。
+
+### 前置条件
+
+- Rust（当前 1.94.0，配置 `[profile.release] opt-level = 0`）
+- Android SDK + NDK（`build-apk.cmd` 自动查找最新版）
+- Java JDK 21（`build-apk.cmd` 默认 `C:\Program Files\Java\jdk-21`，可通过 `JAVA_HOME` 覆盖）
+
+### 构建命令
+
+```cmd
+# Windows 桌面版（一键生成 NSIS 安装包）
+build-desktop.cmd
+
+# Android 版（一键生成已签名 APK）
+build-apk.cmd
+```
+
+### Android 构建原理
+
+`build-apk.cmd` 通过环境变量 `CARGO_TARGET_*_LINKER` 动态设置 NDK 链接器（不需要 `.cargo/config.toml`）。构建流程：
+1. Web 前端 → `npm run build`
+2. Rust → `cargo build --release --lib --target <triple>` × 4（aarch64/armv7/i686/x86_64）
+3. 复制 `.so` 到 `gen/android/app/src/main/jniLibs/<abi>/`
+4. Gradle → `assembleUniversalRelease`（跳过 Rust 构建任务）
+5. `apksigner` 签名 → `public/ResuLab.apk`
 
 ## 注意事项
 
@@ -127,3 +159,5 @@ GitHub Actions 监听 `main` 分支 push → 自动 `npm ci && npm run build` �
 - 头像存储为 base64 data URL（压缩质量 0.85）
 - PDF 导出使用 2x 缩放截图 → JPEG 0.95 → jsPDF A4 自动分页，导出前临时设置裁剪
 - SPA 路由刷新 404 修复：构建后 `cp dist/index.html dist/404.html`，让 GitHub Pages 用 404.html 响应所有路由
+- `[profile.release] opt-level = 0` 必须设置，否则 `tauri/custom-protocol` feature 会导致 LLVM OOM
+- Android 构建通过 `CARGO_TARGET_*_LINKER` 环境变量动态设置 NDK 链接器（`build-apk.cmd` 自动处理）

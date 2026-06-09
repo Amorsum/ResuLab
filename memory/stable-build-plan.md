@@ -28,7 +28,7 @@ metadata:
 - `[lib] name = "app_lib"`, `crate-type = ["staticlib", "cdylib", "rlib"]`
 - `[[bin]]` 自动从 `src/main.rs`
 - `[profile.release] opt-level = 0`
-- `src-tauri/.cargo/config.toml` — Android NDK 链接器配置
+- Android NDK 链接器通过 `CARGO_TARGET_*_LINKER` 环境变量动态设置（`build-apk.cmd` 自动处理）
 
 ### Windows 构建 (`build-desktop.cmd`)
 
@@ -43,6 +43,8 @@ npx tauri bundle --bundles nsis        # NSIS 打包
 ### Android 构建 (`build-apk.cmd`)
 
 ```cmd
+:: 自动查找 NDK 和 build-tools 版本，无需硬编码
+:: 可通过环境变量覆盖：ANDROID_HOME, NDK_HOME, JAVA_HOME
 npm run build                                                  # Web 前端
 cargo build --release --target aarch64-linux-android --lib     # ARM64
 cargo build --release --target armv7-linux-androideabi --lib   # ARM32
@@ -50,8 +52,18 @@ cargo build --release --target i686-linux-android --lib        # x86
 cargo build --release --target x86_64-linux-android --lib      # x86_64
 # 复制 .so 到 gen/android/app/src/main/jniLibs/<abi>/
 gradlew assembleUniversalRelease -x rustBuild*                 # Gradle 打包
-# APK 签名
+:: APK 签名 → public/ResuLab.apk
 ```
+
+### 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `ANDROID_HOME` | `C:\Users\19307\Android\Sdk` | Android SDK 路径 |
+| `NDK_HOME` | 自动查找最新版本 | NDK 路径 |
+| `JAVA_HOME` | `C:\Program Files\Java\jdk-21` | JDK 路径 |
+
+链接器通过 `CARGO_TARGET_<triple>_LINKER` 环境变量设置，不需要 `.cargo/config.toml`。
 
 ## 验证记录
 
@@ -66,9 +78,8 @@ gradlew assembleUniversalRelease -x rustBuild*                 # Gradle 打包
 
 | 文件 | 用途 |
 |------|------|
-| `src-tauri/.cargo/config.toml` | Android NDK linker 配置 |
 | `build-desktop.cmd` | Windows 一键构建脚本 |
-| `build-apk.cmd` | Android 一键构建脚本 |
+| `build-apk.cmd` | Android 一键构建脚本（自动查找 NDK / build-tools） |
 | `src-tauri/Cargo.toml` | `[profile.release] opt-level = 0` |
 
 ## 注意事项
