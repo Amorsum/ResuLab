@@ -67,8 +67,8 @@ npm run build
 # 详见 src-tauri/ 目录下的配置
 
 # Windows 桌面版
-cargo-tauri build
-# 输出: src-tauri/target/release/bundle/nsis/ResuLab_x.x.x_x64-setup.exe
+build-desktop.cmd
+# 输出: src-tauri/target/release/bundle/nsis/ResuLab_1.0.2_x64-setup.exe
 
 # Android 版
 build-apk.cmd
@@ -106,10 +106,7 @@ build-apk.cmd
 
 | 问题 | 状态 | 说明 |
 |------|------|------|
-| Windows 桌面版启动白屏 | 🔧 修复中 | `main.tsx` 已添加 Tauri 环境检测跳过 Service Worker，待重新构建验证 |
-| Android 版状态栏遮挡 | 🔧 修复中 | `index.css` 已添加 `safe-area-inset-top`，待重新构建验证 |
-| App 内显示下载按钮 | 🔧 修复中 | `HomePage.tsx` 已添加 Tauri 环境判断隐藏下载按钮，待重新构建验证 |
-| Rust 编译偶尔 OOM | ⚠️ 已知 | 部分机器在 `opt-level=3` 下编译 `app_lib` 时内存不足，可尝试 `cargo-tauri build --debug` |
+| Rust 编译 corrupt rlib / OOM | ✅ 已修复 | 禁用 `tauri/custom-protocol`，分步构建（见 `build-desktop.cmd` / `build-apk.cmd`） |
 | GitHub 不支持 >100MB 文件 | ✅ 已解决 | 安装包改用 GitHub Releases 分发，仓库内不提交 |
 
 ### Supabase 配置清单
