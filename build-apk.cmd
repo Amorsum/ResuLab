@@ -114,14 +114,15 @@ if not exist "%KEYSTORE%" (
 for /f "tokens=*" %%i in ('dir /b /ad "%ANDROID_HOME%\build-tools" 2^>nul ^| sort /r') do set "BUILD_TOOLS_VER=%%i" & goto :bt_found
 :bt_found
 if not exist release-artifacts mkdir release-artifacts
-"%ANDROID_HOME%\build-tools\%BUILD_TOOLS_VER%\apksigner.bat" sign --ks "%KEYSTORE%" --ks-pass pass:resulab123 --out release-artifacts\ResuLab.apk src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk
+for /f "delims=" %%v in ('powershell -NoProfile -Command "(Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version"') do set "APP_VERSION=%%v"
+"%ANDROID_HOME%\build-tools\%BUILD_TOOLS_VER%\apksigner.bat" sign --ks "%KEYSTORE%" --ks-pass pass:resulab123 --out release-artifacts\ResuLab_%APP_VERSION%.apk src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk
 if %errorlevel% neq 0 (echo ERROR: Signing failed & exit /b 1)
 echo OK
 
 echo.
 echo ===========================================
 echo  BUILD COMPLETE!
-echo  Signed APK: release-artifacts\ResuLab.apk
+echo  Signed APK: release-artifacts\ResuLab_%APP_VERSION%.apk
 echo ===========================================
 
 endlocal
