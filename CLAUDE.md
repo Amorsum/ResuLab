@@ -37,9 +37,12 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 | `vite.config.ts` | Vite 配置（Tauri 白屏修复：剥离 crossorigin；Tauri 构建用 `--base=/`、Web 构建用 `base: '/'`） |
 | `src/main.tsx` | 入口文件（Tauri 环境自动切 HashRouter、Service Worker 跳过） |
 | `src-tauri/src/lib.rs` | Tauri 入口（插件注册、`save_pdf` 命令：原生保存对话框 + PDF 文件写入） |
-| `src-tauri/tauri.conf.json` | Tauri 配置（frontendDist、窗口 `useHttpsScheme`、`withGlobalTauri`、CSP、构建命令） |
-| `build-desktop.cmd` | 桌面版一键构建（web+Rust crate-type 切换+NSIS 打包） |
-| `build-apk.cmd` | Android 一键构建（web+Rust×4+Gradle+APK 签名，含 `setlocal` 路径安全处理） |
+| `src-tauri/tauri.conf.json` | Tauri 配置（frontendDist、窗口 `useHttpsScheme`、`withGlobalTauri`、CSP、构建命令）— **版本号唯一来源** |
+| `build-desktop.cmd` | 桌面版一键构建（web+Rust crate-type 切换+NSIS 打包），输出 `ResuLab_<version>_x64-setup.exe` |
+| `build-apk.cmd` | Android 一键构建（web+Rust×4+Gradle+APK 签名，含 `setlocal` 路径安全处理），输出 `ResuLab_<version>.apk` |
+| `src-tauri/gen/android/app/build.gradle.kts` | Android Gradle 配置（插件依赖声明） |
+| `src-tauri/gen/android/gradle.properties` | Android Gradle 属性（`kotlin.incremental=false` 跨驱动器修复） |
+| `src-tauri/gen/android/tauri.settings.gradle` | Android 插件模块注册（**gitignore，由 `build-apk.cmd` 自动补丁**） |
 
 ## 核心架构
 
@@ -261,11 +264,16 @@ std::fs::write(&file_path, &bytes)?;
 `build-apk.cmd` 通过环境变量 `CARGO_TARGET_*_LINKER` 动态设置 NDK 链接器（不需要 `.cargo/config.toml`）。构建流程：
 1. Web 前端 → `npm run build:tauri`
 2. Rust → `cargo build --release --lib --target <triple>` × 4（aarch64/armv7/i686/x86_64）
-3. 复制 `.so` 到 `gen/android/app/src/main/jniLibs/<abi>/`
-4. Gradle → `assembleUniversalRelease`（跳过 Rust 构建任务）
-5. 自动创建 `release-artifacts/` 目录（如不存在）→ `apksigner` 签名 → `release-artifacts/ResuLab.apk`
+3. **自动补丁** `tauri.settings.gradle`（检测并注册 Cargo.toml 中的 Android 插件模块，如 `tauri-plugin-dialog`）
+4. 复制 `.so` 到 `gen/android/app/src/main/jniLibs/<abi>/`
+5. Gradle → `assembleUniversalRelease`（跳过 Rust 构建任务）
+6. 自动创建 `release-artifacts/` 目录（如不存在）→ `apksigner` 签名 → `release-artifacts/ResuLab_<version>.apk`
+
+两个构建脚本的输出文件名均从 `tauri.conf.json` 动态读取版本号，不再硬编码。
 
 ## 注意事项
+
+- **版本号管理**：发新版时只需修改 `tauri.conf.json`（`version`）和 `Cargo.toml`（`version`），两个构建脚本会自动读取，产物文件名自动带版本号。无需手动修改构建脚本。
 
 - Node.js 需提前安装（推荐 v24 LTS）
 - 模板必须在 A4 尺寸 (794×1123px) 内渲染，根元素设置 `maxHeight: 1123px; overflow: hidden`
