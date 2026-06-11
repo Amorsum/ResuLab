@@ -181,6 +181,7 @@ export default function BuilderPage() {
             onSwitchView={setMobileView}
             onExport={exportPdf}
             isExporting={isExporting}
+            exportError={exportError}
             onSmartFit={smartFit}
           />
         </div>

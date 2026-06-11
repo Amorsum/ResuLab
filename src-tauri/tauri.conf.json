@@ -1,15 +1,16 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "ResuLab",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "identifier": "com.resulab.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run build:tauri"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "ResuLab — 智能简历制作平台",
@@ -18,7 +19,8 @@
         "minWidth": 900,
         "minHeight": 640,
         "resizable": true,
-        "center": true
+        "center": true,
+        "useHttpsScheme": true
       }
     ],
     "security": {

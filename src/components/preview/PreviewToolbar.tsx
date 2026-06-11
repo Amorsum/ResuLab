@@ -162,6 +162,16 @@ export default function PreviewToolbar({
         </div>
       </div>
 
+      {/* ===== 导出错误提示 ===== */}
+      {exportError && (
+        <div className="px-5 py-2 border-t border-red-100 bg-red-50 text-red-700 text-xs flex items-center gap-2">
+          <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{exportError}</span>
+        </div>
+      )}
+
       {/* ===== 排版设置面板（可折叠） ===== */}
       {showSettings && (
         <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center gap-x-6 gap-y-2">

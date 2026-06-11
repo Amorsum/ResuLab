@@ -7,6 +7,7 @@ interface MobileBuilderBarProps {
   onSwitchView: (v: 'form' | 'preview') => void;
   onExport: () => void;
   isExporting: boolean;
+  exportError?: string | null;
   onSmartFit?: () => void;
 }
 
@@ -37,7 +38,7 @@ function marginLabel(m: number) {
   return labels[m] || `${m}`;
 }
 
-export default function MobileBuilderBar({ view, onSwitchView, onExport, isExporting, onSmartFit }: MobileBuilderBarProps) {
+export default function MobileBuilderBar({ view, onSwitchView, onExport, isExporting, exportError, onSmartFit }: MobileBuilderBarProps) {
   const { resume, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort } = useResume();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -164,6 +165,15 @@ export default function MobileBuilderBar({ view, onSwitchView, onExport, isExpor
 
       {/* 底部工具栏 */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 pb-safe">
+        {/* 导出错误提示 */}
+        {exportError && (
+          <div className="px-4 py-1.5 bg-red-50 text-red-700 text-xs flex items-center gap-2 border-b border-red-100">
+            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{exportError}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between px-3 py-2">
           {/* 返回编辑 */}
           <button

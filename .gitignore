@@ -3,5 +3,14 @@ dist/
 .DS_Store
 *.local
 .env
+
+# Build outputs (distributed via GitHub Releases, not committed)
+release-artifacts/
+
+# Android build cache
+src-tauri/gen/android/buildSrc/.kotlin/
+
+# Legacy: old APK/EXE output paths (safety)
 public/ResuLab.apk
+public/ResuLab.apk.idsig
 public/ResuLab_Setup.exe
