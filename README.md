@@ -68,11 +68,11 @@ npm run build
 
 # Windows 桌面版
 build-desktop.cmd
-# 输出: src-tauri/target/release/bundle/nsis/ResuLab_1.0.2_x64-setup.exe
+# 输出: src-tauri/target/release/bundle/nsis/ResuLab_1.0.3_x64-setup.exe
 
 # Android 版
 build-apk.cmd
-# 输出: public/ResuLab.apk（已签名）
+# 输出: release-artifacts/ResuLab_1.0.3.apk（已签名）
 ```
 
 ## 项目结构
@@ -102,7 +102,15 @@ build-apk.cmd
 
 ## 已知问题
 
-### v1.0.2（当前）
+### v1.0.3（当前）
+
+| 问题 | 状态 | 说明 |
+|------|------|------|
+| Tauri PDF 导出无反应 | ✅ 已修复 | 改用 Rust 原生保存对话框（`tauri-plugin-dialog`），替代 jspdf 浏览器下载 |
+| Android 版启动闪退 | ✅ 已修复 | `tauri-plugin-dialog` Android 原生模块未注册，已在 Gradle 中补全 |
+| 导出失败无错误提示 | ✅ 已修复 | 桌面/移动端工具栏新增红色错误横幅 |
+
+### v1.0.2
 
 | 问题 | 状态 | 说明 |
 |------|------|------|
