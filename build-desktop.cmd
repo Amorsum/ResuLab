@@ -33,5 +33,5 @@ echo OK
 echo.
 echo ===========================================
 echo  BUILD COMPLETE!
-echo  Installer: src-tauri\target\release\bundle\nsis\ResuLab_1.0.3_x64-setup.exe
+for /f "delims=" %%v in ('powershell -NoProfile -Command "(Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version"') do echo  Installer: src-tauri\target\release\bundle\nsis\ResuLab_%%v_x64-setup.exe
 echo ===========================================
