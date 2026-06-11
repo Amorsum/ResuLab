@@ -33,5 +33,5 @@ echo OK
 echo.
 echo ===========================================
 echo  BUILD COMPLETE!
-echo  Installer: src-tauri\target\release\bundle\nsis\ResuLab_1.0.2_x64-setup.exe
+echo  Installer: src-tauri\target\release\bundle\nsis\ResuLab_1.0.3_x64-setup.exe
 echo ===========================================
