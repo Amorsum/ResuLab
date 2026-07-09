@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/builder`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) return { error: getChineseErrorMessage(error) };
     return { error: null };
