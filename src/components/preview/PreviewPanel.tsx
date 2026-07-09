@@ -9,18 +9,22 @@ interface PreviewPanelProps {
   isExporting?: boolean;
   exportError?: string | null;
   onExport?: () => void;
+  onExportPdf?: () => void;
+  onExportDocx?: () => void;
   hideToolbar?: boolean;
 }
 
-export function PreviewPanel({ previewRef: externalRef, isExporting: externalExporting, exportError: externalError, onExport: externalOnExport, hideToolbar }: PreviewPanelProps) {
+export function PreviewPanel({ previewRef: externalRef, isExporting: externalExporting, exportError: externalError, onExport: externalOnExport, onExportPdf: externalPdf, onExportDocx: externalDocx, hideToolbar }: PreviewPanelProps) {
   const [scale, setScale] = useState(1.1);
-  const { previewRef: internalRef, exportPdf: internalExport, isExporting: internalExporting, error: internalError } = usePdfExport();
+  const { previewRef: internalRef, exportPdf: internalExport, exportDocx: internalDocx, isExporting: internalExporting, error: internalError } = usePdfExport();
   const { resume, setFontSize, setLineHeight, setPageMargin } = useResume();
 
   const previewRef = externalRef || internalRef;
   const isExporting = externalExporting ?? internalExporting;
   const exportError = externalError ?? internalError;
-  const onExport = externalOnExport || internalExport;
+  // 桌面端：使用 BuilderPage 传入的值；内部 fallback 仅用于无传入时的兼容
+  const onExportPdf = externalPdf ?? (externalOnExport || internalExport);
+  const onExportDocx = externalDocx ?? internalDocx;
 
   /** 智能一页：自动调整排版使内容缩放到一页内 */
   const smartFit = useCallback(() => {
@@ -71,7 +75,8 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
         <PreviewToolbar
           scale={scale}
           onScaleChange={setScale}
-          onExport={onExport}
+          onExportPdf={onExportPdf}
+          onExportDocx={onExportDocx}
           isExporting={isExporting}
           exportError={exportError}
           onSmartFit={smartFit}

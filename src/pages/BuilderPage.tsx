@@ -57,8 +57,8 @@ export default function BuilderPage() {
     }
   };
 
-  // PDF 导出（移动端需要）
-  const { previewRef, exportPdf, isExporting, error: exportError } = usePdfExport();
+  // PDF 导出
+  const { previewRef, exportPdf, exportDocx, isExporting, error: exportError } = usePdfExport();
 
   // 首次加载时：URL 有模板参数 → 同步到 state
   useEffect(() => {
@@ -171,7 +171,8 @@ export default function BuilderPage() {
             previewRef={previewRef}
             isExporting={isExporting}
             exportError={exportError}
-            onExport={exportPdf}
+            onExportPdf={exportPdf}
+            onExportDocx={exportDocx}
           />
         </div>
 
@@ -192,6 +193,7 @@ export default function BuilderPage() {
                 isExporting={isExporting}
                 exportError={exportError}
                 onExport={exportPdf}
+                onExportDocx={exportDocx}
                 hideToolbar
               />
             </div>
