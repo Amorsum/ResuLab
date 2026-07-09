@@ -33,9 +33,6 @@ export default function ModernTemplate({ data }: Props) {
       fontFamily: ff,
       fontSize: `${data.fontSize}px`,
       lineHeight: `${data.lineHeight}px`,
-      minHeight: '1123px',
-      maxHeight: '1123px',
-      overflow: 'hidden',
     }}>
       {/* ========== 头部横幅 ========== */}
       <div className="text-white" style={{ backgroundColor: accent, padding: `${mg.y}px ${mg.x}px` }}>
@@ -76,7 +73,7 @@ export default function ModernTemplate({ data }: Props) {
       </div>
 
       {/* ========== 主体内容 ========== */}
-      <div className="space-y-5" style={{ padding: `${mg.y}px ${mg.x}px`, overflow: 'hidden' }}>
+      <div className="space-y-5" style={{ padding: `${mg.y}px ${mg.x}px` }}>
         {/* 教育背景 */}
         {education.length > 0 && (
           <ModernSection title="教育背景" accent={accent}>

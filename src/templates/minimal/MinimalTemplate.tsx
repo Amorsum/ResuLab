@@ -33,9 +33,6 @@ export default function MinimalTemplate({ data }: Props) {
       fontFamily: ff,
       fontSize: `${data.fontSize}px`,
       lineHeight: `${data.lineHeight}px`,
-      minHeight: '1123px',
-      maxHeight: '1123px',
-      overflow: 'hidden',
       padding: `${mg.y}px ${mg.x}px`,
     }}>
       {/* ========== 头部：姓名居中 ========== */}

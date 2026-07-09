@@ -1,6 +1,6 @@
 // ===================== 枚举 / 常量类型 =====================
 
-export type TemplateId = 'classic' | 'modern' | 'minimal';
+export type TemplateId = 'classic' | 'modern' | 'minimal' | 'professional';
 
 export type Gender = '' | '男' | '女';
 

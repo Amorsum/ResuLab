@@ -45,7 +45,7 @@ export default function BuilderPage() {
 
   // 首次加载时：URL 有模板参数 → 同步到 state
   useEffect(() => {
-    if (!initialized.current && templateId && ['classic', 'modern', 'minimal'].includes(templateId)) {
+    if (!initialized.current && templateId && ['classic', 'modern', 'minimal', 'professional'].includes(templateId)) {
       setTemplate(templateId as TemplateId);
     }
     initialized.current = true;
@@ -150,7 +150,12 @@ export default function BuilderPage() {
 
         {/* 右侧: 预览面板 */}
         <div className="hidden lg:flex flex-1 flex-col min-w-0">
-          <PreviewPanel />
+          <PreviewPanel
+            previewRef={previewRef}
+            isExporting={isExporting}
+            exportError={exportError}
+            onExport={exportPdf}
+          />
         </div>
 
         {/* 移动端：单视图切换 */}

@@ -37,9 +37,6 @@ export default function ClassicTemplate({ data }: Props) {
       fontFamily: ff,
       fontSize: `${data.fontSize}px`,
       lineHeight: `${data.lineHeight}px`,
-      minHeight: '1123px',
-      maxHeight: '1123px',
-      overflow: 'hidden',
     }}>
       {/* ========== 左侧边栏 ========== */}
       {showSidebar && (
@@ -128,7 +125,7 @@ export default function ClassicTemplate({ data }: Props) {
       )}
 
       {/* ========== 右侧主体 ========== */}
-      <div className="flex-1" style={{ padding: `${mg.y}px ${mg.x}px`, overflow: 'hidden' }}>
+      <div className="flex-1" style={{ padding: `${mg.y}px ${mg.x}px` }}>
         {/* 姓名 + 职位 */}
         <div className="mb-6">
           {p.fullName && <h1 className="font-bold text-[#2d3748] tracking-wide mb-1" style={{ fontSize: '2em' }}>{p.fullName}</h1>}
