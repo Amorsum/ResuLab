@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useResume } from '../../hooks/useResume';
 import { TEMPLATE_LIST } from '../../constants/templates';
 import type { FontFamily } from '../../types/resume';
@@ -58,6 +58,20 @@ export default function PreviewToolbar({
   const { resume, setTemplate, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort, undo, redo, canUndo, canRedo } = useResume();
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // 点击外部关闭导出菜单
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showExportMenu]);
 
   const zoomOut = () => onScaleChange(Math.max(0.4, scale - 0.1));
   const zoomIn = () => onScaleChange(Math.min(1.5, scale + 0.1));
@@ -182,30 +196,42 @@ export default function PreviewToolbar({
             </svg>
           </button>
 
-          <div id="toolbar-export" className="relative">
+          <div id="toolbar-export" className="relative" ref={exportMenuRef}>
             <button
-              onClick={handlePdf}
+              onClick={() => setShowExportMenu(!showExportMenu)}
               disabled={isExporting}
-              className="btn-primary text-sm rounded-r-none"
+              className="btn-primary text-sm flex items-center gap-1"
             >
               {isExporting ? (
                 <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />导出中...</>
               ) : (
                 <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>导出 PDF</>
+                </svg>导出 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6,9 12,15 18,9"/></svg></>
               )}
             </button>
-            <button
-              onClick={handleDocx}
-              disabled={isExporting}
-              className="btn-primary text-sm rounded-l-none border-l border-primary-400"
-              title="导出为 Word 文档"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
-              </svg>
-            </button>
+            {showExportMenu && !isExporting && (
+              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]">
+                <button
+                  onClick={() => { handlePdf?.(); setShowExportMenu(false); }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/>
+                  </svg>
+                  PDF 文档 (.pdf)
+                </button>
+                <button
+                  onClick={() => { handleDocx?.(); setShowExportMenu(false); }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+                  </svg>
+                  Word 文档 (.docx)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
