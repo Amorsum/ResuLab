@@ -1,8 +1,9 @@
-import React, { createContext, useReducer, useEffect, useRef } from 'react';
+import { createContext, useEffect, useRef, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { ResumeData } from '../types/resume';
 import type { ResumeAction } from './resumeReducer';
 import { resumeReducer } from './resumeReducer';
+import { useResumeWithUndo } from './useResumeWithUndo';
 import { DEFAULT_RESUME } from '../constants/defaultResume';
 
 export const STORAGE_KEY = 'resulab_data';
@@ -11,7 +12,11 @@ export const STORAGE_KEY = 'resulab_data';
 
 interface ResumeContextValue {
   state: ResumeData;
-  dispatch: React.Dispatch<ResumeAction>;
+  dispatch: (action: ResumeAction, skipHistory?: boolean) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export const ResumeContext = createContext<ResumeContextValue | null>(null);
@@ -19,19 +24,16 @@ export const ResumeContext = createContext<ResumeContextValue | null>(null);
 // ===================== Provider =====================
 
 function migrateData(data: ResumeData): ResumeData {
-  // 迁移旧版 fontFamily 值
   const validFonts = ['songti', 'yahei', 'kaiti', 'fangsong'];
   if (!validFonts.includes(data.fontFamily as string)) {
     data.fontFamily = 'yahei';
   }
-  // 迁移旧版 pageMargin 值为数字
   if (typeof data.pageMargin !== 'number' || isNaN(data.pageMargin)) {
     const marginMap: Record<string, number> = { narrow: 5, normal: 15, wide: 25 };
     data.pageMargin = marginMap[data.pageMargin as unknown as string] || 15;
   }
-  // 迁移旧版 lineHeight 小于等于 3 的情况（旧的 unitless 值，如 1.6），转为 px
   if (typeof data.lineHeight === 'number' && data.lineHeight <= 3) {
-    data.lineHeight = Math.round(data.lineHeight * 14); // 基于默认 14px 字号转换
+    data.lineHeight = Math.round(data.lineHeight * 14);
   }
   return data;
 }
@@ -52,8 +54,19 @@ function loadFromStorage(): ResumeData | null {
 }
 
 export function ResumeProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(resumeReducer, null, () =>
-    loadFromStorage() || DEFAULT_RESUME
+  const loaded = loadFromStorage();
+  const {
+    state,
+    dispatch,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useResumeWithUndo(resumeReducer, loaded || DEFAULT_RESUME);
+
+  const value = useMemo(
+    () => ({ state, dispatch, undo, redo, canUndo, canRedo }),
+    [state, dispatch, undo, redo, canUndo, canRedo]
   );
 
   // 防抖写入 localStorage
@@ -74,7 +87,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   return (
-    <ResumeContext.Provider value={{ state, dispatch }}>
+    <ResumeContext.Provider value={value}>
       {children}
     </ResumeContext.Provider>
   );

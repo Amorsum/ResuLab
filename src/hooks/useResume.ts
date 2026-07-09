@@ -1,8 +1,7 @@
 import { useContext } from 'react';
 import { ResumeContext } from '../context/ResumeContext';
 import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../types/resume';
-import type { ResumeAction } from '../context/resumeReducer';
-import { generateId, createEmptyResume } from '../constants/defaultResume';
+import { generateId } from '../constants/defaultResume';
 
 export function useResume() {
   const ctx = useContext(ResumeContext);
@@ -10,7 +9,7 @@ export function useResume() {
     throw new Error('useResume must be used within a ResumeProvider');
   }
 
-  const { state, dispatch } = ctx;
+  const { state, dispatch, undo, redo, canUndo, canRedo } = ctx;
 
   return {
     resume: state,
@@ -62,9 +61,15 @@ export function useResume() {
     smartSort: () => dispatch({ type: 'SMART_SORT' }),
 
     loadResume: (payload: ResumeData) =>
-      dispatch({ type: 'LOAD_RESUME', payload }),
+      dispatch({ type: 'LOAD_RESUME', payload }, true),
 
-    resetAll: () => dispatch({ type: 'RESET_ALL' }),
+    resetAll: () => dispatch({ type: 'RESET_ALL' }, true),
+
+    // ---- 撤销/重做 ----
+    undo,
+    redo,
+    canUndo,
+    canRedo,
 
     // ---- 工具 ----
     generateId,

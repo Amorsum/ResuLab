@@ -8,16 +8,33 @@ import type { TemplateId } from '../types/resume';
 import { FormPanel } from '../components/form/FormPanel';
 import { PreviewPanel } from '../components/preview/PreviewPanel';
 import MobileBuilderBar from '../components/preview/MobileBuilderBar';
+import OnboardingOverlay from '../components/onboarding/OnboardingOverlay';
 import UserMenu from '../components/layout/UserMenu';
 
 export default function BuilderPage() {
   const { templateId } = useParams<{ templateId: string }>();
-  const { resume, setTemplate, setFontSize, setLineHeight, setPageMargin } = useResume();
+  const { resume, setTemplate, setFontSize, setLineHeight, setPageMargin, undo, redo } = useResume();
   const navigate = useNavigate();
   const initialized = useRef(false);
 
   // 移动端视图切换
   const [mobileView, setMobileView] = useState<'form' | 'preview'>('form');
+
+  // 键盘快捷键：Ctrl+Z 撤销，Ctrl+Y 重做
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
 
   // 云端保存
   const { user } = useAuth();
@@ -191,6 +208,9 @@ export default function BuilderPage() {
           />
         </div>
       </div>
+
+      {/* ========== 首次使用引导 ========== */}
+      <OnboardingOverlay />
     </div>
   );
 }

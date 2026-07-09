@@ -66,7 +66,7 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
   }, [previewRef, resume, setFontSize, setLineHeight, setPageMargin]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div id="preview-panel" className="h-full flex flex-col">
       {!hideToolbar && (
         <PreviewToolbar
           scale={scale}

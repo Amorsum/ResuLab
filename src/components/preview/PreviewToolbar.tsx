@@ -34,7 +34,9 @@ function marginLabel(m: number) {
 interface PreviewToolbarProps {
   scale: number;
   onScaleChange: (scale: number) => void;
-  onExport: () => void;
+  onExport?: () => void;
+  onExportPdf?: () => void;
+  onExportDocx?: () => void;
   isExporting: boolean;
   exportError: string | null;
   onSmartFit?: () => void;
@@ -44,11 +46,16 @@ export default function PreviewToolbar({
   scale,
   onScaleChange,
   onExport,
+  onExportPdf,
+  onExportDocx,
   isExporting,
   exportError,
   onSmartFit,
 }: PreviewToolbarProps) {
-  const { resume, setTemplate, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort } = useResume();
+  // 兼容两种调用方式：新方式有 onExportPdf/onExportDocx，旧方式有 onExport
+  const handlePdf = onExportPdf || onExport;
+  const handleDocx = onExportDocx || onExport;
+  const { resume, setTemplate, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort, undo, redo, canUndo, canRedo } = useResume();
 
   const [showSettings, setShowSettings] = useState(false);
 
@@ -61,7 +68,7 @@ export default function PreviewToolbar({
       {/* ===== 主工具栏 ===== */}
       <div className="flex items-center justify-between px-5 py-2 gap-3 flex-wrap">
         {/* 左侧：模板 + 主题色 */}
-        <div className="flex items-center gap-2">
+        <div id="toolbar-templates" className="flex items-center gap-2">
           <span className="text-xs text-gray-400 shrink-0">模板</span>
           {TEMPLATE_LIST.map((tpl) => (
             <button
@@ -94,6 +101,31 @@ export default function PreviewToolbar({
 
         {/* 中间：智能功能 */}
         <div className="flex items-center gap-1.5">
+          {/* 撤销 / 重做 */}
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors"
+            title="撤销 (Ctrl+Z)"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="1,4 1,10 7,10"/>
+              <path d="M4 15a9 9 0 1 0 3-8.7"/>
+            </svg>
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors"
+            title="重做 (Ctrl+Y)"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23,4 23,10 17,10"/>
+              <path d="M20 15a9 9 0 1 1-3-8.7"/>
+            </svg>
+          </button>
+
+          <span className="w-px h-4 bg-gray-200 mx-0.5" />
           <button
             onClick={onSmartFit}
             className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg border border-gray-200
@@ -150,15 +182,31 @@ export default function PreviewToolbar({
             </svg>
           </button>
 
-          <button onClick={onExport} disabled={isExporting} className="btn-primary text-sm">
-            {isExporting ? (
-              <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />导出中...</>
-            ) : (
-              <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>导出 PDF</>
-            )}
-          </button>
+          <div id="toolbar-export" className="relative">
+            <button
+              onClick={handlePdf}
+              disabled={isExporting}
+              className="btn-primary text-sm rounded-r-none"
+            >
+              {isExporting ? (
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />导出中...</>
+              ) : (
+                <><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>导出 PDF</>
+              )}
+            </button>
+            <button
+              onClick={handleDocx}
+              disabled={isExporting}
+              className="btn-primary text-sm rounded-l-none border-l border-primary-400"
+              title="导出为 Word 文档"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

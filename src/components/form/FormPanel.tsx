@@ -21,7 +21,7 @@ export function FormPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-gray-200">
+    <div id="form-panel" className="h-full flex flex-col bg-white border-r border-gray-200">
       {/* 顶部标题栏 */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
         <div>
