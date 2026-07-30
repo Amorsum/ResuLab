@@ -4,3 +4,7 @@ compatibility_date = "2025-07-01"
 
 [observability]
 enabled = true
+
+[[routes]]
+pattern = "api.amorsum.top"
+custom_domain = true

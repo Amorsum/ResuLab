@@ -4,6 +4,10 @@ dist/
 *.local
 .env
 
+# Cloudflare Workers local state
+workers/node_modules/
+workers/.wrangler/
+
 # Build outputs (distributed via GitHub Releases, not committed)
 release-artifacts/
 

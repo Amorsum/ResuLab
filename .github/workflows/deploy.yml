@@ -30,6 +30,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_AI_API_BASE: ${{ secrets.VITE_AI_API_BASE }}
 
       - name: Copy index.html to 404.html (SPA routing fix)
         run: cp dist/index.html dist/404.html
