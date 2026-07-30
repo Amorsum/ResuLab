@@ -4,9 +4,7 @@
  */
 import { useAuth } from './useAuth';
 
-const AI_API_BASE = import.meta.env.PROD
-  ? 'https://api.amorsum.top'
-  : (import.meta.env.VITE_AI_API_BASE || 'https://api.amorsum.top');
+const AI_API_BASE = 'https://api.amorsum.top';
 
 export interface MembershipStatus {
   tier: 'free' | 'pro';
