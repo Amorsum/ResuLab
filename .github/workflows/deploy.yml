@@ -42,3 +42,4 @@ jobs:
           publish_dir: ./dist
           cname: resulab.amorsum.top
           force_orphan: true
+re-trigger
