@@ -4,6 +4,7 @@ import TextField from '../TextField';
 import TextAreaField from '../TextAreaField';
 import DateRangeField from '../DateRangeField';
 import SkillTagInput from '../SkillTagInput';
+import { AIPolishButton } from '../../ai/AIPolishButton';
 import type { Project } from '../../../types/resume';
 
 export default function ProjectSection() {
@@ -39,8 +40,16 @@ export default function ProjectSection() {
             onEndChange={(v) => updateItem('projects', proj.id, { endDate: v })}
             onCurrentChange={(v) => updateItem('projects', proj.id, { isCurrent: v, endDate: v ? '' : proj.endDate })}
           />
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-gray-700">项目描述</span>
+            <AIPolishButton
+              fieldLabel={`${proj.projectName} 项目描述`}
+              currentValue={proj.description}
+              onPolished={(v) => updateItem('projects', proj.id, { description: v })}
+            />
+          </div>
           <TextAreaField
-            label="项目描述"
+            label=""
             value={proj.description}
             onChange={(v) => updateItem('projects', proj.id, { description: v })}
             placeholder="描述项目背景、你的工作内容和取得的成果"

@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中填写简历信息、实时预览、选择模板、自定义排版（字体/字号/行距/页边距/主题色）、使用智能功能（智能一页/智能排序）、导出 PDF。所有数据存储在 localStorage。
+ResuLab 是一个 AI 增强的简历制作 SPA。用户可以在浏览器中填写简历信息、实时预览、选择模板、自定义排版（字体/字号/行距/页边距/主题色）、使用智能功能（智能一页/智能排序、AI 批量生成、AI 逐字段润色）、导出 PDF。数据支持本地 localStorage 和云端 Supabase 存储。
 
 在线地址：[resulab.amorsum.top](https://resulab.amorsum.top) — GitHub Pages + 自定义域名部署。
 
@@ -13,8 +13,9 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 - **路由**: React Router v6 (`/` → HomePage, `/builder` → BuilderPage)
 - **状态管理**: Context + useReducer (`src/context/ResumeContext.tsx` + `resumeReducer.ts`)
 - **PDF 导出**: html2canvas 截图 + jsPDF 封装
+- **AI 后端**: Cloudflare Workers (DeepSeek API 代理) + Supabase (会员+用量)
 - **持久化**: 每次 state 变更 300ms 防抖写入 localStorage，含旧版本数据自动迁移
-- **部署**: GitHub Actions 自动构建 → GitHub Pages（gh-pages 分支）
+- **部署**: GitHub Actions 自动构建前端 → GitHub Pages（gh-pages 分支）；Cloudflare Workers 部署 AI 后端
 
 ## 关键文件
 
@@ -33,6 +34,13 @@ ResuLab 是一个纯客户端的简历制作 SPA。用户可以在浏览器中�
 | `src/components/preview/PreviewToolbar.tsx` | 桌面端工具栏（模板/主题色/排版设置/智能功能/缩放/导出） |
 | `src/components/preview/MobileBuilderBar.tsx` | 移动端底部导航栏（编辑/预览切换、智能功能、排版弹出抽屉、导出） |
 | `src/templates/` | 三个模板组件 + TemplateBase |
+| `src/components/ai/AIBulkGenerate.tsx` | AI 批量生成：粘贴经历一键填简历 |
+| `src/components/ai/AIPolishButton.tsx` | AI 润色按钮（可嵌入任意表单字段） |
+| `src/components/ai/AIUsageBadge.tsx` | AI 会员等级和剩余次数显示 |
+| `src/hooks/useAI.ts` | AI API 调用 hook（generate/polish/interview） |
+| `src/context/AIContext.tsx` | AI Context Provider：会员状态 + 用量门控 |
+| `workers/src/index.ts` | Cloudflare Workers AI 后端（零依赖，纯 fetch） |
+| `workers/wrangler.toml` | Workers 部署配置 |
 | `.github/workflows/deploy.yml` | GitHub Actions 自动部署配置（含 SPA 404 修复） |
 | `vite.config.ts` | Vite 配置（Tauri 白屏修复：剥离 crossorigin；Tauri 构建用 `--base=/`、Web 构建用 `base: '/'`） |
 | `src/main.tsx` | 入口文件（Tauri 环境自动切 HashRouter、Service Worker 跳过） |

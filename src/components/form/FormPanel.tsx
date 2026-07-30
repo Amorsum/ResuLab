@@ -1,5 +1,7 @@
 import { useResume } from '../../hooks/useResume';
 import FormSection from './FormSection';
+import { AIBulkGenerate } from '../ai/AIBulkGenerate';
+import { AIUsageBadge } from '../ai/AIUsageBadge';
 import PersonalInfoSection from './sections/PersonalInfoSection';
 import JobIntentionSection from './sections/JobIntentionSection';
 import EducationSection from './sections/EducationSection';
@@ -37,6 +39,9 @@ export function FormPanel() {
 
       {/* 可滚动的表单区域 */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+        <AIBulkGenerate />
+        <AIUsageBadge />
+
         <FormSection title="基本信息" defaultOpen>
           <PersonalInfoSection />
         </FormSection>

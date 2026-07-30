@@ -1,0 +1,6 @@
+name = "resulab-api"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+
+[observability]
+enabled = true

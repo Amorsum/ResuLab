@@ -4,6 +4,7 @@ import TextField from '../TextField';
 import TextAreaField from '../TextAreaField';
 import DateRangeField from '../DateRangeField';
 import SkillTagInput from '../SkillTagInput';
+import { AIPolishButton } from '../../ai/AIPolishButton';
 import type { WorkExperience } from '../../../types/resume';
 
 export default function WorkExperienceSection() {
@@ -45,8 +46,16 @@ export default function WorkExperienceSection() {
             onEndChange={(v) => updateItem('workExperience', exp.id, { endDate: v })}
             onCurrentChange={(v) => updateItem('workExperience', exp.id, { isCurrent: v, endDate: v ? '' : exp.endDate })}
           />
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-gray-700">工作内容</span>
+            <AIPolishButton
+              fieldLabel={`${exp.companyName} - ${exp.position} 工作描述`}
+              currentValue={exp.description}
+              onPolished={(v) => updateItem('workExperience', exp.id, { description: v })}
+            />
+          </div>
           <TextAreaField
-            label="工作内容"
+            label=""
             value={exp.description}
             onChange={(v) => updateItem('workExperience', exp.id, { description: v })}
             placeholder="描述你的主要工作职责和成果"

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, HashRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ResumeProvider } from './context/ResumeContext';
+import { AIProvider } from './context/AIContext';
 import App from './App';
 import './index.css';
 
@@ -17,7 +18,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <Router>
       <AuthProvider>
         <ResumeProvider>
-          <App />
+          <AIProvider>
+            <App />
+          </AIProvider>
         </ResumeProvider>
       </AuthProvider>
     </Router>

@@ -4,6 +4,7 @@ import TextField from '../TextField';
 import TextAreaField from '../TextAreaField';
 import SelectField from '../SelectField';
 import DateRangeField from '../DateRangeField';
+import { AIPolishButton } from '../../ai/AIPolishButton';
 import type { Education } from '../../../types/resume';
 
 export default function EducationSection() {
@@ -59,8 +60,16 @@ export default function EducationSection() {
             onChange={(v) => updateItem('education', edu.id, { gpa: v })}
             placeholder="如：3.8/4.0（选填）"
           />
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-gray-700">在校经历</span>
+            <AIPolishButton
+              fieldLabel={`${edu.schoolName} 在校经历`}
+              currentValue={edu.description}
+              onPolished={(v) => updateItem('education', edu.id, { description: v })}
+            />
+          </div>
           <TextAreaField
-            label="在校经历"
+            label=""
             value={edu.description}
             onChange={(v) => updateItem('education', edu.id, { description: v })}
             placeholder="如：获得校级奖学金、担任学生会主席等"
