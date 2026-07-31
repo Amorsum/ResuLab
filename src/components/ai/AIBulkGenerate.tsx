@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useAI } from '../../hooks/useAI';
 import { useResume } from '../../hooks/useResume';
 import { useAIContext } from '../../hooks/useAIContext';
+import type { ArraySectionName } from '../../types/resume';
 
 export function AIBulkGenerate() {
-  const { loadResume, resume } = useResume();
+  const resume = useResume();
   const { generateResume } = useAI();
   const { checkAccess } = useAIContext();
 
@@ -14,80 +15,89 @@ export function AIBulkGenerate() {
   const [error, setError] = useState<string | null>(null);
 
   const accessError = checkAccess('generate');
-  const isDisabled = !!accessError || loading;
 
   const handleGenerate = async () => {
-    if (accessError) {
-      setError(accessError);
-      return;
-    }
+    if (accessError) { setError(accessError); return; }
     setError(null);
     setLoading(true);
+
     try {
       const result = await generateResume(rawText);
-      // AI 返回的数据可能不完整，与现有简历合并
-      const merged = JSON.parse(JSON.stringify(resume));
 
-      // 安全合并 personalInfo
+      // 逐字段安全更新，不替换整个 state，避免白屏
+
+      // personalInfo
       if (result.personalInfo && typeof result.personalInfo === 'object') {
         const safe: Record<string, string> = {};
         for (const [k, v] of Object.entries(result.personalInfo)) {
-          safe[k] = typeof v === 'string' ? v : '';
+          if (typeof v === 'string') safe[k] = v;
         }
-        merged.personalInfo = { ...merged.personalInfo, ...safe };
+        if (Object.keys(safe).length > 0) resume.setPersonalInfo(safe);
       }
+
+      // jobIntention
       if (result.jobIntention && typeof result.jobIntention === 'object') {
         const safe: Record<string, string> = {};
         for (const [k, v] of Object.entries(result.jobIntention)) {
-          if (['desiredPosition', 'desiredCity', 'expectedSalary', 'jobType', 'availableDate'].includes(k)) {
-            safe[k] = typeof v === 'string' ? v : '';
-          }
+          if (typeof v === 'string') safe[k] = v;
         }
-        merged.jobIntention = { ...merged.jobIntention, ...safe };
-      }
-      if (typeof result.selfEvaluation === 'string') {
-        merged.selfEvaluation = result.selfEvaluation;
+        if (Object.keys(safe).length > 0) resume.setJobIntention(safe);
       }
 
-      // 安全数组合并：过滤非法数据，确保字段类型正确
-      const arrayFields = ['education', 'workExperience', 'projects', 'skills', 'certificates', 'languages', 'socialLinks'] as const;
-      for (const field of arrayFields) {
-        const aiData = result[field];
+      // selfEvaluation
+      if (typeof result.selfEvaluation === 'string' && result.selfEvaluation.trim()) {
+        resume.setSelfEvaluation(result.selfEvaluation.trim());
+      }
+
+      // 数组字段：逐个 add + update
+      const arrayFields: ArraySectionName[] = ['education', 'workExperience', 'projects', 'skills', 'certificates', 'languages'];
+      for (const section of arrayFields) {
+        const aiData = result[section];
         if (!Array.isArray(aiData) || aiData.length === 0) continue;
 
-        // 过滤掉非对象、空对象
-        const validItems = aiData
-          .filter((item: unknown): item is Record<string, unknown> =>
-            item !== null && typeof item === 'object' && !Array.isArray(item) && Object.keys(item as object).length > 0
-          )
-          .map((item) => {
-            // 确保每个字段值都是合法类型
-            const safe: Record<string, unknown> = {};
-            for (const [k, v] of Object.entries(item)) {
-              if (v === null || v === undefined) {
-                safe[k] = '';
-              } else if (Array.isArray(v)) {
-                safe[k] = v.filter(x => typeof x === 'string');
-              } else if (typeof v === 'object') {
-                // 非预期的嵌套对象 => 转字符串
-                safe[k] = '';
-              } else {
-                safe[k] = v;
-              }
+        for (const item of aiData) {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+
+          // 过滤出合法字段：字符串或字符串数组
+          const safeItem: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(item as Record<string, unknown>)) {
+            if (typeof v === 'string') {
+              safeItem[k] = v;
+            } else if (Array.isArray(v)) {
+              safeItem[k] = v.filter(x => typeof x === 'string');
             }
-            return { ...safe, id: typeof item.id === 'string' && item.id.length > 0 ? item.id : crypto.randomUUID() };
-          });
+          }
 
-        if (validItems.length === 0) continue;
+          // 确保至少有一个有意义的字段（除了 id）
+          const meaningful = Object.entries(safeItem).some(([k, v]) => k !== 'id' && v && (typeof v === 'string' ? v.trim().length > 0 : (v as unknown[]).length > 0));
+          if (!meaningful) continue;
 
-        if (merged[field].length === 0) {
-          merged[field] = validItems;
-        } else {
-          merged[field].push(...validItems);
+          // 先添加空条目，再更新
+          resume.addItem(section);
+          // 拿到刚添加的最后一条的 id
+          const items = resume.resume[section];
+          const newId = items[items.length - 1]?.id;
+          if (newId) {
+            resume.updateItem(section, newId, safeItem);
+          }
         }
       }
 
-      loadResume(merged);
+      // socialLinks
+      if (Array.isArray(result.socialLinks)) {
+        for (const item of result.socialLinks) {
+          if (!item || typeof item !== 'object') continue;
+          const platform = typeof (item as Record<string, unknown>).platform === 'string' ? (item as Record<string, unknown>).platform as string : '';
+          const url = typeof (item as Record<string, unknown>).url === 'string' ? (item as Record<string, unknown>).url as string : '';
+          if (platform && url) {
+            resume.addItem('socialLinks');
+            const items = resume.resume.socialLinks;
+            const newId = items[items.length - 1]?.id;
+            if (newId) resume.updateItem('socialLinks', newId, { platform, url });
+          }
+        }
+      }
+
       setIsOpen(false);
       setRawText('');
     } catch (err) {
