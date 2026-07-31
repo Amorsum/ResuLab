@@ -28,35 +28,62 @@ export function AIBulkGenerate() {
       // AI 返回的数据可能不完整，与现有简历合并
       const merged = JSON.parse(JSON.stringify(resume));
 
-      if (result.personalInfo) {
-        merged.personalInfo = { ...merged.personalInfo, ...result.personalInfo };
+      // 安全合并 personalInfo
+      if (result.personalInfo && typeof result.personalInfo === 'object') {
+        const safe: Record<string, string> = {};
+        for (const [k, v] of Object.entries(result.personalInfo)) {
+          safe[k] = typeof v === 'string' ? v : '';
+        }
+        merged.personalInfo = { ...merged.personalInfo, ...safe };
       }
-      if (result.jobIntention) {
-        merged.jobIntention = { ...merged.jobIntention, ...result.jobIntention };
+      if (result.jobIntention && typeof result.jobIntention === 'object') {
+        const safe: Record<string, string> = {};
+        for (const [k, v] of Object.entries(result.jobIntention)) {
+          if (['desiredPosition', 'desiredCity', 'expectedSalary', 'jobType', 'availableDate'].includes(k)) {
+            safe[k] = typeof v === 'string' ? v : '';
+          }
+        }
+        merged.jobIntention = { ...merged.jobIntention, ...safe };
       }
-      if (result.selfEvaluation) {
+      if (typeof result.selfEvaluation === 'string') {
         merged.selfEvaluation = result.selfEvaluation;
       }
 
-      // 数组合并策略：AI 生成的替换空数组，追加到非空数组后面
+      // 安全数组合并：过滤非法数据，确保字段类型正确
       const arrayFields = ['education', 'workExperience', 'projects', 'skills', 'certificates', 'languages', 'socialLinks'] as const;
       for (const field of arrayFields) {
         const aiData = result[field];
-        if (aiData && Array.isArray(aiData) && aiData.length > 0) {
-          if (merged[field].length === 0) {
-            merged[field] = aiData.map((item: Record<string, unknown>) => ({
-              ...item,
-              id: item.id || crypto.randomUUID(),
-            }));
-          } else {
-            // 追加到现有列表
-            merged[field].push(
-              ...aiData.map((item: Record<string, unknown>) => ({
-                ...item,
-                id: item.id || crypto.randomUUID(),
-              }))
-            );
-          }
+        if (!Array.isArray(aiData) || aiData.length === 0) continue;
+
+        // 过滤掉非对象、空对象
+        const validItems = aiData
+          .filter((item: unknown): item is Record<string, unknown> =>
+            item !== null && typeof item === 'object' && !Array.isArray(item) && Object.keys(item as object).length > 0
+          )
+          .map((item) => {
+            // 确保每个字段值都是合法类型
+            const safe: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(item)) {
+              if (v === null || v === undefined) {
+                safe[k] = '';
+              } else if (Array.isArray(v)) {
+                safe[k] = v.filter(x => typeof x === 'string');
+              } else if (typeof v === 'object') {
+                // 非预期的嵌套对象 => 转字符串
+                safe[k] = '';
+              } else {
+                safe[k] = v;
+              }
+            }
+            return { ...safe, id: typeof item.id === 'string' && item.id.length > 0 ? item.id : crypto.randomUUID() };
+          });
+
+        if (validItems.length === 0) continue;
+
+        if (merged[field].length === 0) {
+          merged[field] = validItems;
+        } else {
+          merged[field].push(...validItems);
         }
       }
 
