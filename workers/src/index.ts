@@ -90,7 +90,7 @@ add('POST', '/api/ai/generate', async (req, env) => {
     const result = await chatCompletion(env, [
       { role: 'system', content: GENERATE_SYSTEM },
       { role: 'user', content: `请根据以下文本提取信息生成简历JSON。仔细阅读每一段，不要遗漏任何内容（教育背景、技能列表、项目经历、荣誉奖项、校园经历等全部都要提取）。\n\n${rawText}` },
-    ], { temperature: 0.5, max_tokens: 8192, response_format: { type: 'json_object' } });
+    ], { temperature: 0.3, max_tokens: 8192, response_format: { type: 'json_object' } });
     await recordUsage(env, userId, 'generate');
     return json(JSON.parse(result));
   } catch (err) {
