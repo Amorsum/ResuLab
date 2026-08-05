@@ -80,19 +80,36 @@ add('GET', '/api/membership/status', async (req, env) => {
   });
 });
 
-// AI generate
+// AI generate — 分两轮
 add('POST', '/api/ai/generate', async (req, env) => {
   const userId = await authenticate(req, env);
   await checkAccess(env, userId, 'generate');
   const { rawText } = await req.json() as { rawText: string };
   if (!rawText || rawText.length < 20) return json({ error: 'BAD_REQUEST', message: '文本太短' }, 400);
+
   try {
-    const result = await chatCompletion(env, [
-      { role: 'system', content: GENERATE_SYSTEM },
-      { role: 'user', content: `请根据以下文本提取信息生成简历JSON。仔细阅读每一段，不要遗漏任何内容（教育背景、技能列表、项目经历、荣誉奖项、校园经历等全部都要提取）。\n\n${rawText}` },
-    ], { temperature: 0.3, max_tokens: 8192, response_format: { type: 'json_object' } });
+    // 第一轮：提取结构化数据（不含自我评价）
+    const round1 = await chatCompletion(env, [
+      { role: 'system', content: GENERATE_ROUND1_SYSTEM },
+      { role: 'user', content: rawText },
+    ], { temperature: 0.2, max_tokens: 4096, response_format: { type: 'json_object' } });
+
+    const structured = JSON.parse(round1) as Record<string, unknown>;
+
+    // 第二轮：基于第一轮结果生成自我评价
+    const context = buildSelfEvalContext(structured);
+    let selfEvaluation = '';
+    if (context) {
+      const round2 = await chatCompletion(env, [
+        { role: 'system', content: GENERATE_ROUND2_SYSTEM },
+        { role: 'user', content: context },
+      ], { temperature: 0.3, max_tokens: 512 });
+      selfEvaluation = round2.trim();
+    }
+
     await recordUsage(env, userId, 'generate');
-    return json(JSON.parse(result));
+
+    return json({ ...structured, selfEvaluation });
   } catch (err) {
     if (err instanceof SyntaxError) return json({ error: 'PARSE_ERROR', message: 'AI返回无效数据' }, 500);
     throw err;
@@ -271,20 +288,65 @@ async function chatCompletion(
 
 // ==================== Prompts ====================
 
-const GENERATE_SYSTEM = `你是一位专业、严谨的简历撰写专家。用户会给你一段原始文本，你需要从中提取真实信息，生成一份简历JSON。
+const GENERATE_ROUND1_SYSTEM = `你是一位专业的简历信息提取助手。请从用户提供的文本中提取结构化信息，填入JSON。
 
-核心原则：**只使用原文中确实存在的信息，严禁编造任何数据、数字、成果、技能或经历。**
+核心原则：**只提取原文中明确存在的信息，严禁编造任何内容。**
 
-具体规则：
-1. 从原文提取能确认的真实信息。无法确认的字段留空，不要猜测。
-2. 工作描述只能基于原文提到的事实进行整理重组，不得添加原文中不存在的职责或成果
-3. 严禁编造量化数据（如"提升30%"、"日均处理10万+"），除非原文明确写了
-4. 禁止添加原文未提及的技能、证书、语言能力
-5. 自我评价基于原文事实总结，不要夸大，控制在60-100字
-6. 日期格式YYYY-MM，无法推断的留空
-7. 仅对原文有把握的信息做轻微的措辞优化，使其更简洁专业，但不改变原意
+字段说明：
+- personalInfo: { fullName, gender, birthYear, birthMonth, phone, email, city, jobTitle, yearsOfExperience }
+- jobIntention: { desiredPosition, desiredCity, expectedSalary, jobType, availableDate }
+- education: [{ id(自增数字), schoolName, degree, major, startDate(YYYY-MM), endDate(YYYY-MM), isCurrent, gpa, description }]
+- workExperience: [{ id, companyName, position, startDate, endDate, isCurrent, city, description, highlights(字符串数组) }]
+- projects: [{ id, projectName, role, startDate, endDate, isCurrent, description, techStack(字符串数组), url }]
+- skills: [{ id, skillName, level(了解/掌握/熟练/精通), category(编程语言/框架/工具/数据库/其他) }]
+- certificates: [{ id, name, issuer, date }]
+- languages: [{ id, language, level(母语/精通/熟练/良好/一般), score }]
+- socialLinks: [{ id, platform, url }]
 
-请严格按JSON格式返回。`;
+规则：
+1. 原文没有的信息留空，绝不猜测
+2. 日期统一YYYY-MM格式
+3. 项目/工作经历的description保持原文措辞，只做轻微整理
+4. 技能按category分组
+5. 荣誉奖项提取到certificates
+6. 校园经历提取到education的description
+7. 不要包含selfEvaluation字段`;
+
+const GENERATE_ROUND2_SYSTEM = `你是一位专业的简历撰写专家。请根据以下简历摘要，写一段简洁的自我评价。
+要求：
+1. 基于事实，不夸大
+2. 突出核心竞争力
+3. 控制在80-120字
+4. 只返回自我评价文本，不要加任何前缀或引号`;
+
+function buildSelfEvalContext(data: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const pi = data.personalInfo as Record<string, unknown> | undefined;
+  if (pi) {
+    parts.push(`姓名: ${pi.fullName || '未知'}, 职位: ${pi.jobTitle || '未知'}, 年限: ${pi.yearsOfExperience || '未知'}`);
+  }
+  const ji = data.jobIntention as Record<string, unknown> | undefined;
+  if (ji) {
+    parts.push(`求职意向: ${ji.desiredPosition || '未填'}`);
+  }
+  const edu = data.education as Array<Record<string, unknown>> | undefined;
+  if (edu?.length) {
+    parts.push(`教育: ${edu.map(e => `${e.schoolName} ${e.major} ${e.degree}`).join('; ')}`);
+  }
+  const work = data.workExperience as Array<Record<string, unknown>> | undefined;
+  if (work?.length) {
+    parts.push(`工作: ${work.map(w => `${w.companyName} ${w.position}`).join('; ')}`);
+  }
+  const proj = data.projects as Array<Record<string, unknown>> | undefined;
+  if (proj?.length) {
+    parts.push(`项目: ${proj.map(p => p.projectName).join('; ')}`);
+  }
+  const skills = data.skills as Array<Record<string, unknown>> | undefined;
+  if (skills?.length) {
+    parts.push(`技能: ${skills.map(s => s.skillName).join(', ')}`);
+  }
+  return parts.join('\n');
+}
 
 const POLISH_SYSTEM = `你是一位专业的简历润色专家。请对以下字段的内容进行小幅优化：
 
