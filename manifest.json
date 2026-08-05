@@ -1,0 +1,21 @@
+{
+  "name": "ResuLab — 智能简历制作",
+  "short_name": "ResuLab",
+  "description": "在线简历制作工具，支持实时预览、多套模板、一键导出 PDF",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "zh-CN",
+  "display_override": ["window-controls-overlay"]
+}
