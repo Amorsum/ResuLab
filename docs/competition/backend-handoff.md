@@ -13,13 +13,14 @@
 
 交A：优先阅读 `shared/README.md`；使用 `shared/agent.schema.ts` 和 `shared/agent.ts`，不要另写revision算法。新增refs.id、protocolVersion、waitingMs已在协议说明中明确。创建/回答/重试复用幂等键，回答须一次提交当前全部问题。完成仅表示建议生成，所有needsConfirmation=true。前端环境变量与reducer保持由A修改。
 
-当前约定：后端部署本机，验收入口 `http://localhost:8788`（默认仅监听127.0.0.1），前端Origin为 `http://127.0.0.1:3002`。已有前端域名 `resulab.amorsum.top`，后端公网入口后续统一配置，不使用云主机。`http://localhost:8080` 只保留已有Docker静态站点/代理验证入口。更新后的Supabase地址可解析，但提供的后端密钥被Auth/REST拒绝为401 Invalid API key，等待正确Secret key或旧版service_role；队长负责迁移，DeepSeek配置另行提供。health显示degraded，不应把databaseConfigured=true当成连接认证成功。
+当前约定：后端部署本机，验收入口 `http://localhost:8788`（默认仅监听127.0.0.1），前端Origin为 `http://127.0.0.1:3002`。已有前端域名 `resulab.amorsum.top`，后端公网入口后续统一配置，不使用云主机。`http://localhost:8080` 只保留已有Docker静态站点/代理验证入口。更换有效service_role后，已完成真实Supabase Auth/PostgREST的40项检查，临时账号和数据全部清理；队长迁移的5表/8RPC已存在。DeepSeek配置另行提供，health因缺模型显示degraded。旧前端公开key与该项目尚未匹配通过，需与A另行核对。
 
 尚待外部条件与共同验收：
 
 - [ ] 团队确认复用基线的比赛资格；确认测试Supabase项目并提供管理配置、模型信息。
 - [ ] A审核共享协议，集成真实登录态、工作区、轮询/刷新恢复、应用/撤销/冲突防护/PDF。
-- [ ] 测试Supabase执行迁移；用真实两账号验证Auth/PostgREST/RLS和四接口。
+- [x] 真实测试Supabase验证5表/8RPC，两个临时账号验证Auth、HTTP查询/越权、RLS及操作幂等；记录在results/supabase-acceptance.json。
+- [ ] DeepSeek配置后，通过四个HTTP接口完成真实模型的创建、追问、重试和结果查询，和A联调应用/PDF。
 - [ ] 确认实际模型支持JSON response_format，测试真实引用、追问、无证据/不知道的情况。
 - [ ] 真实API进程重启、真实多连接竞争及网络故障验收。
 - [ ] 本机8788完整链路验收与真实进程重启；保留日志、用量和资源记录，后续按团队方案验收公网入口。

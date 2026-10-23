@@ -29,7 +29,9 @@ health 是进程探活和配置状态，`degraded` 表示缺配置；200 不代�
 
 本机需要出站代理时，后端读取 `HTTP_PROXY`/`HTTPS_PROXY`（也支持小写），通过Undici EnvHttpProxyAgent同时供Supabase与模型请求使用；不打印代理URL。`NO_PROXY`显式配置时按其规则，否则默认直连localhost/127.0.0.1/[::1]。这只影响出站请求，不会开启后端公网入口。依据[Undici官方说明](https://github.com/nodejs/undici/blob/main/docs/docs/api/EnvHttpProxyAgent.md)。
 
-数据库先在测试 Supabase SQL Editor 一次执行 `supabase/migrations/202610230001_agent.sql`。它新增5张表和8个 RPC，不改 profiles/resumes。不要重复执行同一迁移；后续改动另写迁移。成功后检查 Table Editor 的 agent_* 表、RLS 与 SQL Editor 中的 RPC；读写需由服务角色使用 RPC。迁移包在本地 PGlite PostgreSQL 上执行测试；真实 Supabase Auth/PostgREST 联调仍待配置后验证。
+数据库先在测试 Supabase SQL Editor 一次执行 `supabase/migrations/202610230001_agent.sql`。它新增5张表和8个 RPC，不改 profiles/resumes。不要重复执行同一迁移；后续改动另写迁移。成功后检查 Table Editor 的 agent_* 表、RLS 与 SQL Editor 中的 RPC；读写需由服务角色使用 RPC。迁移已在PGlite和实际测试Supabase验证；真实Auth/PostgREST验收记录见 `docs/competition/results/supabase-acceptance.json`，完整模型链路仍待DeepSeek配置。
+
+模型尚未配置时，可在**已确认的测试项目**运行 `npm --prefix server run verify:supabase`。脚本会创建两个自动确认的临时合成账号，验证登录、HTTP查询、RLS、幂等、回答/重试RPC、租约/检查点和预算预留，结束后删除本轮账号及其任务；不发送邮件或模型请求。不调用全局任务领取RPC，避免领取其他人的任务；状态和租约测试只在自己创建的任务上注入fixture。报告不包含密钥、密码或access token。此脚本不代替模型配置后的完整任务接口和进程恢复验收。
 
 模型适配当前是 OpenAI-compatible `/chat/completions`，使用 JSON response_format 和结构化动作输出，不使用原生 tool calling。提供方必须支持这些参数；未确认接口能力前不能宣称适配成功。模型名称由实际 `MODEL_ID` 决定，代码未写死比赛模型。价格按每百万 Token 配置，未确认时留空。
 

@@ -6,7 +6,9 @@
 
 初次检查：8788仅在127.0.0.1监听，健康接口200/degraded；当时提供的Supabase项目域名返回ENOTFOUND。历史记录见results/local-8788-check.json。
 
-更新配置后的检查：项目域名已能解析，出站代理已支持；Supabase Auth和REST接口均返回401/Invalid API key，所给密钥尚不能认证。当前前端Origin为http://127.0.0.1:3002，预检204并正确返回允许来源。后端构建和19项本地测试通过。databaseConfigured=true只表示已填写，不能作为认证成功或迁移完成的证据。队长执行迁移，需由有效后端密钥复核；DeepSeek配置另行提供。最新结果见results/local-config-check.json，真实密钥未提交。
+中间配置检查：项目域名恢复解析，但当时的后端密钥被Supabase拒绝401；历史记录见results/local-config-check.json。前端Origin已设http://127.0.0.1:3002，预检204正确返回允许来源；后端构建和19项本地测试通过。
+
+更换有效service_role后：Auth和5张表均200，8个RPC已安装且签名匹配；40项真实Auth/数据库/本机HTTP检查通过。包含两个临时用户真实登录、并发创建幂等、跨账号404、RLS、浏览器写入/RPC权限拒绝、回答/重试幂等、租约和检查点。临时账号与所属任务已清理。全局领取函数只核对安装，未领取其他用户任务。报告见results/supabase-acceptance.json。模型请求数为0，当前健康状态仍degraded，DeepSeek和完整模型链路验收待提供配置。旧前端公开key与新项目尚未匹配通过，A的真实前端登录需另行核对。
 
 ## 按依赖执行
 

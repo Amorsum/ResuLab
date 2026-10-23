@@ -14,6 +14,7 @@
     "start": "node dist/server/src/index.js",
     "examples": "tsx scripts/examples.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "verify:supabase": "tsx scripts/verify-supabase.ts",
     "test:report": "tsx scripts/test-report.ts"
   },
   "dependencies": {
