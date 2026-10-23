@@ -58,6 +58,12 @@ npm run build
 
 > 不配置 Supabase 环境变量也可以正常使用——本地编辑、预览、PDF 导出功能不受影响，仅云端存储不可用。
 
+### 参赛前端开发
+
+AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字段类型和枚举，保留 `isCurrent`，由应用生成条目 ID，跳过完全重复条目，不导入头像和排版设置。基本信息、求职意向、自我评价显示覆盖前后内容；取消不写入，确认后一次撤销恢复整个批次。预览后简历变化会阻止导入，需返回重新生成。
+
+旧生成/润色服务读取 `VITE_AI_API_BASE`（默认 `https://api.amorsum.top`）。新 Agent 服务预留 `VITE_AGENT_API_BASE`、`VITE_AGENT_MOCK`，当前尚未接入；不能把旧 AI 服务地址用于 Agent。修改环境变量后重启 Vite。开发进度与后端依赖见 `docs/competition/frontend-handoff.md`。
+
 ### 构建桌面端 / 移动端
 
 安装包通过 GitHub Releases 分发，不提交到仓库（文件过大）。
