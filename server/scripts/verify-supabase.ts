@@ -1,7 +1,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { writeFile, mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { configureEnvironmentProxy } from "../src/network.js";
 import { loadConfig, readiness } from "../src/config.js";
@@ -43,6 +43,13 @@ const users: Array<{
 const checks: Array<{ name: string; passed: boolean }> = [];
 const cleanup: Array<{ userDeleted: boolean; ownedRunsRemoved: boolean }> = [];
 let failure: string | null = null;
+let failureDetails: {
+  operation: string;
+  name: string | null;
+  code: string | null;
+  status: number | null;
+  networkRelated: boolean;
+} | null = null;
 const check = (condition: unknown, name: string) => {
   checks.push({ name, passed: Boolean(condition) });
   console.log(JSON.stringify({ check: name, passed: Boolean(condition) }));
@@ -59,7 +66,28 @@ async function ok<T extends { data: unknown; error: unknown }>(
   operation: PromiseLike<T>,
 ): Promise<T["data"]> {
   const result = await operation;
-  if (result.error) throw new Error(`${label}:${code(result.error)}`);
+  if (result.error) {
+    const error = result.error as {
+      name?: unknown;
+      code?: unknown;
+      status?: unknown;
+      message?: unknown;
+    };
+    const safeName = (value: unknown) =>
+      typeof value === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(value)
+        ? value
+        : null;
+    failureDetails = {
+      operation: label,
+      name: safeName(error.name),
+      code: safeName(error.code),
+      status: typeof error.status === "number" ? error.status : null,
+      networkRelated:
+        typeof error.message === "string" &&
+        /fetch failed|network|timeout|aborted|reset/i.test(error.message),
+    };
+    throw new Error(`${label}:${code(result.error)}`);
+  }
   return result.data;
 }
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
@@ -473,14 +501,18 @@ try {
       process.exitCode = 1;
   }
   const output = resolve(
-    "../docs/competition/results/supabase-acceptance.json",
+    process.env.AGENT_ACCEPTANCE_REPORT ??
+      "../docs/competition/results/supabase-acceptance.json",
   );
-  await mkdir(resolve("../docs/competition/results"), { recursive: true });
+  await mkdir(dirname(output), { recursive: true });
   await writeFile(
     output,
     JSON.stringify(
       {
         timestamp: new Date().toISOString(),
+        apiOrigin: new URL(base).origin,
+        runtime: { platform: process.platform, node: process.version },
+        proxyConfigured: Boolean(proxy),
         realDatabase: true,
         realAuth: true,
         modelRequestsSent: 0,
@@ -490,6 +522,7 @@ try {
         checks,
         cleanup,
         failure,
+        failureDetails,
         success: !process.exitCode,
       },
       null,

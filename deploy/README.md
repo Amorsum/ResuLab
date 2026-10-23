@@ -2,6 +2,8 @@
 
 基于仓库根构建，独立于 main 的 GitHub Pages 工作流。推送 codex/contest-b 仅更新源码和触发检查，**不会自动把 Agent 部署到云主机**。需实际配置资源、迁移并运行本说明。
 
+Windows Server 2022 的原生 Node.js 部署见 [windows/README.md](windows/README.md)，该方案使用 Windows 计划任务，无需安装 Docker Desktop。以下为 Docker / Compose 方案。
+
 1. 准备 Docker Engine / Compose；云主机域名解析到主机。
 2. 按 server/README 在测试 Supabase 执行一次数据库迁移。
 3. 从 deploy/.env.example 创建 deploy/.env，填写配置。该文件已忽略。

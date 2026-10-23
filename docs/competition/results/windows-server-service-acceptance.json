@@ -1,0 +1,88 @@
+﻿{
+    "timestamp":  "2026-10-23T13:34:19.5237382Z",
+    "deployment":  {
+                       "revision":  "1e701deb7664224387dfa014ba7f279fea97a52c",
+                       "node":  "v22.23.4",
+                       "deployedAt":  "2026-10-23T13:27:35.5073800Z",
+                       "release":  "C:\\ResuLab\\releases\\1e701deb7664224387dfa014ba7f279fea97a52c",
+                       "task":  "ResuLab-Agent-API",
+                       "listen":  "127.0.0.1:8788",
+                       "modelConfigured":  false
+                   },
+    "checks":  [
+                   {
+                       "name":  "scheduled_task_running",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "system_principal",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "startup_trigger_configured",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "failure_restart_configured",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "no_execution_time_limit",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "loopback_only",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "database_configured_model_explicitly_missing",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "domain_cors_preflight",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "unlisted_origin_not_allowed",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "no_token_http_401",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "invalid_token_http_401",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "server_configuration_admin_system_only",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "stopping_task_releases_api_port",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "task_restart_recovers_health",
+                       "passed":  true
+                   },
+                   {
+                       "name":  "restart_uses_new_process",
+                       "passed":  true
+                   }
+               ],
+    "health":  {
+                   "version":  "0.1.0",
+                   "protocolVersion":  "1.0.0",
+                   "status":  "degraded",
+                   "dependencies":  {
+                                        "databaseConfigured":  true,
+                                        "modelConfigured":  false
+                                    }
+               },
+    "osRebootTested":  false,
+    "crashRecoveryFaultInjected":  false,
+    "realModelRequestsSent":  0,
+    "publicIngressConfigured":  false,
+    "success":  true
+}

@@ -13,7 +13,9 @@
 
 交A：优先阅读 `shared/README.md`；使用 `shared/agent.schema.ts` 和 `shared/agent.ts`，不要另写revision算法。新增refs.id、protocolVersion、waitingMs已在协议说明中明确。创建/回答/重试复用幂等键，回答须一次提交当前全部问题。完成仅表示建议生成，所有needsConfirmation=true。前端环境变量与reducer保持由A修改。
 
-当前约定：后端部署本机，验收入口 `http://localhost:8788`（默认仅监听127.0.0.1），前端Origin为 `http://127.0.0.1:3002`。已有前端域名 `resulab.amorsum.top`，后端公网入口后续统一配置，不使用云主机。`http://localhost:8080` 只保留已有Docker静态站点/代理验证入口。更换有效service_role后，已完成真实Supabase Auth/PostgREST的40项检查，临时账号和数据全部清理；队长迁移的5表/8RPC已存在。DeepSeek配置另行提供，health因缺模型显示degraded。旧前端公开key与该项目尚未匹配通过，需与A另行核对。
+用户后来将后端部署目标改为租用的 Windows Server 2022，服务器上的 `127.0.0.1:8788` 已运行 API；源码为 B 分支提交 `1e701deb7664224387dfa014ba7f279fea97a52c`（PR #3 尚待合入集成分支）。Node.js v22.23.4 使用官方归档并核对 SHA256，生产依赖按锁文件安装；通过 Windows 计划任务配置开机启动和异常退出重启，实际停止/启动恢复已验证。服务器本机运行的40项真实Supabase/鉴权检查通过，15项服务/CORS/权限/进程重启检查通过，合成账号与数据已清理。详见 `deploy/windows/README.md` 和 `results/windows-server-*.json`。
+
+服务器 CORS 允许 `http://127.0.0.1:3002` 和 `https://resulab.amorsum.top`；公网 HTTPS 入口仍待统一配置，8788仅在服务器内部监听。初始本机8788及Docker8080验收记录保留为历史证据。DeepSeek配置另行提供，health因缺模型显示degraded，真实模型请求数仍为0。旧前端公开key与当前Supabase项目尚未匹配通过，需与A另行核对。服务器本机验收前，两次由开发电脑经隧道发起的检查均在回答RPC阶段出现网络类错误（30项通过、数据清理成功）；已保留失败报告，不能用服务器验收结果声称开发电脑的这条网络路径已修复。
 
 尚待外部条件与共同验收：
 
@@ -22,8 +24,9 @@
 - [x] 真实测试Supabase验证5表/8RPC，两个临时账号验证Auth、HTTP查询/越权、RLS及操作幂等；记录在results/supabase-acceptance.json。
 - [ ] DeepSeek配置后，通过四个HTTP接口完成真实模型的创建、追问、重试和结果查询，和A联调应用/PDF。
 - [ ] 确认实际模型支持JSON response_format，测试真实引用、追问、无证据/不知道的情况。
-- [ ] 真实API进程重启、真实多连接竞争及网络故障验收。
-- [ ] 本机8788完整链路验收与真实进程重启；保留日志、用量和资源记录，后续按团队方案验收公网入口。
+- [x] Windows后端进程停止/启动恢复、CORS、配置ACL和真实Auth/数据库检查；系统重启和异常崩溃恢复仅配置，未做故障注入。
+- [ ] 含真实模型任务的API进程重启恢复、多连接竞争及网络故障验收。
+- [ ] 8788真实模型完整链路、日志/用量/资源记录及团队方案的公网入口验收。
 - [ ] 真实模型顺序任务及资源允许时2并发测量；填入已确认价格和缓存计价边界。
 - [ ] 合并A/B工作、完整回归、材料同SHA、真实Demo彩排后统一冻结标签。
 

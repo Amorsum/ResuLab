@@ -1,6 +1,6 @@
 # 本机8788验收安排
 
-2026-10-23用户确认：前端已有域名resulab.amorsum.top；后端部署在本机电脑，不使用云主机。先在localhost:8788完成测试库迁移、真实模型和完整链路验收；后端公网入口以后统一配置。本轮不改域名解析或公网代理。
+2026-10-23用户最初确认：前端已有域名resulab.amorsum.top；先在本机localhost:8788完成测试库迁移、真实模型和完整链路验收，公网入口以后统一配置。用户随后租用了 Windows Server 2022 并授权部署，当前后端已迁移到服务器运行；见下文最新记录。本轮尚未修改域名解析或配置公网代理。
 
 收到的.env只有VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY、VITE_AI_API_BASE。它们是前端配置；anon key不能替代service role，也不能执行建表迁移。真实配置只放忽略的本机.env文件，不进入Git或日志。
 
@@ -9,6 +9,10 @@
 中间配置检查：项目域名恢复解析，但当时的后端密钥被Supabase拒绝401；历史记录见results/local-config-check.json。前端Origin已设http://127.0.0.1:3002，预检204正确返回允许来源；后端构建和19项本地测试通过。
 
 更换有效service_role后：Auth和5张表均200，8个RPC已安装且签名匹配；40项真实Auth/数据库/本机HTTP检查通过。包含两个临时用户真实登录、并发创建幂等、跨账号404、RLS、浏览器写入/RPC权限拒绝、回答/重试幂等、租约和检查点。临时账号与所属任务已清理。全局领取函数只核对安装，未领取其他用户任务。报告见results/supabase-acceptance.json。模型请求数为0，当前健康状态仍degraded，DeepSeek和完整模型链路验收待提供配置。旧前端公开key与新项目尚未匹配通过，A的真实前端登录需另行核对。
+
+服务器最新记录：Node.js v22.23.4，API源码提交1e701de，部署于服务器回环地址127.0.0.1:8788。15项服务检查通过，实际停止计划任务会释放端口，重新启动后新PID恢复健康接口；开机启动和每分钟异常重启规则已配置，未重启整台服务器或注入崩溃。服务器本机执行的40项真实Supabase/Auth/HTTP检查全部通过，未配置代理，合成数据均已清理，模型请求数为0。见results/windows-server-service-acceptance.json、results/windows-server-supabase-acceptance.json。部署及维护方式见deploy/windows/README.md。
+
+此前两次由开发电脑发起、HTTP经SSH隧道访问服务器的验收均在回答RPC阶段遇到网络类错误，30项检查通过，合成数据清理成功。失败报告分别为results/windows-server-supabase-first-attempt.json和results/windows-server-supabase-tunnel-failure.json。第二次安全诊断networkRelated=true；未据此认定具体代理/网络组件故障，也未给失败操作自动补发请求。改在服务器本机执行后40项通过。后续若仍需从开发电脑运行管理脚本，应单独排查这条出网路径。
 
 ## 按依赖执行
 

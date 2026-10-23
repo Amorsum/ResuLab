@@ -1,0 +1,151 @@
+{
+  "timestamp": "2026-10-23T13:35:37.126Z",
+  "apiOrigin": "http://127.0.0.1:8789",
+  "realDatabase": true,
+  "realAuth": true,
+  "modelRequestsSent": 0,
+  "globalQueueClaimExecuted": false,
+  "globalQueueClaimReason": "避免领取其他用户任务；只检查函数已安装",
+  "fixtures": "临时合成账号和任务；状态/租约由本测试在自己任务上注入",
+  "checks": [
+    {
+      "name": "local_backend_has_database_configuration",
+      "passed": true
+    },
+    {
+      "name": "no_model_scheduler_for_database_fixture_checks",
+      "passed": true
+    },
+    {
+      "name": "agent_runs_accessible",
+      "passed": true
+    },
+    {
+      "name": "agent_operations_accessible",
+      "passed": true
+    },
+    {
+      "name": "agent_steps_accessible",
+      "passed": true
+    },
+    {
+      "name": "agent_answers_accessible",
+      "passed": true
+    },
+    {
+      "name": "agent_model_calls_accessible",
+      "passed": true
+    },
+    {
+      "name": "postgrest_schema_accessible",
+      "passed": true
+    },
+    {
+      "name": "agent_create_run_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_get_run_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_mutate_run_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_claim_run_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_renew_lease_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_checkpoint_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_begin_model_call_installed",
+      "passed": true
+    },
+    {
+      "name": "agent_finish_model_call_installed",
+      "passed": true
+    },
+    {
+      "name": "real_user_0_token_verified",
+      "passed": true
+    },
+    {
+      "name": "real_user_1_token_verified",
+      "passed": true
+    },
+    {
+      "name": "real_concurrent_create_is_idempotent",
+      "passed": true
+    },
+    {
+      "name": "IDEMPOTENCY_CONFLICT",
+      "passed": true
+    },
+    {
+      "name": "rpc_owner_read",
+      "passed": true
+    },
+    {
+      "name": "RUN_NOT_FOUND",
+      "passed": true
+    },
+    {
+      "name": "real_authenticated_http_read",
+      "passed": true
+    },
+    {
+      "name": "real_other_user_http_404",
+      "passed": true
+    },
+    {
+      "name": "real_unauthenticated_http_401",
+      "passed": true
+    },
+    {
+      "name": "missing_model_is_explicit_not_mock_success",
+      "passed": true
+    },
+    {
+      "name": "real_rls_owner_isolation",
+      "passed": true
+    },
+    {
+      "name": "browser_role_cannot_write_task_state",
+      "passed": true
+    },
+    {
+      "name": "browser_role_cannot_call_server_rpc",
+      "passed": true
+    },
+    {
+      "name": "STATE_CONFLICT",
+      "passed": true
+    }
+  ],
+  "cleanup": [
+    {
+      "userDeleted": true,
+      "ownedRunsRemoved": true
+    },
+    {
+      "userDeleted": true,
+      "ownedRunsRemoved": true
+    }
+  ],
+  "failure": "agent_mutate_run:OPERATION_FAILED",
+  "failureDetails": {
+    "operation": "agent_mutate_run",
+    "name": null,
+    "code": null,
+    "status": null,
+    "networkRelated": true
+  },
+  "success": false
+}
