@@ -52,15 +52,18 @@ const scheduler =
   store && ready.model
     ? startScheduler(store, openAIProvider(config, store), config)
     : undefined;
-const server = serve({ fetch: app.fetch, port: config.PORT }, () =>
-  console.log(
-    JSON.stringify({
-      event: "listening",
-      port: config.PORT,
-      protocolVersion: "1.0.0",
-      ...ready,
-    }),
-  ),
+const server = serve(
+  { fetch: app.fetch, hostname: config.HOST, port: config.PORT },
+  () =>
+    console.log(
+      JSON.stringify({
+        event: "listening",
+        host: config.HOST,
+        port: config.PORT,
+        protocolVersion: "1.0.0",
+        ...ready,
+      }),
+    ),
 );
 let shuttingDown = false;
 for (const name of ["SIGTERM", "SIGINT"] as const)

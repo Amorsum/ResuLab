@@ -2,6 +2,8 @@
 
 Node.js 22 + Hono + Supabase。与原 `workers/` 独立，旧 AI 接口继续走旧服务。本目录不实现前端写回或撤销。
 
+当前部署约定：后端运行在本机，使用 `http://localhost:8788`；默认 `HOST=127.0.0.1` 仅接受本机连接。已有前端域名 `resulab.amorsum.top`，公网访问本机后端的入口后续统一配置；当前不需要云主机、不改DNS。Docker内显式设 `HOST=0.0.0.0` 供同网络代理访问。完整本机验收步骤见 `../docs/competition/local-acceptance.md`。
+
 从仓库根执行：
 
 ```powershell
