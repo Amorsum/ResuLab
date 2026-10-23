@@ -1,8 +1,10 @@
 # 成本与性能：当前证据和测量方法
 
-当前没有团队测试Supabase、实际模型或云主机配置。**真实模型费用、成功率、任务延迟、云容器负载均未知**。本地自动化测试的耗时不能当作模型性能，provider stub给出的Token仅用于验证加总。
+当前已配置团队测试Supabase，并通过真实Auth/数据库检查；后端部署本机，不使用云主机。DeepSeek配置尚未提供，**真实模型费用、成功率、任务延迟和模型任务资源负载均未知**。本地自动化测试的耗时不能当作模型性能，provider stub给出的Token仅用于验证加总。
 
 已有原始证据：results/local-tests.tap.txt、results/local-test-environment.json。报告记录测试机器CPU、逻辑核数、内存、Node版本、测试时间及命令结果，明确标记scripted provider。容器探活记录可证明进程与代理启动，不能证明模型可用。
+
+实际Supabase检查另存results/supabase-acceptance.json，含40项通过记录及临时数据清理结果。其模型日志计数测试使用明确标记的数据库fixture且已清理，外部模型请求数为0，不属于真实模型性能/计费数据。
 
 本地容器证据另存results/local-container-check.json：三个容器已构建运行，静态首页/SPA回退/代理健康接口通过；外部配置缺失，状态degraded。资源采样是本地空闲状态快照，不是任务负载或云主机性能。
 

@@ -6,6 +6,7 @@ const price = z.preprocess(
   z.coerce.number().nonnegative().optional(),
 );
 const configSchema = z.object({
+  HOST: z.enum(["127.0.0.1", "0.0.0.0", "::1", "::"]).default("127.0.0.1"),
   PORT: integer(8788, 65535),
   NODE_ENV: z
     .enum(["development", "test", "production"])

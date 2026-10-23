@@ -13,6 +13,7 @@ const child = spawn(
     "--test",
     "tests/contract.test.ts",
     "tests/integration.test.ts",
+    "tests/network.test.ts",
   ],
   { stdio: ["ignore", "pipe", "pipe"] },
 );

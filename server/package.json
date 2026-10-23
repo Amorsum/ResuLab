@@ -14,6 +14,7 @@
     "start": "node dist/server/src/index.js",
     "examples": "tsx scripts/examples.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "verify:supabase": "tsx scripts/verify-supabase.ts",
     "test:report": "tsx scripts/test-report.ts"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "dotenv": "^18.0.9",
     "hono": "^4.13.13",
+    "undici": "^7.30.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

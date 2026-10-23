@@ -2,6 +2,8 @@
 
 Node.js 22 + Hono + Supabase。与原 `workers/` 独立，旧 AI 接口继续走旧服务。本目录不实现前端写回或撤销。
 
+当前部署约定：后端运行在本机，使用 `http://localhost:8788`；默认 `HOST=127.0.0.1` 仅接受本机连接。已有前端域名 `resulab.amorsum.top`，公网访问本机后端的入口后续统一配置；当前不需要云主机、不改DNS。Docker内显式设 `HOST=0.0.0.0` 供同网络代理访问。完整本机验收步骤见 `../docs/competition/local-acceptance.md`。
+
 从仓库根执行：
 
 ```powershell
@@ -23,7 +25,13 @@ health 是进程探活和配置状态，`degraded` 表示缺配置；200 不代�
 
 配置：将 `.env.example` 复制为 `server/.env`，填写**测试** Supabase 和模型信息。运行脚本的工作目录为 server，dotenv 从该目录加载。service role 和模型 key 只留服务端，不能放到任何 VITE 变量。
 
-数据库先在测试 Supabase SQL Editor 一次执行 `supabase/migrations/202610230001_agent.sql`。它新增5张表和8个 RPC，不改 profiles/resumes。不要重复执行同一迁移；后续改动另写迁移。成功后检查 Table Editor 的 agent_* 表、RLS 与 SQL Editor 中的 RPC；读写需由服务角色使用 RPC。迁移包在本地 PGlite PostgreSQL 上执行测试；真实 Supabase Auth/PostgREST 联调仍待配置后验证。
+后端密钥可以是新版 `sb_secret_...` 或旧版service_role JWT，均放在当前 `SUPABASE_SERVICE_ROLE_KEY` 配置项；数据库密码不是此API密钥。`databaseConfigured`只表示配置已填写，不代表密钥已通过认证。若Supabase返回401，先从项目Settings → API Keys核对密钥，不能通过改数据库密码或关闭RLS解决。参见[Supabase官方API密钥说明](https://supabase.com/docs/guides/getting-started/api-keys)。
+
+本机需要出站代理时，后端读取 `HTTP_PROXY`/`HTTPS_PROXY`（也支持小写），通过Undici EnvHttpProxyAgent同时供Supabase与模型请求使用；不打印代理URL。`NO_PROXY`显式配置时按其规则，否则默认直连localhost/127.0.0.1/[::1]。这只影响出站请求，不会开启后端公网入口。依据[Undici官方说明](https://github.com/nodejs/undici/blob/main/docs/docs/api/EnvHttpProxyAgent.md)。
+
+数据库先在测试 Supabase SQL Editor 一次执行 `supabase/migrations/202610230001_agent.sql`。它新增5张表和8个 RPC，不改 profiles/resumes。不要重复执行同一迁移；后续改动另写迁移。成功后检查 Table Editor 的 agent_* 表、RLS 与 SQL Editor 中的 RPC；读写需由服务角色使用 RPC。迁移已在PGlite和实际测试Supabase验证；真实Auth/PostgREST验收记录见 `docs/competition/results/supabase-acceptance.json`，完整模型链路仍待DeepSeek配置。
+
+模型尚未配置时，可在**已确认的测试项目**运行 `npm --prefix server run verify:supabase`。脚本会创建两个自动确认的临时合成账号，验证登录、HTTP查询、RLS、幂等、回答/重试RPC、租约/检查点和预算预留，结束后删除本轮账号及其任务；不发送邮件或模型请求。不调用全局任务领取RPC，避免领取其他人的任务；状态和租约测试只在自己创建的任务上注入fixture。报告不包含密钥、密码或access token。此脚本不代替模型配置后的完整任务接口和进程恢复验收。
 
 模型适配当前是 OpenAI-compatible `/chat/completions`，使用 JSON response_format 和结构化动作输出，不使用原生 tool calling。提供方必须支持这些参数；未确认接口能力前不能宣称适配成功。模型名称由实际 `MODEL_ID` 决定，代码未写死比赛模型。价格按每百万 Token 配置，未确认时留空。
 

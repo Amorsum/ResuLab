@@ -7,8 +7,10 @@ import { AgentError } from "./errors.js";
 import { supabaseStore } from "./store.js";
 import { openAIProvider } from "./provider.js";
 import { startScheduler } from "./engine.js";
+import { configureEnvironmentProxy } from "./network.js";
 
 const config = loadConfig();
+configureEnvironmentProxy();
 const ready = readiness(config);
 const client = ready.database
   ? createClient(config.SUPABASE_URL!, config.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -52,15 +54,18 @@ const scheduler =
   store && ready.model
     ? startScheduler(store, openAIProvider(config, store), config)
     : undefined;
-const server = serve({ fetch: app.fetch, port: config.PORT }, () =>
-  console.log(
-    JSON.stringify({
-      event: "listening",
-      port: config.PORT,
-      protocolVersion: "1.0.0",
-      ...ready,
-    }),
-  ),
+const server = serve(
+  { fetch: app.fetch, hostname: config.HOST, port: config.PORT },
+  () =>
+    console.log(
+      JSON.stringify({
+        event: "listening",
+        host: config.HOST,
+        port: config.PORT,
+        protocolVersion: "1.0.0",
+        ...ready,
+      }),
+    ),
 );
 let shuttingDown = false;
 for (const name of ["SIGTERM", "SIGINT"] as const)
