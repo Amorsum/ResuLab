@@ -13,9 +13,11 @@
 
 交A：优先阅读 `shared/README.md`；使用 `shared/agent.schema.ts` 和 `shared/agent.ts`，不要另写revision算法。新增refs.id、protocolVersion、waitingMs已在协议说明中明确。创建/回答/重试复用幂等键，回答须一次提交当前全部问题。完成仅表示建议生成，所有needsConfirmation=true。前端环境变量与reducer保持由A修改。
 
-用户后来将后端部署目标改为租用的 Windows Server 2022，服务器上的 `127.0.0.1:8788` 已运行 API；源码为 B 分支提交 `1e701deb7664224387dfa014ba7f279fea97a52c`（PR #3 尚待合入集成分支）。Node.js v22.23.4 使用官方归档并核对 SHA256，生产依赖按锁文件安装；通过 Windows 计划任务配置开机启动和异常退出重启，实际停止/启动恢复已验证。服务器本机运行的40项真实Supabase/鉴权检查通过，15项服务/CORS/权限/进程重启检查通过，合成账号与数据已清理。详见 `deploy/windows/README.md` 和 `results/windows-server-*.json`。
+用户后来将后端部署目标改为租用的 Windows Server 2022，服务器上的 `127.0.0.1:8788` 已运行 API。首次部署源码为 B 分支的 `1e701de`；随后按用户授权审核合并PR #1和后端PR #3，当前已从 `codex/contest-b` 发布应用提交 `0b815ee5f5e8bf0f853e0f166ada6183265a68e9`。服务器只部署后端，前端由前端团队独立发布。Node.js v22.23.4 使用官方归档并核对 SHA256，生产依赖按锁文件安装；通过 Windows 计划任务配置开机启动和异常退出重启，实际停止/启动恢复已验证。首次服务器本机的40项真实Supabase/鉴权检查和15项服务检查记录保留在 `results/windows-server-*.json`。
 
-服务器 CORS 允许 `http://127.0.0.1:3002` 和 `https://resulab.amorsum.top`；公网 HTTPS 入口仍待统一配置，8788仅在服务器内部监听。初始本机8788及Docker8080验收记录保留为历史证据。DeepSeek配置另行提供，health因缺模型显示degraded，真实模型请求数仍为0。旧前端公开key与当前Supabase项目尚未匹配通过，需与A另行核对。服务器本机验收前，两次由开发电脑经隧道发起的检查均在回答RPC阶段出现网络类错误（30项通过、数据清理成功）；已保留失败报告，不能用服务器验收结果声称开发电脑的这条网络路径已修复。
+服务器 CORS 允许 `http://127.0.0.1:3002` 和 `https://resulab.amorsum.top`；临时公网 HTTPS API 已建立，接入地址和构建变量见 `api-handoff.md`，公网七项HTTPS/CORS/未登录及无效token检查通过。8788仍仅在服务器内部监听，正式前端域名由原有托管提供。DeepSeek配置另行提供，health因缺模型显示degraded，真实模型请求数仍为0。前端团队负责匹配本次Supabase公开key、邮箱发信/回调和前端发布；当前resumes/profiles REST返回404，需要补齐原云简历依赖。历史上由开发电脑经SSH隧道发起的两次验收在回答RPC阶段出现网络错误（30项通过、清理成功），已保留失败记录，未声称修复该出网路径。
+
+当前集成应用的公网入口也已完成40项真实Supabase/Auth/HTTP验收，报告 `results/public-api-supabase-acceptance.json`；两账号越权404、原操作幂等与数据清理通过，无真实模型请求。
 
 尚待外部条件与共同验收：
 

@@ -72,6 +72,8 @@ Invoke-RestMethod http://127.0.0.1:8789/api/health
 
 `8788` 仅监听服务器回环地址。SSH 隧道可用于验收；公网浏览器不能直接使用服务器的 `localhost`。待团队确定 HTTPS 入口后再配置反向代理、DNS 和安全组，前端据此设置 API 地址。仅配置 CORS 不会创建公网访问入口。
 
+当前独立前端的临时HTTPS API方案见 `docs/competition/api-handoff.md`。服务器仅运行API与cloudflared，不托管前端。将 `install-test-tunnel.ps1` 放入 `C:\ResuLab\ops` 后运行可创建测试隧道，安装时校验官方二进制SHA256，输出API Origin，并注册 `ResuLab-Agent-HTTPS` 计划任务。隧道进程重启可能更换URL；固定测试域名就绪后再迁移。API当前应用源码已更新至 `codex/contest-b` 的0b815ee，以下首次部署归档记录保留作历史证据。
+
 真实 Supabase 验收使用 `server/scripts/verify-supabase.ts`；`AGENT_API_BASE` 指定待验收 API，`AGENT_ACCEPTANCE_REPORT` 可指定单独的报告路径，防止覆盖历史记录。脚本保存执行平台、Node.js版本、是否配置出网代理，以及不含密钥的失败分类。缺模型时使用两个自行创建的合成账号验证数据库及 HTTP 查询，完成后清理；不请求模型，也不领取其他用户任务。服务器只有生产依赖时可用已安装的 esbuild 在开发机打包脚本（`--bundle --packages=external --platform=node --format=esm`），将结果置于发布目录的 `server` 下运行，并在启动前显式使用 dotenv 的 `config({ path, quiet: true })` 加载服务器配置。
 
 部署记录：应用归档 SHA256 为 `7a1fa5a7f8eb41238bb636ce50b1c791466582d18027a2fc9aa2a622c92e86ba`，Node.js v22.23.4 官方 ZIP 的 SHA256 为 `cbc74b5e0982c9dbb41525fd8fb5dcd32fbee237863f7829072f4639a1ce5f20`。验收报告见 `docs/competition/results/windows-server-*.json`。部署源码是 B 分支的1e701de，集成PR仍需队长审核；本次未替代集成分支合并。
