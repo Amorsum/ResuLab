@@ -13,7 +13,7 @@
 
 交A：优先阅读 `shared/README.md`；使用 `shared/agent.schema.ts` 和 `shared/agent.ts`，不要另写revision算法。新增refs.id、protocolVersion、waitingMs已在协议说明中明确。创建/回答/重试复用幂等键，回答须一次提交当前全部问题。完成仅表示建议生成，所有needsConfirmation=true。前端环境变量与reducer保持由A修改。
 
-当前约定：后端部署本机，验收入口 `http://localhost:8788`（默认仅监听127.0.0.1）。已有前端域名 `resulab.amorsum.top`，后端公网入口后续统一配置，不使用云主机。`http://localhost:8080` 只保留已有Docker静态站点/代理验证入口。已收到前端Supabase公开配置；测试库管理配置、后端service role和DeepSeek配置尚待提供，health显示degraded，任务不会假成功。
+当前约定：后端部署本机，验收入口 `http://localhost:8788`（默认仅监听127.0.0.1），前端Origin为 `http://127.0.0.1:3002`。已有前端域名 `resulab.amorsum.top`，后端公网入口后续统一配置，不使用云主机。`http://localhost:8080` 只保留已有Docker静态站点/代理验证入口。更新后的Supabase地址可解析，但提供的后端密钥被Auth/REST拒绝为401 Invalid API key，等待正确Secret key或旧版service_role；队长负责迁移，DeepSeek配置另行提供。health显示degraded，不应把databaseConfigured=true当成连接认证成功。
 
 尚待外部条件与共同验收：
 

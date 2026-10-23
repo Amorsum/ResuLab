@@ -7,8 +7,10 @@ import { AgentError } from "./errors.js";
 import { supabaseStore } from "./store.js";
 import { openAIProvider } from "./provider.js";
 import { startScheduler } from "./engine.js";
+import { configureEnvironmentProxy } from "./network.js";
 
 const config = loadConfig();
+configureEnvironmentProxy();
 const ready = readiness(config);
 const client = ready.database
   ? createClient(config.SUPABASE_URL!, config.SUPABASE_SERVICE_ROLE_KEY!, {

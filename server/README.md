@@ -25,6 +25,10 @@ health 是进程探活和配置状态，`degraded` 表示缺配置；200 不代�
 
 配置：将 `.env.example` 复制为 `server/.env`，填写**测试** Supabase 和模型信息。运行脚本的工作目录为 server，dotenv 从该目录加载。service role 和模型 key 只留服务端，不能放到任何 VITE 变量。
 
+后端密钥可以是新版 `sb_secret_...` 或旧版service_role JWT，均放在当前 `SUPABASE_SERVICE_ROLE_KEY` 配置项；数据库密码不是此API密钥。`databaseConfigured`只表示配置已填写，不代表密钥已通过认证。若Supabase返回401，先从项目Settings → API Keys核对密钥，不能通过改数据库密码或关闭RLS解决。参见[Supabase官方API密钥说明](https://supabase.com/docs/guides/getting-started/api-keys)。
+
+本机需要出站代理时，后端读取 `HTTP_PROXY`/`HTTPS_PROXY`（也支持小写），通过Undici EnvHttpProxyAgent同时供Supabase与模型请求使用；不打印代理URL。`NO_PROXY`显式配置时按其规则，否则默认直连localhost/127.0.0.1/[::1]。这只影响出站请求，不会开启后端公网入口。依据[Undici官方说明](https://github.com/nodejs/undici/blob/main/docs/docs/api/EnvHttpProxyAgent.md)。
+
 数据库先在测试 Supabase SQL Editor 一次执行 `supabase/migrations/202610230001_agent.sql`。它新增5张表和8个 RPC，不改 profiles/resumes。不要重复执行同一迁移；后续改动另写迁移。成功后检查 Table Editor 的 agent_* 表、RLS 与 SQL Editor 中的 RPC；读写需由服务角色使用 RPC。迁移包在本地 PGlite PostgreSQL 上执行测试；真实 Supabase Auth/PostgREST 联调仍待配置后验证。
 
 模型适配当前是 OpenAI-compatible `/chat/completions`，使用 JSON response_format 和结构化动作输出，不使用原生 tool calling。提供方必须支持这些参数；未确认接口能力前不能宣称适配成功。模型名称由实际 `MODEL_ID` 决定，代码未写死比赛模型。价格按每百万 Token 配置，未确认时留空。

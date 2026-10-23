@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-10-23T10:42:07.4615905Z",
+  "health": {
+    "version": "0.1.0",
+    "protocolVersion": "1.0.0",
+    "status": "degraded",
+    "dependencies": {
+      "databaseConfigured": true,
+      "modelConfigured": false
+    }
+  },
+  "listening": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 8788
+    }
+  ],
+  "configuredOrigin": "http://127.0.0.1:3002",
+  "preflightStatus": 204,
+  "allowOrigin": "http://127.0.0.1:3002",
+  "supabaseDnsResolved": true,
+  "supabaseAuthStatus": 401,
+  "supabaseRestStatus": 401,
+  "invalidApiKey": true,
+  "outboundProxyEnabled": true,
+  "databaseMigrationVerified": false,
+  "realModelInvoked": false,
+  "localTestsPassed": 19
+}

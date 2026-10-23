@@ -4,7 +4,9 @@
 
 收到的.env只有VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY、VITE_AI_API_BASE。它们是前端配置；anon key不能替代service role，也不能执行建表迁移。真实配置只放忽略的本机.env文件，不进入Git或日志。
 
-本轮检查：8788已仅在127.0.0.1监听，健康接口200/degraded，后端构建和16项本地测试通过。提供的Supabase项目域名在本机DNS返回ENOTFOUND，控制域名supabase.com能解析；须向队长核对项目URL及测试项目状态。尚未执行远程迁移或真实模型调用。具体状态见results/local-8788-check.json。
+初次检查：8788仅在127.0.0.1监听，健康接口200/degraded；当时提供的Supabase项目域名返回ENOTFOUND。历史记录见results/local-8788-check.json。
+
+更新配置后的检查：项目域名已能解析，出站代理已支持；Supabase Auth和REST接口均返回401/Invalid API key，所给密钥尚不能认证。当前前端Origin为http://127.0.0.1:3002，预检204并正确返回允许来源。后端构建和19项本地测试通过。databaseConfigured=true只表示已填写，不能作为认证成功或迁移完成的证据。队长执行迁移，需由有效后端密钥复核；DeepSeek配置另行提供。最新结果见results/local-config-check.json，真实密钥未提交。
 
 ## 按依赖执行
 
