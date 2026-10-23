@@ -1,10 +1,12 @@
 import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../types/resume';
 import { generateId, createEmptyResume } from '../constants/defaultResume';
 import { applyAIImport, type AIImportPlan } from '../utils/aiImport';
+import { applyAgentChanges, type AgentApplication } from '../utils/agentChanges';
 
 // ===================== Action 类型 =====================
 
 export type ResumeAction =
+  | { type: 'APPLY_AGENT_CHANGES'; payload: AgentApplication }
   | { type: 'IMPORT_AI_RESUME'; payload: AIImportPlan }
   | { type: 'SET_PERSONAL_INFO'; payload: Partial<ResumeData['personalInfo']> }
   | { type: 'SET_JOB_INTENTION'; payload: Partial<ResumeData['jobIntention']> }
@@ -49,6 +51,8 @@ function createEmptyItem(section: ArraySectionName) {
 
 export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeData {
   switch (action.type) {
+    case 'APPLY_AGENT_CHANGES':
+      return applyAgentChanges(state, action.payload);
     case 'IMPORT_AI_RESUME':
       return applyAIImport(state, action.payload);
     case 'SET_PERSONAL_INFO':

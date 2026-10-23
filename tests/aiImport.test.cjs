@@ -11,7 +11,7 @@ function loader(react) {
     if (cache.has(file)) return cache.get(file).exports;
     const module = { exports: {} }; cache.set(file, module);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
-    new Function('require', 'module', 'exports', code)(name => name === 'react' ? react : load(path.resolve(path.dirname(file), `${name}.ts`)), module, module.exports);
+    new Function('require', 'module', 'exports', code)(name => name === 'react' ? react : !name.startsWith('.') ? require(name) : load(path.resolve(path.dirname(file), name.replace(/\.js$/, '').concat('.ts'))), module, module.exports);
     return module.exports;
   }
   return load;

@@ -62,7 +62,15 @@ npm run build
 
 AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字段类型和枚举，保留 `isCurrent`，由应用生成条目 ID，跳过完全重复条目，不导入头像和排版设置。基本信息、求职意向、自我评价显示覆盖前后内容；取消不写入，确认后一次撤销恢复整个批次。预览后简历变化会阻止导入，需返回重新生成。
 
-旧生成/润色服务读取 `VITE_AI_API_BASE`（默认 `https://api.amorsum.top`）。新 Agent 服务预留 `VITE_AGENT_API_BASE`、`VITE_AGENT_MOCK`，当前尚未接入；不能把旧 AI 服务地址用于 Agent。修改环境变量后重启 Vite。开发进度与后端依赖见 `docs/competition/frontend-handoff.md`。
+旧生成/润色服务读取 `VITE_AI_API_BASE`（默认 `https://api.amorsum.top`）。编辑器顶部“针对岗位优化”打开 Agent 工作区：输入 JD → 证据匹配 → 回答追问 → 勾选并确认修改 → 预览导出；一次撤销恢复整批建议。
+
+- 本机联调：设置 `VITE_AGENT_API_BASE=http://localhost:8788`、`VITE_AGENT_MOCK=false`，启动方式见 `server/README.md`。端口冲突时，以 Vite 实际端口更新后端 `ALLOWED_ORIGINS`。
+- 同源部署：显式设置 `VITE_AGENT_API_BASE=`。未设置该变量时显示配置提示，不会回落模拟。
+- 开发样例：仅在 Vite 开发模式显式设置 `VITE_AGENT_MOCK=true` 才启用；页面明确标记，生产构建始终禁用。五种状态用于交互验证，非模型效果证明。
+- 任务按登录账号保存 runId 恢复索引；完整结果从服务端查询。回答草稿仅存当前浏览器会话、按账号和任务隔离。请求超时可重发同一次操作，创建/回答/重试复用该操作的幂等键。
+- 应用仅限共享协议白名单，核对快照摘要和原文；简历编辑、删除、重排后拒绝旧建议。本批应用后禁用重复应用（撤销后需要重新分析）。
+
+修改环境变量后重启 Vite。现有域名为 `resulab.amorsum.top`，计划本机运行后端；公网 HTTPS 入口尚待配置。开发进度与真实联调条件见 `docs/competition/frontend-handoff.md`。
 
 ### 构建桌面端 / 移动端
 

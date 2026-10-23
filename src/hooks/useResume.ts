@@ -3,6 +3,7 @@ import { ResumeContext } from '../context/ResumeContext';
 import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../types/resume';
 import { generateId } from '../constants/defaultResume';
 import type { AIImportPlan } from '../utils/aiImport';
+import type { AgentApplication } from '../utils/agentChanges';
 
 export function useResume() {
   const ctx = useContext(ResumeContext);
@@ -14,6 +15,7 @@ export function useResume() {
 
   return {
     resume: state,
+    applyAgentChanges: (payload: AgentApplication) => dispatch({ type: 'APPLY_AGENT_CHANGES', payload }),
     importAIResume: (payload: AIImportPlan) => dispatch({ type: 'IMPORT_AI_RESUME', payload }),
 
     // ---- 基础信息 ----
