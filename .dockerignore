@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/.dev.vars*
+**/.wrangler
+**/*.tsbuildinfo
+**/target
+release-artifacts
+src-tauri
+.claude
+.agents
+memory
+docs/competition/results/private

@@ -1,0 +1,30 @@
+name: Contest checks
+on:
+  pull_request:
+    branches: [codex/contest-b]
+  push:
+    branches: [codex/contest-b, codex/b-agent-backend]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            workers/package-lock.json
+      - run: npm ci
+      - run: npm --prefix server ci
+      - run: npm --prefix workers ci
+      - run: npm run build
+      - run: npm --prefix workers run typecheck
+      - run: npm --prefix server run typecheck
+      - run: npm --prefix server test
+      - run: npm --prefix server run build
+      - run: git diff --check
