@@ -12,6 +12,15 @@ const stepStatuses: Record<string, string> = { queued: '待执行', running: '�
 const tools: Record<string, string> = { extract_job_requirements: '解析岗位要求', find_resume_evidence: '查找简历证据', request_clarification: '确认事实缺口', draft_resume_changes: '起草修改建议', validate_changes: '校验建议' };
 const sections: Record<string, string> = { education: '教育经历', workExperience: '工作经历', projects: '项目经历', selfEvaluation: '自我评价' };
 const coverage = { supported: '有证据', needs_clarification: '表达不足，待确认', missing: '无证据' };
+function failureMessage(run: RunView): string {
+  switch (run.error?.code) {
+    case 'MODEL_SCHEMA_INVALID': return '模型输出未通过结构校验，本次没有应用任何建议。请将任务编号交给后端排查；修复后可重试失败步骤。';
+    case 'MODEL_TIMEOUT': return '模型响应超时。原简历保持原样，可手动重试。';
+    case 'TOOL_RESULT_INVALID': return '模型结果的引用或事实校验未通过，本次没有应用任何建议。请将任务编号交给后端核对。';
+    case 'BUDGET_EXHAUSTED': return '当前任务已达到模型调用预算，请联系后端检查失败原因后再开始新分析。';
+    default: return '执行步骤失败，请查看轨迹并重试，或将任务编号交给后端核对。';
+  }
+}
 const text = (value: string | string[]) => Array.isArray(value) ? value.join('\n') : value;
 function RunTimeline({ run }: { run: RunView }) {
   return <section className="agent-panel" aria-labelledby="agent-timeline-title">
@@ -21,6 +30,7 @@ function RunTimeline({ run }: { run: RunView }) {
       <p className="agent-muted">{step.summary || '正在执行…'}</p>
     </li>)}</ol>}
     <dl className="agent-usage"><div><dt>模型调用</dt><dd>{run.usage.calls} 次</dd></div><div><dt>总耗时</dt><dd>{(run.usage.elapsedMs / 1000).toFixed(1)} 秒</dd></div><div><dt>输入 / 输出 Token</dt><dd>{run.usage.inputTokens ?? '—'} / {run.usage.outputTokens ?? '—'}</dd></div><div><dt>估计费用</dt><dd>{run.usage.estimatedCost === null ? '未知' : `${run.usage.estimatedCost.toFixed(4)} ${run.usage.currency}`}</dd></div></dl>
+    {run.usage.estimatedCost === null && <p className="agent-muted">尚未获得完整的 Token 用量或模型单价，暂无法估算费用；未知不代表零费用。</p>}
   </section>;
 }
 function EvidenceList({ run }: { run: RunView }) {
@@ -105,13 +115,14 @@ export function AgentWorkspace({ open, onClose, onPreview }: { open: boolean; on
         </aside>
         <main className="agent-sheet">
           <div className="agent-row agent-result-header"><h2>{run ? statuses[run.status] : agent.runId ? '正在恢复任务' : '让每次修改都有依据'}</h2>{agent.runId && !agent.mock && <button className="agent-button" disabled={agent.busy} onClick={agent.refresh}>刷新任务</button>}</div>
+          {agent.runId && <p className="agent-muted agent-run-id">任务编号：<code>{agent.runId}</code></p>}
           {agent.error && <div className="agent-error" role="alert"><p>{agent.error.message}</p>{agent.error.requestId && <p>请求编号：{agent.error.requestId}</p>}<div className="agent-actions">{agent.error.status === 401 && <Link to="/login" onClick={onClose}>重新登录</Link>}{agent.canResend && <button className="agent-button" disabled={agent.busy} onClick={() => void agent.resend()}>重发同一次操作</button>}{agent.runId && <button className="agent-button" onClick={agent.refresh}>恢复查询</button>}</div></div>}
           {!run && !agent.runId && <div className="agent-empty"><h3>粘贴岗位描述开始分析</h3><p>你将看到岗位要求与简历原文的对应关系。信息不足时先补充事实，完成后逐条核对建议。</p><p>原简历保持原样，直到你确认应用。</p></div>}
           {agent.runId && !run && !agent.error && <p role="status" className="agent-muted">正在查询服务端任务记录…</p>}
           {run && <>
             <EvidenceList run={run} />
             {run.status === 'awaiting_input' && <section className="agent-panel"><h2>补充事实后继续</h2><p className="agent-muted">不确定的指标可以直接说“不清楚”，没有做过的事情也可以如实说明。</p><form onSubmit={event => { event.preventDefault(); void agent.answer(); }}>{run.questions.map(question => <div className="agent-question" key={question.id}><label htmlFor={`${inputId}-${question.id}`}>{question.question}</label><textarea id={`${inputId}-${question.id}`} value={agent.drafts[question.id] ?? question.answer ?? ''} onChange={event => agent.setDraft(question.id, event.target.value)} rows={3} maxLength={2000} disabled={agent.busy} required /><div className="agent-actions"><button type="button" className="agent-button" onClick={() => agent.setDraft(question.id, '没有做过')}>没有做过</button><button type="button" className="agent-button" onClick={() => agent.setDraft(question.id, '不清楚，无法提供可靠指标')}>不清楚</button></div></div>)}<button className="agent-button agent-primary" disabled={agent.busy}>{agent.busy ? '正在提交…' : '提交全部回答并继续'}</button></form></section>}
-            {run.status === 'failed' && <section className="agent-error" role="alert"><h2>分析暂未完成</h2><p>{run.error?.code === 'MODEL_TIMEOUT' ? '模型响应超时。原简历保持原样，可手动重试。' : '执行步骤失败，请查看轨迹并重试，或联系后端核对请求。'}</p><p>错误代码：{run.error?.code ?? 'UNKNOWN'}</p>{run.error?.retryable && <button className="agent-button" disabled={agent.busy} onClick={() => void agent.retry()}>重试失败步骤</button>}</section>}
+            {run.status === 'failed' && <section className="agent-error" role="alert"><h2>分析暂未完成</h2><p>{failureMessage(run)}</p><p>错误代码：{run.error?.code ?? 'UNKNOWN'}</p>{run.error?.retryable && <button className="agent-button" disabled={agent.busy} onClick={() => void agent.retry()}>重试失败步骤</button>}</section>}
             {run.status === 'completed' && <section className="agent-panel"><h2>核对修改建议</h2><p className="agent-muted">完成分析不代表已经修改简历。勾选你认可的内容，再确认应用。</p>
               {!run.changes.length ? <p className="agent-notice">没有可应用的修改。可补充真实经历后重新分析；不会从岗位描述中补造技能。</p> : <>
                 {!showChanges && <button className="agent-button" onClick={() => setShowChanges(true)}>查看 {run.changes.length} 条修改建议</button>}
