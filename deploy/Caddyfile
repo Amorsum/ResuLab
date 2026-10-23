@@ -1,0 +1,12 @@
+{$SITE_ADDRESS:http://localhost} {
+    encode gzip
+    handle /api/agent/* {
+        reverse_proxy api:8788
+    }
+    handle /api/health {
+        reverse_proxy api:8788
+    }
+    handle {
+        reverse_proxy frontend:8080
+    }
+}
