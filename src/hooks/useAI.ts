@@ -4,7 +4,7 @@
  */
 import { useAuth } from './useAuth';
 
-const AI_API_BASE = 'https://api.amorsum.top';
+const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, '');
 
 export interface MembershipStatus {
   tier: 'free' | 'pro';

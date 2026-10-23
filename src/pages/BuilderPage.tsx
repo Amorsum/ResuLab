@@ -10,12 +10,14 @@ import { PreviewPanel } from '../components/preview/PreviewPanel';
 import MobileBuilderBar from '../components/preview/MobileBuilderBar';
 import OnboardingOverlay from '../components/onboarding/OnboardingOverlay';
 import UserMenu from '../components/layout/UserMenu';
+import { AgentWorkspace } from '../components/agent/AgentWorkspace';
 
 export default function BuilderPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const { resume, setTemplate, setFontSize, setLineHeight, setPageMargin, undo, redo } = useResume();
   const navigate = useNavigate();
   const initialized = useRef(false);
+  const [agentOpen, setAgentOpen] = useState(() => new URLSearchParams(window.location.search).get('agent') === '1');
 
   // 移动端视图切换
   const [mobileView, setMobileView] = useState<'form' | 'preview'>('form');
@@ -23,6 +25,8 @@ export default function BuilderPage() {
   // 键盘快捷键：Ctrl+Z 撤销，Ctrl+Y 重做
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable="true"]')) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -127,7 +131,7 @@ export default function BuilderPage() {
   }, [previewRef, resume, setFontSize, setLineHeight, setPageMargin]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
+    <div className={`h-screen flex flex-col overflow-hidden bg-gray-100 ${agentOpen ? 'agent-background-hidden' : ''}`}>
       {/* ========== 顶部导航栏 ========== */}
       <header className="flex-shrink-0 h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-10">
         <Link to="/" className="flex items-center gap-1.5 text-base font-bold text-primary-700">
@@ -139,6 +143,7 @@ export default function BuilderPage() {
         </Link>
 
         <div className="flex items-center gap-3">
+          <button onClick={() => setAgentOpen(true)} className="min-h-10 px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100">针对岗位优化</button>
           {saveMsg && (
             <span className={`text-xs ${saveMsg.includes('失败') ? 'text-red-500' : 'text-green-600'}`}>
               {saveMsg}
@@ -213,6 +218,7 @@ export default function BuilderPage() {
 
       {/* ========== 首次使用引导 ========== */}
       <OnboardingOverlay />
+      <AgentWorkspace open={agentOpen} onClose={() => setAgentOpen(false)} onPreview={() => { setAgentOpen(false); setMobileView('preview'); }} />
     </div>
   );
 }

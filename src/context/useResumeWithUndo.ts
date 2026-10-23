@@ -26,6 +26,7 @@ export function useResumeWithUndo(reducer: Reducer<ResumeData, ResumeAction>, in
     switch (a.type) {
       case 'DISPATCH': {
         const nextPresent = reducer(state.present, a.action);
+        if (nextPresent === state.present) return state;
         if (a.skipHistory) {
           return { ...state, present: nextPresent };
         }
