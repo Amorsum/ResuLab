@@ -3,6 +3,16 @@ dist/
 .DS_Store
 *.local
 .env
+.env.*
+!.env.example
+!**/.env.example
+.dev.vars
+.dev.vars.*
+server/node_modules/
+server/dist/
+server/.env
+deploy/.env
+docs/competition/results/private/
 
 # Cloudflare Workers local state
 workers/node_modules/
