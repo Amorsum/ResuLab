@@ -1,4 +1,4 @@
-import { createContext, useEffect, useRef, useMemo } from 'react';
+import { createContext, useEffect, useRef, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ResumeData } from '../types/resume';
 import type { ResumeAction } from './resumeReducer';
@@ -17,6 +17,7 @@ interface ResumeContextValue {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  saveStatus: 'saving' | 'saved' | 'error';
 }
 
 export const ResumeContext = createContext<ResumeContextValue | null>(null);
@@ -54,6 +55,7 @@ function loadFromStorage(): ResumeData | null {
 }
 
 export function ResumeProvider({ children }: { children: ReactNode }) {
+  const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'error'>('saved');
   const loaded = loadFromStorage();
   const {
     state,
@@ -65,24 +67,35 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
   } = useResumeWithUndo(resumeReducer, loaded || DEFAULT_RESUME);
 
   const value = useMemo(
-    () => ({ state, dispatch, undo, redo, canUndo, canRedo }),
-    [state, dispatch, undo, redo, canUndo, canRedo]
+    () => ({ state, dispatch, undo, redo, canUndo, canRedo, saveStatus }),
+    [state, dispatch, undo, redo, canUndo, canRedo, saveStatus]
   );
 
   // 防抖写入 localStorage
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
+    setSaveStatus('saving');
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
+    const persist = () => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        setSaveStatus('saved');
       } catch {
-        // localStorage 满了
+        setSaveStatus('error');
       }
-    }, 300);
+    };
+    timerRef.current = setTimeout(persist, 300);
+    const leave = (event: BeforeUnloadEvent) => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', leave);
+    window.addEventListener('pagehide', persist);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      window.removeEventListener('beforeunload', leave);
+      window.removeEventListener('pagehide', persist);
     };
   }, [state]);
 

@@ -1,0 +1,7 @@
+{
+    admin 127.0.0.1:2019
+}
+http://:80 {
+    encode gzip
+    reverse_proxy 127.0.0.1:8788
+}

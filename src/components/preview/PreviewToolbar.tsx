@@ -75,12 +75,12 @@ export default function PreviewToolbar({
 
   const zoomOut = () => onScaleChange(Math.max(0.4, scale - 0.1));
   const zoomIn = () => onScaleChange(Math.min(1.5, scale + 0.1));
-  const zoomReset = () => onScaleChange(1.1);
+  const zoomReset = () => onScaleChange(1);
 
   return (
-    <div className="bg-white border-b border-gray-200">
+    <div className="preview-toolbar bg-white border-b border-gray-200">
       {/* ===== 主工具栏 ===== */}
-      <div className="flex items-center justify-between px-5 py-2 gap-3 flex-wrap">
+      <div className="preview-toolbar-main flex items-center justify-between px-5 py-2 gap-3 flex-wrap">
         {/* 左侧：模板 + 主题色 */}
         <div id="toolbar-templates" className="flex items-center gap-2">
           <span className="text-xs text-gray-400 shrink-0">模板</span>
@@ -98,19 +98,6 @@ export default function PreviewToolbar({
             </button>
           ))}
 
-          <span className="w-px h-5 bg-gray-200 mx-1" />
-
-          {ACCENT_PRESETS.map(({ color, name }) => (
-            <button
-              key={color}
-              onClick={() => setAccentColor(color)}
-              title={name}
-              className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 ${
-                resume.accentColor === color ? 'border-gray-700 scale-110' : 'border-gray-200'
-              }`}
-              style={{ backgroundColor: color }}
-            />
-          ))}
         </div>
 
         {/* 中间：智能功能 */}
@@ -167,6 +154,7 @@ export default function PreviewToolbar({
           {/* 排版设置切换 */}
           <button
             onClick={() => setShowSettings(!showSettings)}
+            aria-expanded={showSettings}
             className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
               showSettings
                 ? 'bg-gray-100 text-gray-700 border-gray-300'
@@ -187,7 +175,7 @@ export default function PreviewToolbar({
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
             </svg>
           </button>
-          <button onClick={zoomReset} className="text-xs text-gray-500 w-9 text-center hover:text-gray-700">
+          <button onClick={zoomReset} title="恢复 100% 显示" className="text-xs text-gray-500 w-9 text-center hover:text-gray-700">
             {Math.round(scale * 100)}%
           </button>
           <button onClick={zoomIn} className="p-0.5 text-gray-400 hover:text-gray-600" title="放大">
@@ -199,6 +187,7 @@ export default function PreviewToolbar({
           <div id="toolbar-export" className="relative" ref={exportMenuRef}>
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
+              aria-expanded={showExportMenu}
               disabled={isExporting}
               className="btn-primary text-sm flex items-center gap-1"
             >
@@ -230,6 +219,7 @@ export default function PreviewToolbar({
                   </svg>
                   Word 文档 (.docx)
                 </button>
+                <p className="px-4 py-2 text-xs text-gray-500 max-w-[240px]">PDF 固定版式，当前为图片型；需要可编辑、可复制的正文或机器解析时请选择 Word。</p>
               </div>
             )}
           </div>
@@ -249,6 +239,20 @@ export default function PreviewToolbar({
       {/* ===== 排版设置面板（可折叠） ===== */}
       {showSettings && (
         <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="flex items-center gap-2"><span className="text-xs text-gray-400">主题色</span>
+
+          {ACCENT_PRESETS.map(({ color, name }) => (
+            <button
+              key={color}
+              onClick={() => setAccentColor(color)}
+              title={name} aria-label={name}
+              className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 ${
+                resume.accentColor === color ? 'border-gray-700 scale-110' : 'border-gray-200'
+              }`}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+</div>
           {/* 字体 */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-gray-400">字体</span>

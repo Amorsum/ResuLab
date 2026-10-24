@@ -38,7 +38,7 @@ export const TEMPLATES: Record<TemplateId, TemplateMeta> = {
   professional: {
     id: 'professional',
     name: '专业模板',
-    description: '单栏布局，ATS 解析友好，适合正式求职申请',
+    description: '单栏布局，重点清晰，适合正式求职申请',
     component: lazy(() => import('../templates/professional/ProfessionalTemplate')),
     color: '#1f2937',
     hasPhoto: true,

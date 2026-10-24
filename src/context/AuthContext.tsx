@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { aiRequest } from '../utils/aiApi';
 
 // ===================== Types =====================
 
@@ -93,20 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** 注销账号 */
   const deleteAccount = useCallback(async () => {
-    // 先删除云端简历数据
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
-      await supabase.from('resumes').delete().eq('user_id', session.user.id);
+    if (!session?.access_token) return { error: '请先登录' };
+    try {
+      const base = (import.meta.env.VITE_AI_API_BASE ?? 'https://api.amorsum.top').trim().replace(/\/$/, '');
+      await aiRequest(base, '/api/account/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ confirmation: '确认注销' }) }, '账号注销未完成，请稍后重试');
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : '账号注销未完成，请稍后重试' };
     }
-    // 调用 Supabase 的 deleteUser（需要通过 Edge Function 或 Admin API）
-    // 前端无法直接删除用户，改用请求服务端
-    const { error } = await supabase.rpc('delete_user_account');
-    if (error) {
-      // 如果 RPC 不存在，尝试用 Admin API 的方式
-      console.error('注销账号失败:', error);
-      return { error: '注销功能需要后端支持，请联系管理员' };
-    }
-    return { error: null };
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {

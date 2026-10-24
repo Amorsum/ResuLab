@@ -4,6 +4,7 @@ import {
   CareerValidationError,
 } from './career.js';
 import { cosmeticContent, RESUME_WRITER_VERSION, RESUME_WRITING_RULES } from './resumeWritingSkill.js';
+import { checkFactualClaims } from './factualGuards.js';
 
 export const selectionInstruction = `${RESUME_WRITING_RULES}
 先分析JD并选材，暂不改写简历。返回严格JSON：
@@ -91,6 +92,7 @@ export function assembleCareer(value: unknown, facts: CareerFact[], plan: Career
     const sources = resolveSources(edit.sourceIds, catalog, path + '.sourceIds', factId);
     ensure(sources.length > 0, 'source_required', path + '.sourceIds');
     checkNumbers(after, sources, path + '.after');
+    checkFactualClaims(after, sources, path + '.after');
     ensure(cosmeticContent(before) !== cosmeticContent(after), 'cosmetic_only_change', path + '.after');
     return { factId, field, before: structuredClone(before), after, reason: text(edit.reason, path + '.reason', 1200, 1), sources };
   });
@@ -99,11 +101,19 @@ export function assembleCareer(value: unknown, facts: CareerFact[], plan: Career
   const summarySources = resolveSources(summary.sourceIds, catalog, '$.summary.sourceIds');
   ensure(summaryText.trim() ? summarySources.length > 0 : summarySources.length === 0, 'summary_sources', '$.summary');
   checkNumbers(summaryText, summarySources, '$.summary.text');
+  checkFactualClaims(summaryText, summarySources, '$.summary.text');
   const snapshot: CareerSnapshot = { education: [], workExperience: [], projects: [], skills: [], certificates: [], languages: [], selfEvaluation: summaryText };
   for (const fact of selected) {
     const item = structuredClone(fact.data);
     for (const edit of edits.filter((edit) => edit.factId === fact.id)) Object.assign(item, { [edit.field]: structuredClone(edit.after) });
     (snapshot[fact.section] as typeof item[]).push(item);
+  }
+  // Education is essential context for a student's first application, even when a JD
+  // doesn't explicitly demand a degree. Retain only confirmed, included source records.
+  if (selected.length && !snapshot.education.length) {
+    snapshot.education = facts.filter(fact => fact.section === 'education')
+      .map(fact => structuredClone(fact.data) as CareerSnapshot['education'][number])
+      .sort((a, b) => b.startDate.localeCompare(a.startDate)).slice(0, 2);
   }
   snapshot.workExperience.sort((a, b) => b.startDate.localeCompare(a.startDate));
   snapshot.education.sort((a, b) => b.startDate.localeCompare(a.startDate));

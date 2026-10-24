@@ -7,13 +7,28 @@ export interface LibrarySource {
   resume: ResumeData; confirmed: boolean; included: boolean; doNotClaim: string; originalText: string;
 }
 export interface LibraryDraft {
-  id: string; title: string; jdText: string; createdAt: number; kind: 'tailored' | 'editor-backup';
+  id: string; title: string; jdText: string; createdAt: number; kind: 'tailored' | 'editor-backup' | 'saved';
   resume: ResumeData; result?: CareerResult;
 }
 export interface CareerLibrary {
   ownerId: string; version: 1; revision: number; updatedAt: number; sources: LibrarySource[]; drafts: LibraryDraft[];
 }
 export const emptyLibrary = (ownerId: string): CareerLibrary => ({ ownerId, version: 1, revision: 0, updatedAt: Date.now(), sources: [], drafts: [] });
+export const libraryOwner = (userId?: string) => userId || 'local-guest';
+
+/** Deselecting a rewrite restores the source, while keeping role-specific selection/order. */
+export function reviewedCareerResume(draft: LibraryDraft, selected: string[], summary: boolean): ResumeData {
+  const next = structuredClone(draft.resume);
+  if (!draft.result) return next;
+  for (const edit of draft.result.edits) {
+    for (const section of CAREER_SECTIONS) {
+      const row = next[section].find(item => item.id === edit.factId);
+      if (row) Object.assign(row, { [edit.field]: structuredClone(selected.includes(`${edit.factId}:${edit.field}`) ? edit.after : edit.before) });
+    }
+  }
+  next.selfEvaluation = summary ? draft.result.snapshot.selfEvaluation : '';
+  return next;
+}
 
 export type LibrarySkillReview = Record<string, { include: boolean; level: SkillLevel | '' }>;
 /** Extraction cannot establish proficiency; retained skills require a separate human choice. */

@@ -11,6 +11,7 @@ const configSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
+  STATIC_ROOT: z.string().optional(),
   ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
@@ -24,7 +25,6 @@ const configSchema = z.object({
   MAX_MODEL_CALLS_PER_RUN: integer(6, 20),
   MAX_MODEL_RETRIES: z.coerce.number().int().min(0).max(2).default(1),
   MAX_PENDING_RUNS_PER_USER: integer(3, 20),
-  MAX_DAILY_RUNS_PER_USER: integer(20, 1000),
   MODEL_INPUT_PRICE_PER_MILLION: price,
   MODEL_OUTPUT_PRICE_PER_MILLION: price,
   MODEL_CURRENCY: z.string().min(1).max(12).default("CNY"),

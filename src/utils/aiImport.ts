@@ -51,7 +51,7 @@ export interface AIImportPlan {
   items: Pick<ResumeData, ArraySectionName>;
   skipped: number;
 }
-export function prepareAIImport(raw: unknown, resume: ResumeData): AIImportPlan {
+export function prepareAIImport(raw: unknown, resume: ResumeData, faithful = false): AIImportPlan {
   const input = record(raw);
   if (!Object.keys(input).length) throw new Error('AI 返回的数据无效，请重新生成');
   const empty = createEmptyResume();
@@ -66,7 +66,8 @@ export function prepareAIImport(raw: unknown, resume: ResumeData): AIImportPlan 
     for (const value of values) {
       const safe = sanitize(value, defaults[section], section);
       if (!Object.values(safe).some(v => typeof v === 'string' ? v.length > 0 : Array.isArray(v) && v.length > 0)) { plan.skipped++; continue; }
-      const item = { ...defaults[section], ...safe, id: generateId() };
+      const unknowns = faithful ? section === 'education' ? { degree: '' } : section === 'skills' || section === 'languages' ? { level: '' } : {} : {};
+      const item = { ...defaults[section], ...unknowns, ...safe, id: generateId() };
       const key = signature(item);
       if (seen.has(key)) { plan.skipped++; continue; }
       seen.add(key);

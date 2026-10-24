@@ -1,3 +1,4 @@
+import AppHeader from '../components/layout/AppHeader';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCloudResumes } from '../hooks/useCloudResumes';
@@ -78,21 +79,9 @@ export default function MyResumesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="studio-utility-page min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* 导航栏 */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary-700">
-            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            ResuLab
-          </Link>
-        </div>
-      </nav>
+      <AppHeader />
 
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* 页头 */}
@@ -121,7 +110,7 @@ export default function MyResumesPage() {
         {/* 空状态 */}
         {!loading && resumes.length === 0 && !error && (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">📄</div>
+            <div className="empty-document-icon" aria-hidden="true">▱</div>
             <h2 className="text-xl font-semibold text-gray-700 mb-2">还没有简历</h2>
             <p className="text-gray-500 mb-6">创建你的第一份简历，或从本地导入</p>
             <button onClick={handleNew} className="btn-primary">

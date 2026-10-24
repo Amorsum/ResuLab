@@ -35,7 +35,7 @@ services:
       args:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
-        VITE_AI_API_BASE: ${VITE_AI_API_BASE:-https://api.amorsum.top}
+        VITE_AI_API_BASE: ${VITE_AI_API_BASE:-}
         VITE_AGENT_API_BASE: ${VITE_AGENT_API_BASE:-}
     restart: unless-stopped
     mem_limit: 128m

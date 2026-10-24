@@ -1,140 +1,33 @@
-import { useNavigate } from 'react-router-dom';
-import { TEMPLATE_LIST } from '../constants/templates';
+import { Link } from 'react-router-dom';
+import AppHeader from '../components/layout/AppHeader';
 import { useResume } from '../hooks/useResume';
-import UserMenu from '../components/layout/UserMenu';
-import type { TemplateId } from '../types/resume';
-
-const isTauriApp = '__TAURI_INTERNALS__' in window;
 
 export default function HomePage() {
-  const navigate = useNavigate();
-  const { setTemplate } = useResume();
-
-  const handleStart = (templateId?: TemplateId) => {
-    if (templateId) setTemplate(templateId);
-    navigate(templateId ? `/builder/${templateId}` : '/builder');
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 text-xl font-bold text-primary-700">
-            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10,9 9,9 8,9"/>
-            </svg>
-            ResuLab
-          </a>
-          <UserMenu />
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
-        <h1 className="text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-          打造专业简历
-          <br />
-          <span className="text-primary-600">赢在求职起跑线</span>
-        </h1>
-        <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto">
-          只需填写信息，选择模板，即可生成一份排版精美、重点突出的专业简历。完全免费，注册后可云端保存。
-        </p>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          <button onClick={() => handleStart('classic')} className="btn-primary text-lg px-8 py-3">
-            立即制作简历
-          </button>
-          <button onClick={() => navigate('/builder')} className="btn-secondary text-lg px-8 py-3">
-            预览模板
-          </button>
-        </div>
-        {/* 下载按钮 — Tauri App 内不显示 */}
-        {!isTauriApp && (
-        <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
-          {/* Windows — 桌面端显示 */}
-          <a
-            href="https://github.com/Amorsum/ResuLab/releases/latest/download/ResuLab_Setup.exe"
-            download
-            className="hidden sm:inline-flex items-center gap-1.5 btn-secondary text-sm px-5 py-2.5 !bg-gray-900 !text-white !border-gray-900 hover:!bg-gray-800"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            下载 Windows 版
-          </a>
-          {/* Android — 所有端显示 */}
-          <a
-            href="https://github.com/Amorsum/ResuLab/releases/latest/download/ResuLab.apk"
-            download
-            className="inline-flex items-center gap-1.5 btn-secondary text-sm px-5 py-2.5 !bg-green-600 !text-white !border-green-600 hover:!bg-green-700"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="5" y="2" width="14" height="20" rx="2"/>
-              <line x1="12" y1="18" x2="12" y2="18.01"/>
-            </svg>
-            下载 Android 版
-          </a>
-        </div>
-        )}
+  const { resume } = useResume();
+  const hasContent = Boolean(resume.personalInfo.fullName || resume.projects.length || resume.education.length || resume.workExperience.length);
+  const project = resume.projects[0];
+  const education = resume.education[0];
+  return <div className="personal-home">
+    <AppHeader />
+    <main className="personal-workspace">
+      <div className="workspace-heading"><div><span className="eyebrow">YOUR PERSONAL RESUME STUDIO</span><h1>把经历，写成机会<span>。</span></h1><p>从真实的你出发，准备下一份有针对性的简历。</p></div><span className="workspace-label"><i />我的工作台</span></div>
+      <section className="workspace-current" aria-label="当前简历">
+        <div className="workspace-current-copy"><span className="eyebrow">CURRENT DOCUMENT <span> / 01</span></span><h2>{hasContent ? resume.personalInfo.fullName || '未命名简历' : '你的第一份简历'}</h2><p>{resume.jobIntention.desiredPosition || (hasContent ? '添加一个目标岗位，让表达更有方向。' : '导入已有简历，或从一段课程、项目经历开始。')}</p><div className="workspace-counts"><span><b>{resume.education.length.toString().padStart(2,'0')}</b>教育经历</span><span><b>{resume.projects.length.toString().padStart(2,'0')}</b>项目 / 实践</span><span><b>{resume.workExperience.length.toString().padStart(2,'0')}</b>实习 / 工作</span></div><Link className="studio-cta" to="/builder">{hasContent ? '继续编辑简历' : '开始整理简历'}<span aria-hidden="true">↗</span></Link><small>本机自动保存 · 随时继续</small></div>
+        <div className="workspace-document" aria-label="当前内容概览"><div className="document-caption"><span>内容预览</span><span>RESUME / A4</span></div><div className="document-sheet"><span className="document-kicker">个人简历</span><h3>{resume.personalInfo.fullName || '你的姓名'}</h3><p>{resume.jobIntention.desiredPosition || '你的目标岗位'}</p><div className="document-rule"/><h4>教育背景</h4><strong>{education?.schoolName || '从你的教育经历开始'}</strong><p>{education ? [education.degree,education.major].filter(Boolean).join(' · ') : '学校、专业，以及与你有关的成长。'}</p><h4>项目与实践</h4><strong>{project?.projectName || '每一段实践，都有价值'}</strong><p className="document-excerpt">{project?.description || '写下做过的事、用过的方法和真实的收获，再针对目标岗位整理表达。'}</p><div className="document-folio">RESULAB<span>01</span></div></div></div>
       </section>
-
-      {/* 模板展示 */}
-      <section className="max-w-5xl mx-auto px-6 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">多套精美模板</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {TEMPLATE_LIST.map((tpl) => (
-            <div
-              key={tpl.id}
-              className="section-card hover:shadow-md transition-shadow cursor-pointer group"
-              onClick={() => handleStart(tpl.id)}
-            >
-              <div
-                className="h-48 rounded-lg mb-4 flex items-center justify-center text-white font-bold text-lg"
-                style={{ backgroundColor: tpl.color }}
-              >
-                {tpl.name}
-              </div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-                {tpl.name}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">{tpl.description}</p>
-              <button className="mt-4 text-sm text-primary-600 font-medium group-hover:underline">
-                使用此模板 →
-              </button>
-            </div>
-          ))}
+      <section className="feature-directory" aria-labelledby="feature-heading" id="features">
+        <div className="workspace-section-heading"><h2 id="feature-heading">全部功能</h2><span>任何页面都可通过顶部「首页」回到这里</span></div>
+        <div className="workspace-actions">
+          <Link to="/builder"><div className="action-top"><span className="action-symbol" aria-hidden="true">▤</span><span className="feature-status">本机可用 · AI 需登录</span></div><h2>编辑、导入与导出</h2><p>手动填写简历，或读取 PDF / Word / 文本后用 AI 提取并核对。选择模板，实时预览并导出。</p><ul className="feature-tags"><li>四种模板</li><li>字体与排版</li><li>PDF / Word 导出</li><li>撤销与重做</li></ul><b>打开简历编辑器 <span aria-hidden="true">↗</span></b></Link>
+          <Link to="/library"><div className="action-top"><span className="action-symbol" aria-hidden="true">≡</span><span className="feature-status">本机可用 · AI 需登录</span></div><h2>经历库与定向写作</h2><p>记录课程、项目、校园和工作经历，确认事实后，按岗位名称或完整 JD 生成独立简历。</p><ul className="feature-tags"><li>学生经历引导</li><li>事实确认</li><li>逐条改写审核</li></ul><b>打开经历库 <span aria-hidden="true">↗</span></b></Link>
+          <Link to="/builder?agent=1"><div className="action-top"><span className="action-symbol" aria-hidden="true">✳</span><span className="feature-status">AI 分析需登录</span></div><h2>针对岗位优化</h2><p>分析当前简历与岗位的联系，查看匹配证据和缺口，核对建议后再应用到简历。</p><ul className="feature-tags"><li>岗位分析</li><li>改写对照</li><li>选择应用建议</li></ul><b>打开岗位优化 <span aria-hidden="true">↗</span></b></Link>
+          <Link to="/jobs"><div className="action-top"><span className="action-symbol" aria-hidden="true">↗</span><span className="feature-status feature-preview">BOSS 接入待验证</span></div><h2>求职工作台</h2><p>导入岗位 JD、匹配已确认经历，逐岗生成专用 PDF 并审核。AI 匹配与生成需登录。</p><ul className="feature-tags"><li>手动导入 JD</li><li>岗位匹配</li><li>专用简历审核</li></ul><p className="feature-limitation">扩展搜索待实站验证；自动沟通及附件发送暂不可用。</p><b>打开求职工作台 <span aria-hidden="true">↗</span></b></Link>
+          <Link to="/library#versions"><div className="action-top"><span className="action-symbol" aria-hidden="true">▱</span><span className="feature-status">本机可用</span></div><h2>本地版本与备份</h2><p>查看定制简历、另存的岗位版本和切换前备份。经历库支持导出与恢复备份。</p><ul className="feature-tags"><li>独立岗位版本</li><li>打开继续编辑</li><li>备份与恢复</li></ul><b>查看本地版本 <span aria-hidden="true">↗</span></b></Link>
+          <Link to="/my-resumes"><div className="action-top"><span className="action-symbol" aria-hidden="true">☁</span><span className="feature-status">需登录</span></div><h2>云端简历管理</h2><p>管理已保存到账号的简历，打开继续编辑或新建版本。在编辑器中手动保存到云端。</p><ul className="feature-tags"><li>云端保存</li><li>版本管理</li><li>账号访问</li></ul><b>查看云端简历 <span aria-hidden="true">↗</span></b></Link>
         </div>
       </section>
-
-      {/* 功能亮点 */}
-      <section className="max-w-5xl mx-auto px-6 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">为什么选择 ResuLab</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { icon: '👁️', title: '实时预览', desc: '填写即渲染，所见即所得' },
-            { icon: '🎨', title: '多套模板', desc: '经典/现代/极简 一键切换' },
-            { icon: '📄', title: '导出 PDF', desc: '高清矢量输出，支持多页' },
-            { icon: '💾', title: '自动保存', desc: '数据保存在浏览器，随时回来' },
-          ].map((feat) => (
-            <div key={feat.title} className="text-center p-6">
-              <div className="text-4xl mb-3">{feat.icon}</div>
-              <h3 className="font-semibold text-gray-900 mb-1">{feat.title}</h3>
-              <p className="text-sm text-gray-500">{feat.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
-        <p>ResuLab — 智能简历制作平台 &copy; {new Date().getFullYear()}</p>
-      </footer>
-    </div>
-  );
+      <aside className="extension-home-entry"><div><strong>浏览器扩展 · 求职助手</strong><p>下载 Edge / Chrome 安装包，查看安装方法与当前支持能力。</p></div><Link to="/extension">下载扩展与安装说明 ↗</Link></aside>
+      <footer className="workspace-footer"><span>ResuLab — 留下真实，写出可能。</span><span>本机编辑自动保存 · 云端同步需登录</span></footer>
+    </main>
+  </div>;
 }

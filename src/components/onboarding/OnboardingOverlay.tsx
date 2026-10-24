@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 
 const ONBOARDING_KEY = 'resulab_onboarding_done';
 
@@ -42,19 +43,20 @@ const STEPS: Step[] = [
 
 export default function OnboardingOverlay() {
   // 如果已完成引导或不在编辑器页面，不渲染
-  if (localStorage.getItem(ONBOARDING_KEY)) return null;
+  const [finished, setFinished] = useState(() => Boolean(localStorage.getItem(ONBOARDING_KEY)));
+  if (finished) return null;
 
-  return <OnboardingContent />;
+  return <OnboardingContent onFinish={() => setFinished(true)} />;
 }
 
-function OnboardingContent() {
+function OnboardingContent({ onFinish }: { onFinish: () => void }) {
   const [step, setStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   const updateTarget = useCallback(() => {
     const sel = STEPS[step]?.selector;
     if (!sel) { setTargetRect(null); return; }
-    const el = document.querySelector(sel);
+    const el = [...document.querySelectorAll(sel)].find(element => element.getBoundingClientRect().width > 0);
     if (el) {
       setTargetRect(el.getBoundingClientRect());
     } else {
@@ -71,8 +73,7 @@ function OnboardingContent() {
 
   const finish = () => {
     localStorage.setItem(ONBOARDING_KEY, 'true');
-    // Force re-render by unmounting — the parent check handles this
-    window.location.reload();
+    onFinish();
   };
 
   const next = () => {
@@ -95,7 +96,7 @@ function OnboardingContent() {
   const tooltipStyle: React.CSSProperties = {};
   const arrowStyle: React.CSSProperties = {};
 
-  if (rect) {
+  if (rect && window.innerWidth >= 1024) {
     const gap = 12;
     switch (s.placement) {
       case 'bottom':
@@ -145,13 +146,15 @@ function OnboardingContent() {
     }
   }
 
+  if (!rect || window.innerWidth < 1024) Object.assign(tooltipStyle, { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100% - 32px)' });
   return (
     <div className="fixed inset-0 z-[9999]">
       {/* 半透明遮罩 */}
       <div className="absolute inset-0 bg-black/50" />
+      <div className="onboarding-exits"><Link to="/" onClick={finish}>返回首页</Link><button onClick={finish}>关闭引导</button></div>
 
       {/* 高亮的目标区域（镂空） */}
-      {rect && (
+      {rect && window.innerWidth >= 1024 && (
         <div
           className="absolute bg-white ring-4 ring-primary-400 rounded-lg"
           style={{
@@ -165,13 +168,13 @@ function OnboardingContent() {
       )}
 
       {/* Tooltip */}
-      {rect && (
+      {(
         <div
           className="absolute bg-white rounded-xl shadow-2xl p-5 max-w-xs z-10"
           style={tooltipStyle}
         >
           {/* 箭头 */}
-          <div className="absolute w-0 h-0" style={arrowStyle} />
+          {rect && window.innerWidth >= 1024 && <div className="absolute w-0 h-0" style={arrowStyle} />}
 
           <h3 className="font-semibold text-gray-900 mb-1">{s.title}</h3>
           <p className="text-sm text-gray-500 mb-4">{s.description}</p>

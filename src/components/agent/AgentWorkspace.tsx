@@ -7,6 +7,7 @@ import { useResume } from '../../hooks/useResume';
 import { useAuth } from '../../hooks/useAuth';
 import { isFormattingOnlyChange, prepareAgentApplication, validateAgentChanges } from '../../utils/agentChanges';
 import './agent.css';
+import { jobTarget } from '../../../shared/targetJob';
 
 const statuses: Record<string, string> = { queued: '排队中', running: '分析中', awaiting_input: '等待你补充', completed: '建议已生成', failed: '分析失败' };
 const stepStatuses: Record<string, string> = { queued: '待执行', running: '执行中', completed: '已完成', failed: '失败' };
@@ -18,7 +19,7 @@ function failureMessage(run: RunView): string {
     case 'MODEL_SCHEMA_INVALID': return '模型输出未通过结构校验，本次没有应用任何建议。请将任务编号交给后端排查；修复后可重试失败步骤。';
     case 'MODEL_TIMEOUT': return '模型响应超时。原简历保持原样，可手动重试。';
     case 'TOOL_RESULT_INVALID': return '模型结果的引用或事实校验未通过，本次没有应用任何建议。请将任务编号交给后端核对。';
-    case 'BUDGET_EXHAUSTED': return '当前任务已达到模型调用预算，请联系后端检查失败原因后再开始新分析。';
+    case 'BUDGET_EXHAUSTED': return '本次任务的自动尝试已停止。请查看失败步骤，调整材料后重新分析。';
     default: return '执行步骤失败，请查看轨迹并重试，或将任务编号交给后端核对。';
   }
 }
@@ -39,11 +40,15 @@ function EvidenceList({ run }: { run: RunView }) {
     {!run.requirements.length && <p className="agent-muted">解析完成后，这里会列出岗位要求及对应的原文证据。</p>}
     {run.requirements.map(requirement => {
       const evidence = run.evidence.find(item => item.requirementId === requirement.id);
+      const questions = run.questions.filter(question => question.requirementId === requirement.id && question.answer?.trim());
+      const usedAnswers = questions.filter(question => run.changes.some(change => change.sources.some(source => source.kind === 'answer' && source.refId === question.id)));
       return <article className="agent-evidence" key={requirement.id}>
-        <div className="agent-row"><h3>{requirement.text}</h3><span className={`agent-status ${evidence?.coverage === 'missing' ? 'agent-warning' : ''}`}>{evidence ? coverage[evidence.coverage] : '待匹配'}</span></div>
+        <div className="agent-row"><h3>{requirement.text}</h3><span className={`agent-status ${evidence?.coverage === 'missing' && !usedAnswers.length ? 'agent-warning' : ''}`}>{usedAnswers.length ? '回答已提供依据' : evidence ? coverage[evidence.coverage] : '待匹配'}</span></div>
         <p className="agent-muted">岗位原文</p><blockquote>{requirement.jdQuote}</blockquote>
         {evidence?.refs.map(ref => <div key={ref.id}><p className="agent-muted">简历原文 · {sections[ref.section] ?? '简历内容'}</p><blockquote>{ref.quote}</blockquote></div>)}
-        {evidence?.coverage === 'missing' && <p className="agent-muted">当前简历没有对应事实，不会将岗位要求直接写成你的技能。</p>}
+        {usedAnswers.map(question => <div key={question.id}><p className="agent-muted">本次补充 · 已被修改建议引用，仍需本人核对</p><blockquote>{question.answer}</blockquote></div>)}
+        {evidence?.coverage === 'missing' && !usedAnswers.length && <p className="agent-muted">分析时的简历没有对应事实，不会将岗位要求直接写成你的技能。</p>}
+        {!usedAnswers.length && questions.map(question => <blockquote key={question.id}>你的回答：{question.answer}</blockquote>)}
       </article>;
     })}
   </section>;
@@ -96,24 +101,24 @@ export function AgentWorkspace({ open, onClose, onPreview }: { open: boolean; on
   const accountRef = useRef(userId); accountRef.current = userId;
   useEffect(() => { setJd(''); setFeedback(''); setApplyError(''); }, [userId]);
   const inProgress = run?.status === 'running' || run?.status === 'queued';
-  const creationBlocked = agent.busy || agent.authLoading || !agent.authenticated || Boolean(agent.configError) || jd.trim().length < 10;
+  const creationBlocked = agent.busy || agent.authLoading || !agent.authenticated || Boolean(agent.configError) || jd.trim().length < 2;
   return <dialog ref={dialog} className="agent-dialog" aria-labelledby="agent-title" onCancel={onClose} onClose={onClose}>
     <div className="agent-shell">
-      <header className="agent-header"><div><span className="agent-brand">ResuLab</span><h1 id="agent-title">针对岗位优化</h1></div><button className="agent-button" onClick={onClose}>返回编辑器</button></header>
+      <header className="agent-header"><div><span className="agent-brand">ResuLab</span><h1 id="agent-title">针对岗位优化</h1></div><div className="agent-exits"><Link className="agent-button" to="/" onClick={onClose}>返回首页</Link><button className="agent-button" onClick={onClose}>返回编辑器</button></div></header>
       {agent.mock && <p className="agent-mock" role="status">开发模拟模式 · 以下数据为合成样例，未调用模型，不能用作真实效果或费用证明。</p>}
       {/* At 1100px: 320px input rail + 24px gap + remaining result sheet. On mobile both stack. */}
       <div className="agent-grid">
         <aside className="agent-input">
           <h2>先确认岗位，再确认事实</h2><p className="agent-muted">分析当前简历，找到岗位依据，再由你决定是否修改。</p>
           <details className="agent-source" open={!run}><summary>{run ? '查看已提交的岗位描述' : '填写目标岗位描述'}</summary>
-          <label htmlFor={inputId}>目标岗位描述（JD）</label>
-          <textarea id={inputId} value={jd} onChange={event => setJd(event.target.value)} rows={5} maxLength={12000} disabled={agent.busy || Boolean(run)} placeholder="粘贴职责、任职要求和技能要求，至少 10 字。" />
-          <p className="agent-muted">将使用当前经历、技能和自我评价快照，不发送姓名、头像、电话、邮箱和排版设置。</p>
+          <label htmlFor={inputId}>岗位名称或招聘 JD</label>
+          <textarea id={inputId} value={jd} onChange={event => setJd(event.target.value)} rows={5} maxLength={12000} disabled={agent.busy || Boolean(run)} placeholder="填写岗位名称（如产品实习生），或粘贴完整招聘 JD。" />
+          <p className="agent-muted">仅填简短岗位名称时使用通用参考，具体要求请以招聘 JD 为准。</p><p className="agent-muted">将使用当前经历、技能和自我评价快照，不发送姓名、头像、电话、邮箱和排版设置。</p>
           {run && !jd && <p className="agent-muted">这是恢复的任务。岗位描述保存在服务端，本机未缓存其原文。</p>}
           </details>
           {!agent.authenticated && !agent.authLoading && <p className="agent-notice">分析需要登录。<Link to="/login" onClick={onClose}>去登录</Link>，登录后重新打开此工作区。</p>}
           {agent.configError && <p className="agent-notice">{agent.configError}</p>}
-          {!run && !agent.runId && <button className="agent-button agent-primary" disabled={creationBlocked} onClick={() => { setApplyError(''); void agent.create(jd, resume.resume); }}>{agent.busy ? '正在提交…' : '分析当前简历'}</button>}
+          {!run && !agent.runId && <button className="agent-button agent-primary" disabled={creationBlocked} onClick={() => { setApplyError(''); void agent.create(jobTarget(jd).text, resume.resume); }}>{agent.busy ? '正在提交…' : '分析当前简历'}</button>}
           {(run || agent.runId) && <button className="agent-button" disabled={agent.busy || applying} onClick={() => { if (inProgress && !window.confirm('当前任务会继续在后端执行。确定离开它并开始新分析？')) return; agent.newTask(); }}>开始新分析</button>}
           {agent.mock && <div className="agent-examples"><label htmlFor={`${inputId}-example`}>体验合成状态</label><select id={`${inputId}-example`} value="" onChange={event => { if (event.target.value) void agent.loadExample(event.target.value as Parameters<typeof agent.loadExample>[0], resume.resume); }}><option value="">选择样例状态</option><option value="running">执行中</option><option value="awaiting_input">等待回答</option><option value="completed">完成并有建议</option><option value="timeout">模型超时</option><option value="missing">无证据缺口</option></select><p className="agent-muted">有工作描述时，可体验仅调整标点的安全应用；空简历展示无证据结果。执行中样例需手动切换状态。</p></div>}
           {run && <details className="agent-trace"><summary>查看执行轨迹 · {statuses[run.status]}</summary><RunTimeline run={run} /></details>}

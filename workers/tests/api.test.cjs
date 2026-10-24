@@ -44,18 +44,22 @@ test('authentication uses the configured Supabase project, user bearer token and
   assert.equal(seen[0].url, env.SUPABASE_URL + '/auth/v1/user');
   assert.equal(seen[0].init.headers.Authorization, 'Bearer current-project-user');
   assert.equal(seen[0].init.headers.apikey, env.SUPABASE_SERVICE_ROLE_KEY);
-  assert.equal((await result.json()).usage.generate.limit, 3);
+  assert.equal((await result.json()).unlimited, true); assert.equal(seen.length, 1);
 });
-test('quota errors retain status, message and CORS and never reach the model', async () => {
+test('personal AI requests ignore old quotas and never query or write membership tables', async () => {
+  let models = 0;
   const service = worker(async (url) => {
     if (url.endsWith('/auth/v1/user')) return response({ id: userId });
-    if (url.includes('/memberships?')) return response([{ tier: 'free', status: 'active' }]);
-    if (url.includes('/ai_usage_logs?')) return response([{ id: 1 }, { id: 2 }, { id: 3 }]);
-    throw new Error('Model must not be called');
+    if (url.endsWith('/chat/completions')) { models++; return response({ choices: [{ message: { content: '{}' } }] }); }
+    assert.fail('Unexpected membership/database request: ' + url);
   });
-  const result = await service.fetch(request('/api/ai/generate'), env);
-  assert.equal(result.status, 429); cors(result);
-  assert.equal((await result.json()).error, 'USAGE_LIMIT_REACHED');
+  for (let i = 0; i < 4; i++) {
+    for (const route of ['/api/ai/generate', '/api/ai/polish', '/api/ai/interview/start', '/api/ai/interview/respond']) {
+      const result = await service.fetch(request(route, {body: JSON.stringify({rawText:'这是一段足够长的合成课程经历，仅用于验证自用工具调用。', fieldLabel:'项目',currentValue:'合成',resumeData:{},userAnswer:'合成回答'})}),env);
+      assert.equal(result.status, 200); cors(result);
+    }
+  }
+  assert.equal(models, 16);
 });
 test('missing configuration and auth dependency failures are distinct from an expired login', async () => {
   const unconfigured = await worker().fetch(request('/api/ai/generate'), {});
@@ -67,15 +71,13 @@ test('missing configuration and auth dependency failures are distinct from an ex
     assert.doesNotMatch(await result.text(), /private URL|server-only-fixture|invalid JSON/);
   }
 });
-test('missing membership tables are reported with CORS without exposing upstream details', async () => {
-  const service = worker(async (url) => url.endsWith('/auth/v1/user') ? response({ id: userId }) : response({ code: 'PGRST205', secret: 'private upstream' }, 404));
-  const result = await service.fetch(request('/api/ai/generate'), env);
-  assert.equal(result.status, 503); cors(result);
-  const body = await result.json();
-  assert.equal(body.error, 'DATABASE_UNAVAILABLE');
-  assert.doesNotMatch(JSON.stringify(body), /PGRST205|private upstream/);
+test('compatibility status does not depend on membership tables', async () => {
+  const service = worker(async (url) => url.endsWith('/auth/v1/user') ? response({ id: userId }) : assert.fail('must not use membership database'));
+  const result = await service.fetch(request('/api/membership/status', {method:'GET',body:undefined}), env);
+  assert.equal(result.status,200); cors(result);
+  assert.equal((await result.json()).mode,'personal');
 });
-test('authenticated generate completes both rounds, records usage and returns the existing import contract', async () => {
+test('authenticated generate completes both rounds, does not write usage and returns the existing import contract', async () => {
   let models = 0, writes = 0;
   const service = worker(async (url, init) => {
     if (url.endsWith('/auth/v1/user')) return response({ id: userId });
@@ -96,7 +98,7 @@ test('authenticated generate completes both rounds, records usage and returns th
   const body = await result.json();
   assert.equal(body.personalInfo.jobTitle, '后端开发');
   assert.equal(body.selfEvaluation, '具备TypeScript接口开发经历。');
-  assert.equal(models, 2); assert.equal(writes, 1);
+  assert.equal(models, 2); assert.equal(writes, 0);
 });
 
 test('local model overrides are explicit and do not change production defaults', async () => {
@@ -134,9 +136,9 @@ test('library extraction uses one round without inventing a summary and rejects 
   });
   const result = await service.fetch(request('/api/ai/generate', { body: JSON.stringify({ purpose: 'career-library', rawText: '合成经历：使用Excel对活动报名表去重，整理周报。' }) }), env);
   assert.equal(result.status, 200); assert.equal((await result.json()).selfEvaluation, '');
-  assert.equal(models, 1); assert.equal(writes, 1);
+  assert.equal(models, 1); assert.equal(writes, 0);
   const invalid = await service.fetch(request('/api/ai/generate', { body: JSON.stringify({ purpose: 'unknown', rawText: '用于验证错误用途不会调用模型的合成原始经历文本。' }) }), env);
-  assert.equal(invalid.status, 400); assert.equal(models, 1); assert.equal(writes, 1);
+  assert.equal(invalid.status, 400); assert.equal(models, 1); assert.equal(writes, 0);
 });
 
 test('library tailoring uses authenticated bounded selection/writing, returns source-backed copies and charges one completed operation', async () => {
@@ -159,9 +161,29 @@ test('library tailoring uses authenticated bounded selection/writing, returns so
   const result = await service.fetch(request('/api/ai/tailor', { body: JSON.stringify({ jdText, facts: [fact] }) }), env);
   assert.equal(result.status, 200); cors(result);
   const body = await result.json();
-  assert.equal(body.modelCalls, 2); assert.equal(models, 2); assert.equal(writes, 1);
+  assert.equal(body.modelCalls, 2); assert.equal(models, 2); assert.equal(writes, 0);
   assert.equal(body.snapshot.workExperience[0].companyName, fact.data.companyName);
   assert.equal(body.snapshot.workExperience[0].position, '实习生');
   assert.equal(body.snapshot.workExperience[0].description, '使用TypeScript开发订单接口，并查看日志。');
   assert.equal(body.snapshot.personalInfo, undefined);
+});
+
+test('existing resume import uses one extraction call and cannot synthesize a new summary', async () => {
+  let calls=0;
+  const service=worker(async(url,init)=>{
+    if(url.endsWith('/auth/v1/user')) return response({id:userId});
+    if(url.endsWith('/chat/completions')) {
+      calls++; const body=JSON.parse(init.body);assert.match(body.messages[0].content,/忠实导入/);
+      return response({choices:[{message:{content:JSON.stringify({personalInfo:{fullName:'合成同学'},skills:[{skillName:'React',level:''}],selfEvaluation:'虚构的专家自我评价'})}}]});
+    }
+    assert.fail('Unexpected upstream');
+  });
+  const result=await service.fetch(request('/api/ai/generate',{body:JSON.stringify({purpose:'resume-import',rawText:'合成同学，在课程小组项目中使用 React 实现筛选页面，提交课程报告。'})}),env);
+  assert.equal(result.status,200);assert.equal(calls,1);const body=await result.json();assert.equal(body.selfEvaluation,'');assert.equal(body.skills[0].level,'');
+});
+
+test('oversized resume import is rejected before calling the model', async()=>{
+  const service=worker(async url=>url.endsWith('/auth/v1/user')?response({id:userId}):assert.fail('must not call model'));
+  const result=await service.fetch(request('/api/ai/generate',{body:JSON.stringify({purpose:'resume-import',rawText:'x'.repeat(60001)})}),env);
+  assert.equal(result.status,400);
 });

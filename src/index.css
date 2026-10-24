@@ -53,8 +53,7 @@ body.tauri-mobile {
     @apply bg-white shadow-lg;
     width: 794px;
     min-height: 1123px;
-    max-height: 1123px;
-    overflow: hidden;
+    overflow: visible;
   }
 
   /* 表单输入框基础样式 */
