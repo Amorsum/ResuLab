@@ -1,6 +1,6 @@
 # Web 发布与兼容依赖
 
-2026-10-24。前端 GitHub Pages + `resulab.amorsum.top`，Agent 使用既有公网 HTTPS API。角色 PR 使用 merge commit 合入 `codex/contest-b`，经完整 CI 后再将集成分支合入 `main`，触发 Pages 构建；角色分支保留。
+2026-10-24。比赛展示源码唯一分支为 `codex/contest-b`，前端 GitHub Pages + `resulab.amorsum.top`，Agent 使用既有公网 HTTPS API。角色 PR 经 CI 后使用 merge commit 合入 `codex/contest-b`，由该分支直接触发 Pages 构建；角色分支保留。`main` 保持原有基线，不合入比赛代码。`gh-pages` 仅存放该比赛源码构建出的静态文件。
 
 ## 构建配置
 
@@ -26,7 +26,7 @@ Supabase Auth 回调白名单需包含 `https://resulab.amorsum.top/builder` 和
 
 ## 本次发布前验证
 
-- 前端 27 项测试、服务端 42 项测试、两端类型检查、Web 生产构建与 Workers 类型检查通过。新增 5 项离线缓存隔离/更新回归，1 项兼容数据库迁移和 RLS 回归，CI 覆盖集成及 main PR。
+- 前端 27 项测试、服务端 42 项测试、两端类型检查、Web 生产构建与 Workers 类型检查通过。新增 5 项离线缓存隔离/更新回归，1 项兼容数据库迁移和 RLS 回归，CI 覆盖比赛集成分支及角色 PR。
 - 正式前端 Origin 的 Agent OPTIONS 为 204，允许头匹配；health 为 200，数据库/模型配置已加载。旧 AI 自定义域名 health 为 200；同名 workers.dev 地址在本机 SSL 连接失败，正式构建改用自定义域名。
 - 发布配置已通过本机代理写入仓库：公开 Agent URL 存 Repository Variable；Supabase URL/anon 和旧 AI URL 更新既有 Secrets，不输出 key，不提交 `.env`。
 - 依赖审计报告既有 Zod 3 的 [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) 高危资源耗尽项。现有 API 在 schema 校验前限制请求体大小并要求用户认证，但这不等于修补依赖；修复版本需跨到 Zod 4，留待后端连同共享协议兼容性专门升级，本次不运行强制跨主版本修复。
