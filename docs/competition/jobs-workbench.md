@@ -2,7 +2,7 @@
 
 ## 实现状态
 
-本次在现有未提交工作区之上增量实现，未重置或覆盖其他工作，未部署生产。新增 `/jobs`、首页入口、单 JD 匹配接口和独立扩展工程。真实 BOSS 自动发送未完成接入，发行包明确禁用发送；完整执行流程在合成招聘页面通过验证。
+初次交付在现有工作区增量实现，未重置或覆盖其他工作，仅完成本地验证。新增 `/jobs`、首页入口、单 JD 匹配接口和独立扩展工程现已于 2026-10-25 随 PR #15 正式上线，见 [发布验收](split-services-release.md)。真实 BOSS 自动发送未完成接入，发行包明确禁用发送；完整执行流程的既有记录来自合成招聘页面。
 
 ### 工作台与接口
 
@@ -45,6 +45,6 @@ npm run test:extension:browser
 
 ## 交付与后续验收
 
-可加载扩展目录为 `release-artifacts/jobs-extension`，ZIP 为 `release-artifacts/ResuLab-Jobs-Extension-0.1.0.zip`。用户手动加载后在本地 `/jobs` 配对。
+可加载扩展目录为 `release-artifacts/jobs-extension`，当前 ZIP 为 `release-artifacts/ResuLab-Jobs-Extension-0.1.2.zip`；正式下载与安装说明位于 `/extension`。用户手动安装后在同一浏览器的正式 `/jobs` 配对。下方实站验收记录仍是历史状态，发布没有开启发送能力。
 
 真实页面验收在用户登录后被 Computer Use 的网址识别检查中止：无法可靠确定当前 Edge URL。本轮停止浏览器操作，没有发送真实求职消息或上传简历。搜索适配同样未获登录后实测结论；目前只有关键词尝试在平台设置，其余偏好本地过滤。恢复实站访问后，须继续完成受审核批次约束的适配与验收，不能仅凭现有模拟通过记录开启发送。
