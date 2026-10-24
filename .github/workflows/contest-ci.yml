@@ -1,9 +1,9 @@
 name: Contest checks
 on:
   pull_request:
-    branches: [main, codex/contest-b]
+    branches: [codex/contest-b]
   push:
-    branches: [main, codex/contest-b, codex/b-agent-backend]
+    branches: [codex/contest-b, codex/b-agent-backend]
 permissions:
   contents: read
 jobs:
