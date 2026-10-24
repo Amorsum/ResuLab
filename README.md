@@ -77,7 +77,7 @@ AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字�
 - 应用仅限共享协议白名单，核对快照摘要和原文；简历编辑、删除、重排后拒绝旧建议。本批应用后禁用重复应用（撤销后需要重新分析）。
 - 分析失败时可将工作区中的任务编号和错误代码交给后端排查。估计费用“未知”表示完整 Token 用量或模型单价缺失，不代表零费用。证据匹配结构错误的后端排查步骤见 `docs/competition/model-schema-handoff.md`。
 
-修改环境变量后重启 Vite。现有域名为 `resulab.amorsum.top`，计划本机运行后端；公网 HTTPS 入口尚待配置。开发进度与真实联调条件见 `docs/competition/frontend-handoff.md`。
+修改环境变量后重启 Vite。前端沿用 GitHub Pages 与域名 `resulab.amorsum.top`，Agent 后端运行于云电脑并已提供公网 HTTPS 入口，接入配置见 `docs/competition/api-handoff.md`。本机真实联调已获得用户反馈通过；集成分支合并与正式前端发布仍按团队流程进行，详见 `docs/competition/frontend-handoff.md`。
 
 ### 构建桌面端 / 移动端
 
