@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-24T03:06:55.268Z",
+  "sourceRunId": "71b870a4-0c99-4156-a5b2-29c85ac9e45d",
+  "sourceRevision": "0b815ee5f5e8bf0f853e0f166ada6183265a68e9",
+  "purpose": "legacy_step1_replay",
+  "originalRunUnmodified": true,
+  "databaseWrites": false,
+  "events": [
+    {
+      "runId": "71b870a4-0c99-4156-a5b2-29c85ac9e45d",
+      "stepId": "step-1",
+      "replay": true,
+      "attempt": 1,
+      "httpStatus": 200,
+      "finish_reason": "length",
+      "validation": {
+        "kind": "json_parse",
+        "issues": [],
+        "position": 2867
+      },
+      "contentChars": 2867,
+      "prompt_tokens": 3115,
+      "completion_tokens": 3500,
+      "reasoning_tokens": 2355,
+      "max_tokens": 3500
+    },
+    {
+      "runId": "71b870a4-0c99-4156-a5b2-29c85ac9e45d",
+      "stepId": "step-1",
+      "replay": true,
+      "attempt": 2,
+      "httpStatus": 200,
+      "finish_reason": "length",
+      "validation": {
+        "kind": "json_parse",
+        "issues": []
+      },
+      "contentChars": 0,
+      "prompt_tokens": 3130,
+      "completion_tokens": 3500,
+      "reasoning_tokens": 3500,
+      "max_tokens": 3500
+    }
+  ],
+  "replayStatus": "MODEL_SCHEMA_INVALID"
+}

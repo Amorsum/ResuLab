@@ -124,6 +124,13 @@ export function modelFetch(
         ? "find_resume_evidence"
         : "draft_resume_changes";
     options.onCall?.(tool);
+    const input = JSON.parse(body.messages[1].content);
+    const selected = input.references?.find(
+      (r: { section: string; field: string; itemId?: string }) =>
+        r.section === "workExperience" &&
+        r.itemId === "work-1" &&
+        r.field === "description",
+    );
     const ref = {
       id: "resume:workExperience:work-1:description",
       section: "workExperience",
@@ -153,7 +160,15 @@ export function modelFetch(
                     : options.questions
                       ? "needs_clarification"
                       : "supported",
-                  refs: options.missing ? [] : [ref],
+                  refs: options.missing
+                    ? []
+                    : [
+                        {
+                          id: options.forged
+                            ? "nonexistent-evidence"
+                            : selected.id,
+                        },
+                      ],
                 },
               ],
               questions: options.questions

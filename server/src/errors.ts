@@ -8,6 +8,15 @@ export class AgentError extends Error {
     super(message);
   }
 }
+export class ToolResultError extends AgentError {
+  constructor(
+    message: string,
+    public path: string,
+    public rule: string,
+  ) {
+    super("TOOL_RESULT_INVALID", message, 502, true);
+  }
+}
 const dbErrors: Record<string, [string, number, boolean]> = {
   RUN_NOT_FOUND: ["任务不存在或不可访问", 404, false],
   IDEMPOTENCY_CONFLICT: ["相同幂等键对应的内容不同", 409, false],
