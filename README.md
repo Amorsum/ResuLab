@@ -83,6 +83,8 @@ AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字�
 
 正式发布、回调白名单及云简历/旧 AI 的数据库兼容迁移见 [Web 发布说明](docs/competition/web-release.md)。Agent 迁移不创建旧功能的表；迁移需由数据库管理员执行，不能在前端配置管理员密钥绕过权限。
 
+原智能填写/润色的 Cloudflare Worker 位于 `workers/`，独立于 `server/` 的岗位优化 Agent。所有响应（含认证 401、额度 429）统一附带 CORS 头，避免浏览器将业务错误遮蔽为 `Failed to fetch`；可运行 `npm --prefix workers test` 验证。若新账号仍被拒绝，需核对 Worker 的 Supabase 私有配置与前端项目一致，不能通过放开认证解决。
+
 ### 构建桌面端 / 移动端
 
 安装包通过 GitHub Releases 分发，不提交到仓库（文件过大）。

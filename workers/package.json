@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "test": "node --test ../tests/legacyWorker.test.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {},

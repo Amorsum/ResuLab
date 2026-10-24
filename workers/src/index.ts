@@ -22,6 +22,17 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+function withCors(response: Response): Response {
+  // Thrown authentication/quota Responses also need CORS or browsers hide their JSON.
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(CORS_HEADERS)) headers.set(name, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 type Handler = (req: Request, env: Env, params: Record<string, string>) => Promise<Response> | Response;
 
 // ==================== Simple Router ====================
@@ -372,16 +383,17 @@ export default {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
+    let response: Response;
     try {
       const matched = match(request);
-      if (matched) {
-        return await matched.handler(request, env, matched.params);
-      }
-      return json({ error: 'NOT_FOUND', message: '接口不存在' }, 404);
+      response = matched
+        ? await matched.handler(request, env, matched.params)
+        : json({ error: 'NOT_FOUND', message: '接口不存在' }, 404);
     } catch (err) {
-      if (err instanceof Response) return err;
-      const message = err instanceof Error ? err.message : '服务器内部错误';
-      return json({ error: 'INTERNAL_ERROR', message }, 500);
+      response = err instanceof Response
+        ? err
+        : json({ error: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : '服务器内部错误' }, 500);
     }
+    return withCors(response);
   },
 };
