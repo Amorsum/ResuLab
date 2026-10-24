@@ -64,6 +64,8 @@ AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字�
 
 旧生成/润色服务读取 `VITE_AI_API_BASE`（默认 `https://api.amorsum.top`）。编辑器顶部“针对岗位优化”打开 Agent 工作区：输入 JD → 证据匹配 → 回答追问 → 勾选并确认修改 → 预览导出；一次撤销恢复整批建议。
 
+“预览并导出”会关闭工作区、显示简历预览并触发一次 PDF 下载；工具栏仍可手动导出。桌面与移动预览使用独立引用，导出只截取当前可见预览，避免窗口宽度切换后捕获隐藏区域。
+
 - 本机联调：设置 `VITE_AGENT_API_BASE=http://localhost:8788`、`VITE_AGENT_MOCK=false`，启动方式见 `server/README.md`。端口冲突时，以 Vite 实际端口更新后端 `ALLOWED_ORIGINS`。
 - 同源部署：显式设置 `VITE_AGENT_API_BASE=`。未设置该变量时显示配置提示，不会回落模拟。
 - 开发样例：仅在 Vite 开发模式显式设置 `VITE_AGENT_MOCK=true` 才启用；页面明确标记，生产构建始终禁用。五种状态用于交互验证，非模型效果证明。

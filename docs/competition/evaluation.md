@@ -33,3 +33,12 @@
 | UI-04 | 1440 / 768 / 390 视口 | 检查 0 FAIL，保留真实空态留白提示 |
 
 命令：`node --test tests/aiImport.test.cjs tests/useAgent.test.cjs`（9 项）及 `node server/node_modules/tsx/dist/cli.mjs --test tests/agent.test.ts`（5 项）。浏览器人工验证在本机开发服务端口 3002，服务端 8788 当前不可达；真实联调仍待配置。
+
+## 2026-10-24：真实联调反馈与 PDF 回归
+
+- 用户确认 B 的 PR #7（集成版本 `864935c`）部署后，原任务重试已通过。这是用户反馈，不代表全部 A5 场景已验收；两账号、云存储和真实建议应用/撤销仍需分别记录。
+- 复现桌面端从 Agent 点击“预览并导出”后，手动导出报 `Invalid argument passed to jsPDF.scale`：移动预览挂载后覆盖共用 ref，但桌面断点下该预览隐藏，截图尺寸为零。
+- 修复：桌面/移动独立 ref，导出动态选择可见且非零尺寸预览；“预览并导出”在弹窗关闭、预览挂载后的下一帧触发一次 PDF 导出；防止并发导出，零尺寸截图在进入 jsPDF 前拒绝。
+- `node --test tests/aiImport.test.cjs tests/useAgent.test.cjs tests/pdfExport.test.cjs`：13 项通过；`node server/node_modules/tsx/dist/cli.mjs --test tests/agent.test.ts`：5 项通过；`npm run build` 通过，保留既有 bundle 大小提示。
+- 浏览器使用已有合成工作经历、真实 PDF 导出函数，不发起模型调用：1440×900 自动/手动导出、390×844 从编辑进入 Agent 后自动导出及手动导出、768×1024 自动导出均成功，期间包含宽度切换和移动预览卸载/重挂载。
+- 前五份下载文件均可打开，为一页 A4、含非空截图；桌面/移动样本渲染检查文字正常，切回桌面后第六次手动下载也成功。仅验证 Web，不代表 Tauri 打包验收。截图及下载文件为本机验证产物，不提交仓库。
