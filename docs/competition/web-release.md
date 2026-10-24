@@ -14,7 +14,7 @@
 
 发布前只读检查：测试 Supabase 登录设置接口 200；`resumes`、`memberships`、`ai_usage_logs` 返回 404 / PGRST205。Agent 五表迁移不包含这些旧功能。`profiles` 也返回 404，但当前前端没有查询该表，不为无用字段创建表。
 
-管理员/后端在同一项目 SQL Editor 执行 [兼容迁移](../../supabase/migrations/202610240002_legacy_web.sql)。迁移在事务中创建缺失表和索引，可重复执行；`resumes` 仅允许 authenticated 用户访问自己的记录，会员和用量表仅允许服务端 service role，不允许浏览器自行升级会员。没有删除用户或已有数据。已用本地 PGlite 验证重复执行、跨账号隔离和禁止前端改会员/用量；尚未在远程项目执行时不得标记云保存已恢复。
+经项目所有者授权，已在 `resulab-agent-test`（`junromgokspodibpphkg`）SQL Editor 执行 [兼容迁移](../../supabase/migrations/202610240002_legacy_web.sql)，返回成功。迁移在事务中创建缺失表和索引，可重复执行；没有删除用户或已有数据。远程元数据查询确认三表均启用 RLS、anon 无读取权限、service role 可写；authenticated 仅能读取 `resumes`，其 owner policy 限制本人记录，会员和用量不开放给浏览器。匿名 REST 探针由原来的缺表错误变为预期的权限拒绝。另有本地 PGlite 覆盖重复执行、跨账号隔离和禁止前端改会员/用量；尚未以实际登录账号验收远程云保存，不能以建表成功代替完整功能验收。
 
 另需后端/管理员确认旧 Cloudflare AI Worker 的 `SUPABASE_URL`、服务端 key 指向同一项目；该 Worker 的健康接口 200 不能证明新账号的会员、生成、润色链路已通过。只更新前端公开 key 无法修改 Worker 的私有配置。
 
@@ -30,3 +30,10 @@ Supabase Auth 回调白名单需包含 `https://resulab.amorsum.top/builder` 和
 - 正式前端 Origin 的 Agent OPTIONS 为 204，允许头匹配；health 为 200，数据库/模型配置已加载。旧 AI 自定义域名 health 为 200；同名 workers.dev 地址在本机 SSL 连接失败，正式构建改用自定义域名。
 - 发布配置已通过本机代理写入仓库：公开 Agent URL 存 Repository Variable；Supabase URL/anon 和旧 AI URL 更新既有 Secrets，不输出 key，不提交 `.env`。
 - 依赖审计报告既有 Zod 3 的 [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) 高危资源耗尽项。现有 API 在 schema 校验前限制请求体大小并要求用户认证，但这不等于修补依赖；修复版本需跨到 Zod 4，留待后端连同共享协议兼容性专门升级，本次不运行强制跨主版本修复。
+
+## 正式发布结果（2026-10-24）
+
+- PR #8（后端质量修复）、#6（前端）、#9（比赛分支直接发布）均已审核并以 merge commit 合入 `codex/contest-b`。首个已核实的比赛部署为 `2df3e49`，Pages 工作流与同版本 CI 均成功；正式域名 `/version.json` 返回该完整 commit。后续以该接口核对当前版本。
+- `main` 保持发布前的 `8878fc8`，没有合入或推送比赛代码；比赛前端源码为 `codex/contest-b`，`gh-pages` 为构建产物分支。原 `main` 仍保留其历史部署工作流，比赛期间避免从该基线触发其他正式域名发布。
+- 正式域名 `/builder/classic` 可打开新版岗位优化工作区；未登录时显示登录提示并禁用分析。该检查未提交真实简历或调用模型。用户此前反馈的真实联调通过来自本机前端，不自动视为正式域名完整验收。
+- 正式网站已用测试账号登录成功，线上 bundle 核对包含新 Supabase、现有 Agent API 和旧 AI 自定义域名。Cloudflare 管理页已登录，但 Worker 的 Supabase URL/key 均加密，无法读取比较。旧 AI 智能填写使用虚构验收文本请求后显示 `Failed to fetch`，未生成或应用内容；仅此错误无法区分网络、跨域与服务端认证配置，交由 B 排查。用户明确本轮先完成比赛前端合并与发布，其余问题后续处理。云保存、邮箱回调、旧 AI 和正式域名模型完整链路仍不标记通过。
