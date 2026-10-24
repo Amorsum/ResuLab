@@ -38,6 +38,10 @@ Supabase Auth 回调白名单需包含 `https://resulab.amorsum.top/builder` 和
 - 正式域名 `/builder/classic` 可打开新版岗位优化工作区；未登录时显示登录提示并禁用分析。该检查未提交真实简历或调用模型。用户此前反馈的真实联调通过来自本机前端，不自动视为正式域名完整验收。
 - 正式网站已用测试账号登录成功，线上 bundle 核对包含新 Supabase、现有 Agent API 和旧 AI 自定义域名。Cloudflare 管理页已登录，但 Worker 的 Supabase URL/key 均加密，无法读取比较。旧 AI 智能填写使用虚构验收文本请求后显示 `Failed to fetch`，未生成或应用内容；仅此错误无法区分网络、跨域与服务端认证配置，交由 B 排查。用户明确本轮先完成比赛前端合并与发布，其余问题后续处理。云保存、邮箱回调、旧 AI 和正式域名模型完整链路仍不标记通过。
 
-## 旧 AI 跨域错误修复（进行中）
+## 旧 AI 跨域错误修复
 
-独立修复范围为 `workers/` 和专属测试，不修改 `server/`、`shared/` 或 Agent 环境。公网复现：预检 204 含 CORS，但无效 token 的会员请求 401 没有 `Access-Control-Allow-Origin`，浏览器因而无法读取“登录已过期”。Worker 出口统一给普通及抛出的 Response 补 CORS，保留原状态码和 JSON；缺失/无效认证和超额仍被拒绝，不降低权限。新增 7 项回归，修复前缺失认证、无效 token、额度三项重现失败。代码通过验证后另行部署并记录真实账号结果；修好跨域不代表数据库账号配置已对齐。
+独立修复范围为 `workers/` 和专属测试，不修改 `server/`、`shared/` 或 Agent 环境。公网复现：预检 204 含 CORS，但无效 token 的会员请求 401 没有 `Access-Control-Allow-Origin`，浏览器因而无法读取“登录已过期”。Worker 出口统一给普通及抛出的 Response 补 CORS，保留原状态码和 JSON；缺失/无效认证和超额仍被拒绝，不降低权限。新增 7 项回归，修复前缺失认证、无效 token、额度三项重现失败，修复后全通过，Worker 类型检查、dry-run 及 PR CI 通过。
+
+用户亲自授权官方 Wrangler 后，经本机代理部署至原 `resulab-api`，版本 `37617292-0c38-4ba5-99e6-477b617afeb8`；原版本 `cea5ef0e-f98b-47a0-aa55-60882c9d0aed` 可用于回滚。公网无效 token 请求仍返回 401，现已包含 CORS。正式网站使用已登录账号重试，错误由 `Failed to fetch` 变为“请先登录后再使用”，证实浏览器可读取认证失败，但旧 Worker 尚未接受新项目账号。
+
+下一步对齐旧 Worker 的 `SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY` 到新项目；URL 已知，服务端 key 由项目所有者在被 Git 忽略的本地私有文件填写，不通过聊天或 PR 传递。仅同步旧 Worker 的两项 Supabase 配置，保留模型密钥，不修改 Agent。私有配置同步和真实生成尚未完成前，不能标记本功能完全恢复。
