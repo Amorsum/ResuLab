@@ -1,7 +1,6 @@
 import {
   draftingSchema,
   extractionSchema,
-  matchingSchema,
   runViewSchema,
   toolSchema,
 } from "../../shared/agent.schema.js";
@@ -15,6 +14,11 @@ import { AgentError, ToolResultError, safeError } from "./errors.js";
 import type { Store, RunRecord } from "./store.js";
 import type { ModelProvider } from "./provider.js";
 import type { Config } from "./config.js";
+import {
+  evidenceCatalog,
+  evidenceSelectionSchema,
+  resolveEvidenceSelections,
+} from "./evidence.js";
 
 const tools = toolSchema.options;
 function ensure(
@@ -254,26 +258,33 @@ export async function executeRun(
           throw error;
         }
       } else if (stage === 1) {
-        const result = await provider.generate(
+        const catalog = evidenceCatalog(run.resume_snapshot);
+        const selection = await provider.generate(
           run,
           stepId,
-          matchingSchema,
-          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"给定证据ID","section":"给定section","itemId":"给定条目ID（自我评价省略）","field":"给定field","quote":"给定原文的连续片段"}]}],"questions":[{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}]}}。coverage只能是supported、needs_clarification、missing三者之一，不要用竖线拼接。refs逐字段复制references中的定位信息，自我评价省略itemId，其余条目保留itemId，不使用null。quote只取必要的原文短片段，避免整段重复。每个要求一个evidence；supported须有引用，missing须无引用。根据真实缺口决定是否追问，只对非supported要求提问，最多3题，可以无问题。不得在问题中预设用户已做过或诱导虚构。',
+          evidenceSelectionSchema,
+          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"evidence-1"}]}],"questions":[]}}。coverage只能是supported、needs_clarification、missing三者之一。refs只含给定references.id；禁止输出quote、section、itemId、field，后端根据编号回填原文与定位。必须选择语义相关的真实证据；没有相关证据就标缺口，不能用无关引用宣称支持。每个要求一个evidence，supported须有引用，missing须无引用。只对非supported要求提问，最多3题，可以无问题；问题格式为{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}。不得预设用户已做过或诱导虚构。',
           {
             requirements: run.run_view.requirements,
-            references: snapshotReferences(run.resume_snapshot),
+            references: [...catalog].map(([id, reference]) => ({
+              ...reference,
+              id,
+            })),
           },
           signal,
-          (candidate) =>
+          (candidate) => {
+            const resolved = resolveEvidenceSelections(candidate, catalog);
             validateEvidence({
               ...run,
               run_view: {
                 ...run.run_view,
-                evidence: candidate.result.evidence,
-                questions: candidate.result.questions,
+                evidence: resolved.result.evidence,
+                questions: resolved.result.questions,
               },
-            }),
+            });
+          },
         );
+        const result = resolveEvidenceSelections(selection, catalog);
         run.run_view.evidence = result.result.evidence;
         run.run_view.questions = result.result.questions;
         try {
