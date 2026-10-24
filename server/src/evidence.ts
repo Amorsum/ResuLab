@@ -27,20 +27,19 @@ export function evidenceCatalog(snapshot: ResumeSnapshot) {
   for (const reference of snapshotReferences(snapshot)) {
     // Bound repeated quotations and support highlights joined across many items.
     // Each quote remains a literal contiguous slice of one source field.
-    for (let start = 0; start < reference.quote.length;) {
-      let end = Math.min(start + 600, reference.quote.length);
-      if (
-        end < reference.quote.length &&
-        /[\uD800-\uDBFF]/.test(reference.quote[end - 1])
-      )
-        end--;
-      const quote = reference.quote.slice(start, end).trim();
-      if (quote)
-        catalog.set(`evidence-${catalog.size + 1}`, { ...reference, quote });
-      start = end;
-    }
+    for (const quote of quoteSlices(reference.quote))
+      catalog.set(`evidence-${catalog.size + 1}`, { ...reference, quote });
   }
   return catalog;
+}
+export function* quoteSlices(text: string) {
+  for (let start = 0; start < text.length;) {
+    let end = Math.min(start + 600, text.length);
+    if (end < text.length && /[\uD800-\uDBFF]/.test(text[end - 1])) end--;
+    const quote = text.slice(start, end).trim();
+    if (quote) yield quote;
+    start = end;
+  }
 }
 export function resolveEvidenceSelections(
   selection: z.infer<typeof evidenceSelectionSchema>,

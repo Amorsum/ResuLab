@@ -1,5 +1,4 @@
 import {
-  draftingSchema,
   extractionSchema,
   runViewSchema,
   toolSchema,
@@ -7,7 +6,6 @@ import {
 import {
   snapshotReferences,
   stableStringify,
-  targetValue,
   type RunView,
 } from "../../shared/agent.js";
 import { AgentError, ToolResultError, safeError } from "./errors.js";
@@ -19,6 +17,13 @@ import {
   evidenceSelectionSchema,
   resolveEvidenceSelections,
 } from "./evidence.js";
+import {
+  draftProposalSchema,
+  draftTargets,
+  draftSourceCatalog,
+  originalTargetValue,
+  resolveDraftProposals,
+} from "./drafting.js";
 
 const tools = toolSchema.options;
 function ensure(
@@ -134,31 +139,59 @@ export function validateChanges(
       .filter((q) => q.answer)
       .map((q) => [q.id, q.answer!]),
   );
-  ensure(
-    unique(changes.map((c) => c.id)) &&
-      unique(changes.map((c) => stableStringify(c.target))),
-    "修改 ID 或目标字段重复",
-  );
-  for (const change of changes) {
-    const before = targetValue(run.resume_snapshot, change.target);
+  const ids = new Set<string>(),
+    targets = new Set<string>();
+  for (const [index, change] of changes.entries()) {
+    const path = `$.result.changes[${index}]`,
+      targetKey = stableStringify(change.target);
     ensure(
-      before !== undefined &&
-        stableStringify(before) === stableStringify(change.before),
-      "修改目标不存在或 before 与原文不符",
+      !ids.has(change.id),
+      "修改 ID 重复",
+      path + ".id",
+      "duplicate_change_id",
+    );
+    ensure(
+      !targets.has(targetKey),
+      "修改目标字段重复",
+      path + ".target",
+      "duplicate_target",
+    );
+    ids.add(change.id);
+    targets.add(targetKey);
+    const before = originalTargetValue(
+      run.resume_snapshot,
+      change.target,
+      path + ".target",
+    );
+    ensure(
+      stableStringify(before) === stableStringify(change.before),
+      "before 与原文不符",
+      path + ".before",
+      "before_mismatch",
     );
     ensure(
       Array.isArray(before) === Array.isArray(change.after),
       "修改后的字段类型不合法",
+      path + ".after",
+      "after_type_mismatch",
     );
     const sourceTexts: string[] = [];
-    for (const source of change.sources) {
+    for (const [sourceIndex, source] of change.sources.entries()) {
       const original =
         source.kind === "resume"
           ? refs.get(source.refId)?.quote
           : answers.get(source.refId);
       ensure(
-        original && original.includes(source.quote),
-        "修改来源无法定位或引用不匹配",
+        original,
+        "修改来源无法定位",
+        path + `.sources[${sourceIndex}].refId`,
+        "unknown_source",
+      );
+      ensure(
+        original.includes(source.quote),
+        "修改来源引用与原文不匹配",
+        path + `.sources[${sourceIndex}].quote`,
+        "source_quote_mismatch",
       );
       sourceTexts.push(source.quote);
     }
@@ -171,6 +204,8 @@ export function validateChanges(
     ensure(
       numbers(after).every((n) => known.has(n)),
       "建议包含没有来源的数字或指标",
+      path + ".after",
+      "unsupported_number",
     );
     // Semantic truth cannot be proven by a schema; every accepted edit requires user review.
     change.needsConfirmation = true;
@@ -297,20 +332,36 @@ export async function executeRun(
       } else if (stage === 2) {
         awaitInput = run.run_view.questions.length > 0;
       } else if (stage === 3) {
+        const sources = draftSourceCatalog(run);
         const result = await provider.generate(
           run,
           stepId,
-          draftingSchema,
-          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"原条目ID","field":"description"},"before":"原文","after":"建议","reason":"理由","sources":[{"kind":"resume","refId":"证据ID或问题ID","quote":"原文连续片段"}],"needsConfirmation":true}]}}。sources.kind只能为resume或answer之一，不要用竖线拼接。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。before逐字匹配字段，highlights是字符串数组，其余是字符串。每个目标至多一项，最多20项。来源只用给定evidence或已回答questions。没有证据的事实不新增，不复制JD为个人能力，不编造数字/技能；没有安全修改时返回空changes。',
+          draftProposalSchema,
+          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"给定条目ID","field":"description"},"after":"建议","reason":"理由","sources":[{"id":"source-1"}],"needsConfirmation":true}]}}。禁止输出before，由后端从当前简历快照按合法target回填原值。sources只含给定sourceCatalog.id，禁止输出kind/refId/quote，由后端回填真实来源原文。target必须逐字段复制给定targets之一，不得猜测条目ID。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。highlights的after必须是字符串数组，其余after是字符串。每个目标至多一项，最多20项。after中每个数字字面量（包括保留的原文数字）必须原样出现在所选sources对应的quote中；检查给定numbers，选择覆盖全部数字的来源，不能从未选中的原文借用数字。不新增、换算、改写数字、单位或百分比。没有证据的事实不新增，不复制JD为个人能力，不编造技能；没有安全修改时返回空changes。',
           {
             snapshot: run.resume_snapshot,
+            targets: draftTargets(run.resume_snapshot),
+            sourceCatalog: [...sources].map(([id, source]) => ({
+              id,
+              ...source,
+              numbers: source.quote.match(/\d+(?:[.,]\d+)*(?:%|％)?/g) ?? [],
+            })),
             requirements: run.run_view.requirements,
             evidence: run.run_view.evidence,
             questions: run.run_view.questions,
           },
           signal,
+          (candidate) => {
+            validateChanges(
+              run,
+              resolveDraftProposals(candidate, run.resume_snapshot, sources),
+            );
+          },
         );
-        run.run_view.changes = validateChanges(run, result.result.changes);
+        run.run_view.changes = validateChanges(
+          run,
+          resolveDraftProposals(result, run.resume_snapshot, sources),
+        );
       } else {
         run.run_view.changes = validateChanges(run, run.run_view.changes);
       }
@@ -339,6 +390,18 @@ export async function executeRun(
     )
       return;
     const e = safeError(error);
+    if (error instanceof ToolResultError)
+      console.error(
+        JSON.stringify({
+          event: "tool_validation",
+          runId: run.id,
+          stepId: `step-${run.stage}`,
+          validation: {
+            kind: "semantic_validation",
+            issues: [{ path: error.path, code: error.rule }],
+          },
+        }),
+      );
     const step = run.run_view.steps.find((s) => s.id === `step-${run.stage}`);
     if (step) {
       step.status = "failed";
