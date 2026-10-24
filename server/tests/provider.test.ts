@@ -5,6 +5,7 @@ import { openAIProvider } from "../src/provider.js";
 import { loadConfig } from "../src/config.js";
 import type { RunRecord, Store } from "../src/store.js";
 import { agentExamples } from "../../shared/agent.examples.js";
+import { ToolResultError } from "../src/errors.js";
 
 function harness(payloads: unknown[], overrides: NodeJS.ProcessEnv = {}) {
   const events: Record<string, unknown>[] = [],
@@ -44,7 +45,9 @@ function harness(payloads: unknown[], overrides: NodeJS.ProcessEnv = {}) {
     events,
     requests,
     writes,
-    generate: () =>
+    generate: (
+      validate?: (result: import("zod").z.infer<typeof matchingSchema>) => void,
+    ) =>
       openAIProvider(config, store, fetcher, (e) => events.push(e)).generate(
         run,
         "step-1",
@@ -52,6 +55,7 @@ function harness(payloads: unknown[], overrides: NodeJS.ProcessEnv = {}) {
         "JSON protocol",
         {},
         new AbortController().signal,
+        validate,
       ),
   };
 }
@@ -69,6 +73,31 @@ const envelope = (content: unknown, finish_reason = "stop") => ({
     prompt_cache_miss_tokens: 23,
     completion_tokens_details: { reasoning_tokens: 3400 },
   },
+});
+test("a semantic reference error gets one fenced repair with its exact path and retained usage", async () => {
+  const h = harness([envelope(JSON.stringify(valid))]);
+  let validations = 0;
+  await h.generate(() => {
+    if (++validations === 1)
+      throw new ToolResultError(
+        "引用不匹配",
+        "$.result.evidence[0].refs[0].quote",
+        "quote_not_in_source",
+      );
+  });
+  assert.equal(h.events.length, 2);
+  assert.equal(h.events[0].code, "TOOL_RESULT_INVALID");
+  assert.deepEqual(h.events[0].validation, {
+    kind: "semantic_validation",
+    issues: [
+      {
+        path: "$.result.evidence[0].refs[0].quote",
+        code: "quote_not_in_source",
+      },
+    ],
+  });
+  assert.equal(h.events[0].finish_reason, "stop");
+  assert.equal(h.events[0].completion_tokens, 3500);
 });
 
 test("truncated JSON is distinguished from schema fields and retains billed usage on repair", async () => {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { type Config } from "./config.js";
-import { AgentError } from "./errors.js";
+import { AgentError, ToolResultError } from "./errors.js";
 import type { Store, RunRecord } from "./store.js";
 import {
   fieldIssues,
@@ -18,6 +18,7 @@ export interface ModelProvider {
     instruction: string,
     data: unknown,
     signal: AbortSignal,
+    validate?: (result: T) => void,
   ): Promise<T>;
 }
 const responseLimit = 262144;
@@ -91,6 +92,7 @@ export function openAIProvider(
       instruction: string,
       data: unknown,
       signal: AbortSignal,
+      validate?: (result: T) => void,
     ): Promise<T> {
       let transientRetries = 0,
         repairs = 0,
@@ -277,8 +279,14 @@ export function openAIProvider(
             );
           }
           result = checked.data;
+          validate?.(result);
         } catch (error) {
           if (signal.aborted) throw signal.reason;
+          if (error instanceof ToolResultError)
+            diagnostic = {
+              kind: "semantic_validation",
+              issues: [{ path: error.path, code: error.rule }],
+            };
           failure = timeout.signal.aborted
             ? new AgentError("MODEL_TIMEOUT", "模型响应超时，请重试", 504, true)
             : error instanceof AgentError
@@ -349,13 +357,16 @@ export function openAIProvider(
         );
         Object.assign(run.run_view.usage, usage);
         if (!failure) return result!;
-        if (failure.code === "MODEL_SCHEMA_INVALID" && repairs < 1) {
+        const invalidResult =
+          failure.code === "MODEL_SCHEMA_INVALID" ||
+          failure.code === "TOOL_RESULT_INVALID";
+        if (invalidResult && repairs < 1) {
           previousDiagnostic = diagnostic;
           repairs++;
           continue;
         }
         if (
-          failure.code !== "MODEL_SCHEMA_INVALID" &&
+          !invalidResult &&
           failure.retryable &&
           transientRetries < config.MAX_MODEL_RETRIES
         ) {

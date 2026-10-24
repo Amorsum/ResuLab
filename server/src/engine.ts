@@ -11,15 +11,19 @@ import {
   targetValue,
   type RunView,
 } from "../../shared/agent.js";
-import { AgentError, safeError } from "./errors.js";
+import { AgentError, ToolResultError, safeError } from "./errors.js";
 import type { Store, RunRecord } from "./store.js";
 import type { ModelProvider } from "./provider.js";
 import type { Config } from "./config.js";
 
 const tools = toolSchema.options;
-function ensure(condition: unknown, message: string): asserts condition {
-  if (!condition)
-    throw new AgentError("TOOL_RESULT_INVALID", message, 502, true);
+function ensure(
+  condition: unknown,
+  message: string,
+  path = "$",
+  rule = "invalid_tool_result",
+): asserts condition {
+  if (!condition) throw new ToolResultError(message, path, rule);
 }
 function unique(ids: string[]) {
   return new Set(ids).size === ids.length;
@@ -42,30 +46,62 @@ export function validateEvidence(run: RunRecord) {
     view.evidence.length === requirements.size &&
       unique(view.evidence.map((e) => e.requirementId)),
     "每项岗位要求必须有且只有一条覆盖判断",
+    "$.result.evidence",
+    "requirement_coverage_count",
   );
-  for (const evidence of view.evidence) {
+  for (const [index, evidence] of view.evidence.entries()) {
+    const path = `$.result.evidence[${index}]`;
     ensure(
       requirements.has(evidence.requirementId),
       "证据引用了不存在的岗位要求",
+      path + ".requirementId",
+      "unknown_requirement",
     );
     if (evidence.coverage === "supported")
-      ensure(evidence.refs.length > 0, "已支持的要求必须有证据");
+      ensure(
+        evidence.refs.length > 0,
+        "已支持的要求必须有证据",
+        path + ".refs",
+        "supported_requires_reference",
+      );
     if (evidence.coverage === "missing")
-      ensure(evidence.refs.length === 0, "缺口不能伪造证据");
-    for (const ref of evidence.refs) {
+      ensure(
+        evidence.refs.length === 0,
+        "缺口不能伪造证据",
+        path + ".refs",
+        "missing_requires_empty_refs",
+      );
+    for (const [refIndex, ref] of evidence.refs.entries()) {
+      const refPath = path + `.refs[${refIndex}]`;
       const original = refs.get(ref.id);
       ensure(
-        original &&
-          original.section === ref.section &&
-          original.itemId === ref.itemId &&
-          original.field === ref.field &&
-          original.quote.includes(ref.quote),
+        original,
         "简历证据必须能定位到当前快照原文",
+        refPath + ".id",
+        "unknown_reference",
+      );
+      for (const field of ["section", "itemId", "field"] as const)
+        ensure(
+          original[field] === ref[field],
+          "简历证据必须能定位到当前快照原文",
+          refPath + "." + field,
+          "reference_locator_mismatch",
+        );
+      ensure(
+        original.quote.includes(ref.quote),
+        "简历证据必须能定位到当前快照原文",
+        refPath + ".quote",
+        "quote_not_in_source",
       );
     }
   }
-  ensure(unique(view.questions.map((q) => q.id)), "追问 ID 重复");
-  for (const q of view.questions)
+  ensure(
+    unique(view.questions.map((q) => q.id)),
+    "追问 ID 重复",
+    "$.result.questions",
+    "duplicate_question_id",
+  );
+  for (const [index, q] of view.questions.entries())
     ensure(
       requirements.has(q.requirementId) &&
         view.evidence.some(
@@ -73,6 +109,8 @@ export function validateEvidence(run: RunRecord) {
             e.requirementId === q.requirementId && e.coverage !== "supported",
         ),
       "仅对真实缺口或模糊经历追问",
+      `$.result.questions[${index}].requirementId`,
+      "question_requires_gap",
     );
 }
 export function validateChanges(
@@ -226,6 +264,15 @@ export async function executeRun(
             references: snapshotReferences(run.resume_snapshot),
           },
           signal,
+          (candidate) =>
+            validateEvidence({
+              ...run,
+              run_view: {
+                ...run.run_view,
+                evidence: candidate.result.evidence,
+                questions: candidate.result.questions,
+              },
+            }),
         );
         run.run_view.evidence = result.result.evidence;
         run.run_view.questions = result.result.questions;

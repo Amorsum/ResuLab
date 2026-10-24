@@ -5,6 +5,7 @@ export type FailureKind =
   | "content_missing"
   | "json_parse"
   | "field_validation"
+  | "semantic_validation"
   | "truncated"
   | "upstream_finish";
 export interface ValidationDiagnostic {
