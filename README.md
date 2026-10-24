@@ -79,6 +79,10 @@ AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字�
 
 修改环境变量后重启 Vite。前端沿用 GitHub Pages 与域名 `resulab.amorsum.top`，Agent 后端运行于云电脑并已提供公网 HTTPS 入口，接入配置见 `docs/competition/api-handoff.md`。本机真实联调已获得用户反馈通过；集成分支合并与正式前端发布仍按团队流程进行，详见 `docs/competition/frontend-handoff.md`。
 
+GitHub Pages 构建从仓库 Secrets 读取 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_AI_API_BASE`，从仓库 Variables 读取 `VITE_AGENT_API_BASE`（公网 HTTPS 地址），并固定 `VITE_AGENT_MOCK=false`。缺少必要配置会阻止发布；后端地址变更后需更新变量并重新构建。离线缓存只处理本站静态资源和页面，页面优先联网获取新版，Agent、Supabase、旧 AI API 及带认证头的请求不进入缓存。
+
+正式发布、回调白名单及云简历/旧 AI 的数据库兼容迁移见 [Web 发布说明](docs/competition/web-release.md)。Agent 迁移不创建旧功能的表；迁移需由数据库管理员执行，不能在前端配置管理员密钥绕过权限。
+
 ### 构建桌面端 / 移动端
 
 安装包通过 GitHub Releases 分发，不提交到仓库（文件过大）。
