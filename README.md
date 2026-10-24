@@ -64,13 +64,24 @@ AI 智能填写采用“生成 → 预览 → 确认追加”流程：校验字�
 
 旧生成/润色服务读取 `VITE_AI_API_BASE`（默认 `https://api.amorsum.top`）。编辑器顶部“针对岗位优化”打开 Agent 工作区：输入 JD → 证据匹配 → 回答追问 → 勾选并确认修改 → 预览导出；一次撤销恢复整批建议。
 
+“预览并导出”会关闭工作区、显示简历预览并触发一次 PDF 下载；工具栏仍可手动导出。桌面与移动预览使用独立引用，导出只截取当前可见预览，避免窗口宽度切换后捕获隐藏区域。
+
+仅涉及空格、换行或句末句号的建议会标注“空白/标点整理”；这类变化不代表实质内容重写，部分模板下导出的外观可能相同。撤销按最近操作依次恢复，重复选择当前模板不会新增历史；刷新页面会清空内存中的撤销历史。
+
+同一会话中，已应用的选中字段全部恢复到原文后，工作区显示“本批建议已恢复原文”；历史建议对比仍保留，且继续禁止重复应用。
+
 - 本机联调：设置 `VITE_AGENT_API_BASE=http://localhost:8788`、`VITE_AGENT_MOCK=false`，启动方式见 `server/README.md`。端口冲突时，以 Vite 实际端口更新后端 `ALLOWED_ORIGINS`。
 - 同源部署：显式设置 `VITE_AGENT_API_BASE=`。未设置该变量时显示配置提示，不会回落模拟。
 - 开发样例：仅在 Vite 开发模式显式设置 `VITE_AGENT_MOCK=true` 才启用；页面明确标记，生产构建始终禁用。五种状态用于交互验证，非模型效果证明。
 - 任务按登录账号保存 runId 恢复索引；完整结果从服务端查询。回答草稿仅存当前浏览器会话、按账号和任务隔离。请求超时可重发同一次操作，创建/回答/重试复用该操作的幂等键。
 - 应用仅限共享协议白名单，核对快照摘要和原文；简历编辑、删除、重排后拒绝旧建议。本批应用后禁用重复应用（撤销后需要重新分析）。
+- 分析失败时可将工作区中的任务编号和错误代码交给后端排查。估计费用“未知”表示完整 Token 用量或模型单价缺失，不代表零费用。证据匹配结构错误的后端排查步骤见 `docs/competition/model-schema-handoff.md`。
 
-修改环境变量后重启 Vite。现有域名为 `resulab.amorsum.top`，计划本机运行后端；公网 HTTPS 入口尚待配置。开发进度与真实联调条件见 `docs/competition/frontend-handoff.md`。
+修改环境变量后重启 Vite。前端沿用 GitHub Pages 与域名 `resulab.amorsum.top`，Agent 后端运行于云电脑并已提供公网 HTTPS 入口，接入配置见 `docs/competition/api-handoff.md`。本机真实联调已获得用户反馈通过；集成分支合并与正式前端发布仍按团队流程进行，详见 `docs/competition/frontend-handoff.md`。
+
+GitHub Pages 构建从仓库 Secrets 读取 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_AI_API_BASE`，从仓库 Variables 读取 `VITE_AGENT_API_BASE`（公网 HTTPS 地址），并固定 `VITE_AGENT_MOCK=false`。缺少必要配置会阻止发布；后端地址变更后需更新变量并重新构建。离线缓存只处理本站静态资源和页面，页面优先联网获取新版，Agent、Supabase、旧 AI API 及带认证头的请求不进入缓存。
+
+正式发布、回调白名单及云简历/旧 AI 的数据库兼容迁移见 [Web 发布说明](docs/competition/web-release.md)。Agent 迁移不创建旧功能的表；迁移需由数据库管理员执行，不能在前端配置管理员密钥绕过权限。
 
 ### 构建桌面端 / 移动端
 

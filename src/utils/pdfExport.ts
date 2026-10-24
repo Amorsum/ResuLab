@@ -55,6 +55,10 @@ export async function exportToPdf(
       backgroundColor: '#ffffff',
     });
 
+    if (canvas.width <= 0 || canvas.height <= 0) {
+      throw new Error('预览截图尺寸无效，请打开预览后重试');
+    }
+
     // Step 2: 计算尺寸
     const imgWidth = A4_WIDTH_MM;
     const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;

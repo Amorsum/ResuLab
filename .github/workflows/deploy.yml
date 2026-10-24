@@ -26,11 +26,19 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: |
+          node -e "for (const name of ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_AGENT_API_BASE']) { if (!process.env[name]?.trim()) throw new Error('Missing deployment config: ' + name); } if (new URL(process.env.VITE_AGENT_API_BASE).protocol !== 'https:') throw new Error('Agent API must use HTTPS');"
+          npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_AI_API_BASE: ${{ secrets.VITE_AI_API_BASE }}
+          VITE_AGENT_API_BASE: ${{ vars.VITE_AGENT_API_BASE }}
+          VITE_AGENT_MOCK: 'false'
+
+      - name: Record deployed version
+        run: |
+          node -e "require('node:fs').writeFileSync('dist/version.json', JSON.stringify({commit: process.env.GITHUB_SHA, builtAt: new Date().toISOString()}))"
 
       - name: Copy index.html to 404.html (SPA routing fix)
         run: cp dist/index.html dist/404.html

@@ -62,7 +62,25 @@ export default function BuilderPage() {
   };
 
   // PDF 导出
-  const { previewRef, exportPdf, exportDocx, isExporting, error: exportError } = usePdfExport();
+  const mobilePreviewRef = useRef<HTMLDivElement>(null);
+  const { previewRef, getPreviewElement, exportPdf, exportDocx, isExporting, error: exportError } = usePdfExport(mobilePreviewRef);
+  const [pendingAgentExport, setPendingAgentExport] = useState(false);
+
+  const previewAndExport = () => {
+    setAgentOpen(false);
+    setMobileView('preview');
+    setPendingAgentExport(true);
+  };
+
+  // Wait until the dialog has closed and the mobile preview has mounted.
+  useEffect(() => {
+    if (!pendingAgentExport || agentOpen) return;
+    const frame = requestAnimationFrame(() => {
+      setPendingAgentExport(false);
+      void exportPdf();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pendingAgentExport, agentOpen, exportPdf]);
 
   // 首次加载时：URL 有模板参数 → 同步到 state
   useEffect(() => {
@@ -83,7 +101,7 @@ export default function BuilderPage() {
 
   /** 智能一页（移动端需要） */
   const smartFit = useCallback(() => {
-    const el = previewRef.current;
+    const el = getPreviewElement();
     if (!el) return;
 
     const prevOverflow = el.style.overflow;
@@ -128,7 +146,7 @@ export default function BuilderPage() {
       const newLineHeight = Math.max(12, Math.round(lineHeight * ratio));
       setLineHeight(newLineHeight);
     }
-  }, [previewRef, resume, setFontSize, setLineHeight, setPageMargin]);
+  }, [getPreviewElement, resume, setFontSize, setLineHeight, setPageMargin]);
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden bg-gray-100 ${agentOpen ? 'agent-background-hidden' : ''}`}>
@@ -194,7 +212,7 @@ export default function BuilderPage() {
           {mobileView === 'preview' && (
             <div className="flex-1 overflow-y-auto pb-16 bg-gray-100">
               <PreviewPanel
-                previewRef={previewRef}
+                previewRef={mobilePreviewRef}
                 isExporting={isExporting}
                 exportError={exportError}
                 onExport={exportPdf}
@@ -218,7 +236,7 @@ export default function BuilderPage() {
 
       {/* ========== 首次使用引导 ========== */}
       <OnboardingOverlay />
-      <AgentWorkspace open={agentOpen} onClose={() => setAgentOpen(false)} onPreview={() => { setAgentOpen(false); setMobileView('preview'); }} />
+      <AgentWorkspace open={agentOpen} onClose={() => setAgentOpen(false)} onPreview={previewAndExport} />
     </div>
   );
 }
