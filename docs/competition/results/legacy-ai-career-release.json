@@ -1,0 +1,55 @@
+{
+  "at": "2026-10-24T11:19:14.338Z",
+  "apiOrigin": "https://api.amorsum.top",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "supabaseHost": "junromgokspodibpphkg.supabase.co",
+  "syntheticOnly": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/ai/generate",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/ai/generate",
+      "status": 401,
+      "cors": true,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/membership/status",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/ai/generate",
+      "status": 200,
+      "cors": true
+    }
+  ],
+  "generateRequested": true,
+  "realModelCompleted": true,
+  "cleanup": {
+    "userDeleted": true
+  },
+  "success": true,
+  "currentProjectTokenVerified": true,
+  "workerAcceptsCurrentProjectToken": true,
+  "generatedSections": [
+    "personalInfo",
+    "jobIntention",
+    "projects",
+    "skills",
+    "selfEvaluation"
+  ]
+}
