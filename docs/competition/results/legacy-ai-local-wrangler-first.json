@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-24T08:41:59.349Z",
+  "apiOrigin": "http://127.0.0.1:8787",
+  "supabaseHost": "junromgokspodibpphkg.supabase.co",
+  "syntheticOnly": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/ai/generate",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/ai/generate",
+      "status": 401,
+      "cors": true,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/membership/status",
+      "status": 503,
+      "cors": true,
+      "errorCode": "AUTH_UNAVAILABLE"
+    }
+  ],
+  "generateRequested": true,
+  "realModelCompleted": false,
+  "cleanup": {
+    "userDeleted": true
+  },
+  "success": false,
+  "currentProjectTokenVerified": true,
+  "workerAcceptsCurrentProjectToken": false,
+  "failureStage": "GET /api/membership/status",
+  "failure": "MEMBERSHIP_FAILED"
+}

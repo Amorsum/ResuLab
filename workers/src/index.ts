@@ -5,6 +5,8 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY: string;
   PLATFORM_API_KEY: string;
   DEEPSEEK_BASE_URL?: string;
+  DEEPSEEK_MODEL?: string;
+  DEEPSEEK_THINKING?: 'enabled' | 'disabled';
 }
 
 // ==================== Helpers ====================
@@ -306,11 +308,13 @@ async function chatCompletion(
   if (!env.PLATFORM_API_KEY) throw new ApiError('CONFIG_MISSING', 'AI 模型尚未配置完成，请联系管理员');
   const baseUrl = env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
   const body: Record<string, unknown> = {
-    model: 'deepseek-chat',
+    model: env.DEEPSEEK_MODEL || 'deepseek-chat',
     messages,
     temperature: options?.temperature ?? 0.7,
     max_tokens: options?.max_tokens ?? 4096,
   };
+  if (env.DEEPSEEK_THINKING === 'enabled' || env.DEEPSEEK_THINKING === 'disabled')
+    body.thinking = { type: env.DEEPSEEK_THINKING };
   if (options?.response_format?.type === 'json_object') {
     body.response_format = { type: 'json_object' };
   }

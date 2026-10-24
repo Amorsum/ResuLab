@@ -15,7 +15,8 @@ const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, options);
 const login = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, options);
 const base = new URL(origin).origin;
-const report = { at: new Date().toISOString(), apiOrigin: base, supabaseHost: new URL(env.SUPABASE_URL).hostname, syntheticOnly: true, operations: [], generateRequested: generate === '--generate', realModelCompleted: false, cleanup: null, success: false };
+const frontendOrigin = new URL(process.env.LEGACY_FRONTEND_ORIGIN || 'https://resulab.amorsum.top').origin;
+const report = { at: new Date().toISOString(), apiOrigin: base, frontendOrigin, supabaseHost: new URL(env.SUPABASE_URL).hostname, syntheticOnly: true, operations: [], generateRequested: generate === '--generate', realModelCompleted: false, cleanup: null, success: false };
 let userId, token, stage = 'health';
 const save = () => { fs.mkdirSync(path.dirname(reportFile), { recursive: true }); fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n'); };
 async function request(route, method = 'GET', body, authorization = token) {
@@ -23,12 +24,12 @@ async function request(route, method = 'GET', body, authorization = token) {
   const operation = { method, route, status: null, cors: false };
   report.operations.push(operation); save();
   const response = await fetch(base + route, {
-    method, headers: { Origin: 'https://resulab.amorsum.top', ...(authorization ? { Authorization: `Bearer ${authorization}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}), ...(method === 'OPTIONS' ? { 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization,content-type' } : {}) },
+    method, headers: { Origin: frontendOrigin, ...(authorization ? { Authorization: `Bearer ${authorization}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}), ...(method === 'OPTIONS' ? { 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization,content-type' } : {}) },
     body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(method === 'POST' ? 120000 : 20000),
   });
   operation.status = response.status;
   const allow = response.headers.get('Access-Control-Allow-Origin');
-  operation.cors = allow === '*' || allow === 'https://resulab.amorsum.top';
+  operation.cors = allow === '*' || allow === frontendOrigin;
   const result = await response.json().catch(() => ({}));
   if (typeof result.error === 'string' && /^[A-Z_]+$/.test(result.error)) operation.errorCode = result.error;
   save(); return { response, result, operation };

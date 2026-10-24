@@ -83,6 +83,9 @@ test('authenticated generate completes both rounds, records usage and returns th
     if (url.includes('/ai_usage_logs?')) return response([]);
     if (url.endsWith('/chat/completions')) {
       models++;
+      const body = JSON.parse(init.body);
+      assert.equal(body.model, 'deepseek-chat');
+      assert.equal(body.thinking, undefined);
       return response({ choices: [{ message: { content: models === 1 ? JSON.stringify({ personalInfo: { jobTitle: '后端开发' }, skills: [{ skillName: 'TypeScript' }] }) : '具备TypeScript接口开发经历。' } }] });
     }
     if (url.endsWith('/ai_usage_logs') && init.method === 'POST') { writes++; return response([{ user_id: userId }]); }
@@ -94,4 +97,23 @@ test('authenticated generate completes both rounds, records usage and returns th
   assert.equal(body.personalInfo.jobTitle, '后端开发');
   assert.equal(body.selfEvaluation, '具备TypeScript接口开发经历。');
   assert.equal(models, 2); assert.equal(writes, 1);
+});
+
+test('local model overrides are explicit and do not change production defaults', async () => {
+  const service = worker(async (url, init) => {
+    if (url.endsWith('/auth/v1/user')) return response({ id: userId });
+    if (url.includes('/memberships?')) return response([{ tier: 'free', status: 'active' }]);
+    if (url.includes('/ai_usage_logs?')) return response([]);
+    if (url.endsWith('/chat/completions')) {
+      const body = JSON.parse(init.body);
+      assert.equal(body.model, 'configured-local-model');
+      assert.deepEqual(body.thinking, { type: 'disabled' });
+      assert.equal(init.headers.Authorization, 'Bearer model-only-fixture');
+      return response({ choices: [{ message: { content: '实际接口开发经历' } }] });
+    }
+    return response([]);
+  });
+  const result = await service.fetch(request('/api/ai/polish', { body: JSON.stringify({ fieldLabel: '工作描述', currentValue: '接口开发经历' }) }), { ...env, DEEPSEEK_MODEL: 'configured-local-model', DEEPSEEK_THINKING: 'disabled' });
+  assert.equal(result.status, 200);
+  assert.equal((await result.json()).polished, '实际接口开发经历');
 });
