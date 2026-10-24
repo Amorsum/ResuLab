@@ -19,11 +19,12 @@ import {
 } from "./evidence.js";
 import {
   draftProposalSchema,
-  draftTargets,
   draftSourceCatalog,
   originalTargetValue,
   resolveDraftProposals,
 } from "./drafting.js";
+import { draftingInput, draftingInstruction } from "./drafting-instructions.js";
+import { validateDraftQuality } from "./draft-quality.js";
 
 const tools = toolSchema.options;
 function ensure(
@@ -281,7 +282,7 @@ export async function executeRun(
           run,
           stepId,
           extractionSchema,
-          '返回 {"tool":"extract_job_requirements","result":{"requirements":[{"id":"req-1","text":"要求","jdQuote":"JD 原文逐字引用","required":true}]}}。最多20项，ID唯一。',
+          '返回 {"tool":"extract_job_requirements","result":{"requirements":[{"id":"req-1","text":"要求","jdQuote":"JD 原文逐字引用","required":true}]}}。最多20项，ID唯一。优先提取实际工作职责、技术/方法、业务对象和交付要求，合并重复要求；按JD强调程度排列，必需要求优先。text写具体要求，不要只抽取孤立关键词。jdQuote须逐字引用JD。',
           { jdText: run.jd_text },
           signal,
         );
@@ -298,7 +299,7 @@ export async function executeRun(
           run,
           stepId,
           evidenceSelectionSchema,
-          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"evidence-1"}]}],"questions":[]}}。coverage只能是supported、needs_clarification、missing三者之一。refs只含给定references.id；禁止输出quote、section、itemId、field，后端根据编号回填原文与定位。必须选择语义相关的真实证据；没有相关证据就标缺口，不能用无关引用宣称支持。每个要求一个evidence，supported须有引用，missing须无引用。只对非supported要求提问，最多3题，可以无问题；问题格式为{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}。不得预设用户已做过或诱导虚构。',
+          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"evidence-1"}]}],"questions":[]}}。coverage只能是supported、needs_clarification、missing三者之一。refs只含给定references.id；禁止输出quote、section、itemId、field，后端根据编号回填原文与定位。必须选择语义相关的真实证据；没有相关证据就标缺口，不能用无关引用宣称支持。每个要求一个evidence，supported须有引用，missing须无引用。为后续改写选择足够的相关上下文：同一经历中能说明职责、行动、技术、业务对象、已有结果的description/highlights可共同入选，不要只选技能名称；不能为增加上下文而选无关经历。只对非supported要求提问，最多3题，可以无问题；优先询问能改善岗位表达的实际职责、具体做法或交付对象，而非一律索要增长数字。问题格式为{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}。不得预设用户已做过或诱导虚构。',
           {
             requirements: run.run_view.requirements,
             references: [...catalog].map(([id, reference]) => ({
@@ -337,25 +338,13 @@ export async function executeRun(
           run,
           stepId,
           draftProposalSchema,
-          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"给定条目ID","field":"description"},"after":"建议","reason":"理由","sources":[{"id":"source-1"}],"needsConfirmation":true}]}}。禁止输出before，由后端从当前简历快照按合法target回填原值。sources只含给定sourceCatalog.id，禁止输出kind/refId/quote，由后端回填真实来源原文。target必须逐字段复制给定targets之一，不得猜测条目ID。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。highlights的after必须是字符串数组，其余after是字符串。每个目标至多一项，最多20项。after中每个数字字面量（包括保留的原文数字）必须原样出现在所选sources对应的quote中；检查给定numbers，选择覆盖全部数字的来源，不能从未选中的原文借用数字。不新增、换算、改写数字、单位或百分比。没有证据的事实不新增，不复制JD为个人能力，不编造技能；没有安全修改时返回空changes。',
-          {
-            snapshot: run.resume_snapshot,
-            targets: draftTargets(run.resume_snapshot),
-            sourceCatalog: [...sources].map(([id, source]) => ({
-              id,
-              ...source,
-              numbers: source.quote.match(/\d+(?:[.,]\d+)*(?:%|％)?/g) ?? [],
-            })),
-            requirements: run.run_view.requirements,
-            evidence: run.run_view.evidence,
-            questions: run.run_view.questions,
-          },
+          draftingInstruction,
+          draftingInput(run),
           signal,
           (candidate) => {
-            validateChanges(
-              run,
-              resolveDraftProposals(candidate, run.resume_snapshot, sources),
-            );
+            const changes = resolveDraftProposals(candidate, run.resume_snapshot, sources);
+            validateChanges(run, changes);
+            validateDraftQuality(changes);
           },
         );
         run.run_view.changes = validateChanges(
@@ -364,6 +353,7 @@ export async function executeRun(
         );
       } else {
         run.run_view.changes = validateChanges(run, run.run_view.changes);
+        validateDraftQuality(run.run_view.changes);
       }
       const step = run.run_view.steps.find((s) => s.id === stepId)!;
       step.status = "completed";
