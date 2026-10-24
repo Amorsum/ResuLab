@@ -100,3 +100,28 @@ test('zero-sized canvas fails before constructing PDF and restores preview style
   assert.equal(pdfCreated, false);
   assert.deepEqual(element.style, { maxHeight: 'none', overflow: 'visible' });
 });
+
+test('multi-page export captures full unscaled content and does not create a rounding-only blank page', async () => {
+  let options, pages = 1, saved = false;
+  const { exportToPdf } = compile('src/utils/pdfExport.ts', {
+    html2canvas: { default: async (_element, settings) => { options = settings; return { width: 1588, height: 4492, toDataURL: () => 'data:image/jpeg;base64,synthetic' }; } },
+    jspdf: { jsPDF: class { addImage() {} addPage() { pages++; } save() { saved = true; } } },
+    '@tauri-apps/api/core': {},
+  }, { window: {} });
+  const element = { scrollHeight: 2246, style: { maxHeight: '', overflow: '' } };
+  await exportToPdf(element, 'synthetic');
+  assert.equal(options.height, 2246); assert.equal(options.width, 794);
+  const clone = { style: {} }; options.onclone({}, clone);
+  assert.equal(clone.style.transform, 'none'); assert.equal(clone.style.maxHeight, 'none');
+  assert.equal(pages, 2); assert.equal(saved, true);
+  assert.deepEqual(element.style, { maxHeight: '', overflow: '' });
+});
+
+test('page boundary moves to whitespace before glyphs and has a safe fallback for filled backgrounds', () => {
+  const { whitespaceBreak } = compile('src/utils/pdfExport.ts', { html2canvas: {}, jspdf: {}, '@tauri-apps/api/core': {} }, { window: {} });
+  const pixels = new Uint8ClampedArray(100 * 20 * 4).fill(255);
+  for (let y = 15; y < 20; y++) for (let x = 10; x < 80; x++) pixels[(y * 100 + x) * 4] = 0;
+  assert.equal(whitespaceBreak(pixels, 100, 20), 14);
+  pixels.fill(0);
+  assert.equal(whitespaceBreak(pixels, 100, 20), 20);
+});

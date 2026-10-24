@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useResume } from '../hooks/useResume';
 import { useAuth } from '../hooks/useAuth';
 import { useCloudResumes } from '../hooks/useCloudResumes';
@@ -9,12 +9,14 @@ import { FormPanel } from '../components/form/FormPanel';
 import { PreviewPanel } from '../components/preview/PreviewPanel';
 import MobileBuilderBar from '../components/preview/MobileBuilderBar';
 import OnboardingOverlay from '../components/onboarding/OnboardingOverlay';
-import UserMenu from '../components/layout/UserMenu';
+import AppHeader from '../components/layout/AppHeader';
 import { AgentWorkspace } from '../components/agent/AgentWorkspace';
+import { libraryOwner, readLibrary, updateLibrary, cleanLibraryResume } from '../utils/careerLibrary';
+import { generateId } from '../constants/defaultResume';
 
 export default function BuilderPage() {
   const { templateId } = useParams<{ templateId: string }>();
-  const { resume, setTemplate, setFontSize, setLineHeight, setPageMargin, undo, redo } = useResume();
+  const { resume, setTemplate, setFontSize, setLineHeight, setPageMargin, undo, redo, saveStatus } = useResume();
   const navigate = useNavigate();
   const initialized = useRef(false);
   const [agentOpen, setAgentOpen] = useState(() => new URLSearchParams(window.location.search).get('agent') === '1');
@@ -45,6 +47,19 @@ export default function BuilderPage() {
   const { saveResume } = useCloudResumes();
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [versionOpen, setVersionOpen] = useState(false), [versionTitle, setVersionTitle] = useState('');
+  const versionLock = useRef(false);
+  const saveVersion = async () => {
+    if (versionLock.current || !versionTitle.trim()) return;
+    versionLock.current = true; setSaving(true); setSaveMsg(null);
+    const owner = libraryOwner(user?.id), snapshot = cleanLibraryResume(resume);
+    try {
+      const current = await readLibrary(owner);
+      await updateLibrary(owner, current.revision, data => ({ ...data, drafts: [{ id: generateId(), title: versionTitle.trim(), jdText: '', createdAt: Date.now(), kind: 'saved', resume: snapshot }, ...data.drafts] }));
+      setVersionOpen(false); setSaveMsg('岗位版本已保存，可在经历库重新打开');
+    } catch (err) { setSaveMsg(err instanceof Error ? err.message : '版本保存失败，请重试'); }
+    finally { versionLock.current = false; setSaving(false); }
+  };
 
   const handleCloudSave = async () => {
     if (!user) return;
@@ -149,25 +164,13 @@ export default function BuilderPage() {
   }, [getPreviewElement, resume, setFontSize, setLineHeight, setPageMargin]);
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden bg-gray-100 ${agentOpen ? 'agent-background-hidden' : ''}`}>
+    <div className={`builder-shell h-screen flex flex-col overflow-hidden bg-gray-100 ${agentOpen ? 'agent-background-hidden' : ''}`}>
       {/* ========== 顶部导航栏 ========== */}
-      <header className="flex-shrink-0 h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-10">
-        <Link to="/" className="flex items-center gap-1.5 text-base font-bold text-primary-700">
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14,2 14,8 20,8"/>
-          </svg>
-          ResuLab
-        </Link>
-
+      <AppHeader />
+      <div className="builder-actions" aria-label="简历操作">
+        <span>编辑与导出</span>
         <div className="flex items-center gap-1 sm:gap-3">
-          <Link to="/library" aria-label="经历库 / 定向写作" className="min-h-10 flex items-center px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100"><span className="hidden sm:inline">经历库 / 定向写作</span><span className="sm:hidden">经历库</span></Link>
           <button onClick={() => setAgentOpen(true)} className="min-h-10 px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100"><span className="hidden sm:inline">针对岗位优化</span><span className="sm:hidden">岗位优化</span></button>
-          {saveMsg && (
-            <span className={`text-xs ${saveMsg.includes('失败') ? 'text-red-500' : 'text-green-600'}`}>
-              {saveMsg}
-            </span>
-          )}
           {user && (
             <button
               onClick={handleCloudSave}
@@ -177,15 +180,17 @@ export default function BuilderPage() {
               {saving ? '保存中...' : <><span className="hidden sm:inline">保存到云端</span><span className="sm:hidden">云保存</span></>}
             </button>
           )}
-          <UserMenu />
         </div>
-      </header>
+      </div>
+      <div className="builder-context"><div><strong>{resume.jobIntention.desiredPosition || '我的求职简历'}</strong><span role="status">{saveStatus === 'saved' ? '已自动保存到本机' : saveStatus === 'saving' ? '正在保存…' : '本机保存失败，请导出或保存到云端后再离开'}</span></div><button className="career-button" onClick={() => { setVersionTitle(resume.jobIntention.desiredPosition || '我的岗位简历'); setVersionOpen(!versionOpen); }}>另存岗位版本</button></div>
+      {saveMsg && <p className="builder-feedback" role="status">{saveMsg}</p>}
+      {versionOpen && <form className="version-save" onSubmit={event => { event.preventDefault(); void saveVersion(); }}><label>版本名称<input className="input-base" autoFocus value={versionTitle} maxLength={120} onChange={event => setVersionTitle(event.target.value)} placeholder="例如：前端实习 · A 公司" /></label><button className="btn-primary" disabled={saving || !versionTitle.trim()}>保存独立版本</button><button type="button" className="btn-secondary" onClick={() => setVersionOpen(false)}>取消</button></form>}
 
       {/* ========== 主内容区 ========== */}
       <div className="flex flex-1 min-h-0">
         {/* 桌面端：双栏布局 */}
         {/* 左侧: 表单面板 */}
-        <div className="hidden lg:block w-[440px] flex-shrink-0">
+        <div className="builder-form-column hidden lg:block w-[440px] flex-shrink-0">
           <FormPanel />
         </div>
 
@@ -228,6 +233,7 @@ export default function BuilderPage() {
             view={mobileView}
             onSwitchView={setMobileView}
             onExport={exportPdf}
+            onExportDocx={exportDocx}
             isExporting={isExporting}
             exportError={exportError}
             onSmartFit={smartFit}

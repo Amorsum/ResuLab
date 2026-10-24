@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useResume } from '../../hooks/useResume';
 import type { FontFamily } from '../../types/resume';
+import { TEMPLATE_LIST } from '../../constants/templates';
 
 interface MobileBuilderBarProps {
   view: 'form' | 'preview';
   onSwitchView: (v: 'form' | 'preview') => void;
   onExport: () => void;
+  onExportDocx?: () => void;
   isExporting: boolean;
   exportError?: string | null;
   onSmartFit?: () => void;
@@ -38,18 +40,19 @@ function marginLabel(m: number) {
   return labels[m] || `${m}`;
 }
 
-export default function MobileBuilderBar({ view, onSwitchView, onExport, isExporting, exportError, onSmartFit }: MobileBuilderBarProps) {
-  const { resume, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort } = useResume();
+export default function MobileBuilderBar({ view, onSwitchView, onExport, onExportDocx, isExporting, exportError, onSmartFit }: MobileBuilderBarProps) {
+  const { resume, setTemplate, setAccentColor, setFontFamily, setFontSize, setLineHeight, setPageMargin, smartSort } = useResume();
   const [showSettings, setShowSettings] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   if (view === 'form') {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-4 py-3 pb-safe">
+      <div className="mobile-builder-bar fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 px-4 py-3 pb-safe">
         <button
           onClick={() => onSwitchView('preview')}
           className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium text-sm active:bg-primary-700 transition-colors"
         >
-          👁️ 预览简历
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>预览简历
         </button>
       </div>
     );
@@ -67,12 +70,14 @@ export default function MobileBuilderBar({ view, onSwitchView, onExport, isExpor
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900">排版设置</h3>
-              <button onClick={() => setShowSettings(false)} className="text-gray-400 p-1">
+              <button aria-label="关闭排版设置" onClick={() => setShowSettings(false)} className="text-gray-400 p-1">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
+
+            <div className="mb-4"><span className="text-xs text-gray-400 mb-1.5 block">简历模板</span><div className="flex flex-wrap gap-2">{TEMPLATE_LIST.map(template => <button key={template.id} aria-pressed={resume.templateId === template.id} onClick={() => setTemplate(template.id)} className={`px-3 py-2 border rounded-lg text-sm ${resume.templateId === template.id ? 'bg-primary-50 border-primary-500 text-primary-700' : 'border-gray-200'}`}>{template.name}</button>)}</div></div>
 
             {/* 主题色 */}
             <div className="mb-4">
@@ -164,7 +169,7 @@ export default function MobileBuilderBar({ view, onSwitchView, onExport, isExpor
       )}
 
       {/* 底部工具栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 pb-safe">
+      <div className="mobile-builder-bar fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 pb-safe">
         {/* 导出错误提示 */}
         {exportError && (
           <div className="px-4 py-1.5 bg-red-50 text-red-700 text-xs flex items-center gap-2 border-b border-red-100">
@@ -221,9 +226,11 @@ export default function MobileBuilderBar({ view, onSwitchView, onExport, isExpor
             <span className="text-[10px] leading-none">排版</span>
           </button>
 
+          {showExport && <div className="mobile-export-options" aria-label="选择导出格式"><button disabled={isExporting} onClick={() => { setShowExport(false); onExport(); }}>导出 PDF</button>{onExportDocx && <button disabled={isExporting} onClick={() => { setShowExport(false); onExportDocx(); }}>导出 Word</button>}<button onClick={() => setShowExport(false)}>取消</button></div>}
           {/* 导出 */}
           <button
-            onClick={onExport}
+            onClick={() => setShowExport(!showExport)}
+            aria-expanded={showExport}
             disabled={isExporting}
             className="flex flex-col items-center gap-0.5 px-3 py-1 bg-primary-600 text-white rounded-lg active:bg-primary-700 transition-colors min-w-0 disabled:opacity-50"
           >

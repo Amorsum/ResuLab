@@ -74,7 +74,7 @@ export default function MinimalTemplate({ data }: Props) {
                 <span className="text-gray-400" style={{ fontSize: '0.93em' }}>{formatDateRange(edu.startDate, edu.endDate, edu.isCurrent)}</span>
               </div>
               <p className="text-gray-500" style={{ fontSize: '0.93em' }}>{edu.degree} · {edu.major}{edu.gpa ? ` · GPA ${edu.gpa}` : ''}</p>
-              {edu.description && <p className="text-gray-400 mt-0.5" style={{ fontSize: '0.93em' }}>{edu.description}</p>}
+              {edu.description && <p className="text-gray-400 mt-0.5 whitespace-pre-line" style={{ fontSize: '0.93em' }}>{edu.description}</p>}
             </div>
           ))}
         </MinimalSection>
@@ -118,7 +118,7 @@ export default function MinimalTemplate({ data }: Props) {
                 </div>
                 <span className="text-gray-400" style={{ fontSize: '0.93em' }}>{formatDateRange(proj.startDate, proj.endDate, proj.isCurrent)}</span>
               </div>
-              {proj.description && <p className="text-gray-600 mt-1" style={{ fontSize: '0.93em' }}>{proj.description}</p>}
+              {proj.description && <p className="text-gray-600 mt-1 whitespace-pre-line" style={{ fontSize: '0.93em' }}>{proj.description}</p>}
               {proj.techStack.length > 0 && (
                 <p className="text-gray-400 mt-1" style={{ fontSize: '0.85em' }}>{proj.techStack.join(' · ')}</p>
               )}

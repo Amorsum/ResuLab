@@ -154,7 +154,7 @@ export function createApp(deps: AppDependencies) {
       p_revision: input.resumeRevision,
       p_view: view,
       p_max_pending: deps.config.MAX_PENDING_RUNS_PER_USER,
-      p_max_daily: deps.config.MAX_DAILY_RUNS_PER_USER,
+      p_max_daily: null, // Personal use: no daily quota; pending/concurrency guards still apply.
     });
     return c.json(result as object, 202);
   });

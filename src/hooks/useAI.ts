@@ -8,16 +8,6 @@ import type { CareerInput, CareerResult } from '../../shared/career';
 
 const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, '');
 
-export interface MembershipStatus {
-  tier: 'free' | 'pro';
-  status: 'active' | 'cancelled' | 'expired';
-  usage: {
-    generate: { used: number; limit: number };
-    polish: { used: number; limit: number };
-    interview: { used: number; limit: number };
-  };
-}
-
 export interface AIGenerateResult {
   personalInfo?: Record<string, string>;
   jobIntention?: Record<string, string>;
@@ -74,22 +64,13 @@ export function useAI() {
   };
 
   /**
-   * 获取会员状态和用量
-   */
-  const getMembershipStatus = async (): Promise<MembershipStatus> => {
-    return aiRequest<MembershipStatus>(AI_API_BASE, '/api/membership/status', {
-      headers: headers(),
-    }, '获取会员状态失败');
-  };
-
-  /**
    * 批量生成简历 - 粘贴原始经历文本，返回完整 ResumeData
    */
-  const generateResume = async (rawText: string): Promise<AIGenerateResult> => {
+  const generateResume = async (rawText: string, purpose?: 'resume-import'): Promise<AIGenerateResult> => {
     return aiRequest<AIGenerateResult>(AI_API_BASE, '/api/ai/generate', {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ rawText }),
+      body: JSON.stringify({ rawText, purpose }),
     }, '生成失败，请重试');
   };
 
@@ -98,9 +79,9 @@ export function useAI() {
       method: 'POST', headers: headers(), body: JSON.stringify(input), signal,
     }, '岗位简历生成失败，请稍后重试');
 
-  const extractLibraryFacts = (rawText: string): Promise<AIGenerateResult> =>
+  const extractLibraryFacts = (rawText: string, signal?: AbortSignal): Promise<AIGenerateResult> =>
     aiRequest<AIGenerateResult>(AI_API_BASE, '/api/ai/generate', {
-      method: 'POST', headers: headers(), body: JSON.stringify({ rawText, purpose: 'career-library' }),
+      method: 'POST', headers: headers(), body: JSON.stringify({ rawText, purpose: 'career-library' }), signal,
     }, '经历提取失败，请稍后重试');
 
   /** 润色单个字段 */
@@ -146,7 +127,6 @@ export function useAI() {
   return {
     tailorResume,
     extractLibraryFacts,
-    getMembershipStatus,
     generateResume,
     polishField,
     startInterview,

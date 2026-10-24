@@ -20,7 +20,7 @@ export default function SelfEvalSection() {
         label=""
         value={resume.selfEvaluation}
         onChange={setSelfEvaluation}
-        placeholder="简要介绍自己的专业背景、核心能力和职业目标。如：5年前端开发经验，擅长React和TypeScript，主导过多个从0到1的项目..."
+        placeholder="可留空。用一两句已证实的项目行动说明与岗位的联系，避免空泛评价和未做过的事情。"
         rows={5}
         hint="建议控制在 200 字以内，突出核心竞争力和职业亮点"
       />

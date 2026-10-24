@@ -143,7 +143,7 @@ export default function ClassicTemplate({ data }: Props) {
                   <span className="text-gray-400" style={{ fontSize: '0.85em' }}>{formatDateRange(edu.startDate, edu.endDate, edu.isCurrent)}</span>
                 </div>
                 <p className="text-gray-600" style={{ fontSize: '0.93em' }}>{edu.degree} · {edu.major}{edu.gpa ? ` · GPA ${edu.gpa}` : ''}</p>
-                {edu.description && <p className="text-gray-500 mt-1" style={{ fontSize: '0.93em' }}>{edu.description}</p>}
+                {edu.description && <p className="text-gray-500 mt-1 whitespace-pre-line" style={{ fontSize: '0.93em' }}>{edu.description}</p>}
               </div>
             ))}
           </Section>
@@ -184,7 +184,7 @@ export default function ClassicTemplate({ data }: Props) {
                   <span className="text-gray-400" style={{ fontSize: '0.85em' }}>{formatDateRange(proj.startDate, proj.endDate, proj.isCurrent)}</span>
                 </div>
                 <p className="text-gray-600" style={{ fontSize: '0.93em' }}>{proj.role}</p>
-                {proj.description && <p className="text-gray-500 mt-1" style={{ fontSize: '0.93em' }}>{proj.description}</p>}
+                {proj.description && <p className="text-gray-500 mt-1 whitespace-pre-line" style={{ fontSize: '0.93em' }}>{proj.description}</p>}
                 {proj.techStack.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {proj.techStack.map((t) => (
