@@ -29,7 +29,7 @@ export default function ProjectSection() {
               label="担任角色"
               value={proj.role}
               onChange={(v) => updateItem('projects', proj.id, { role: v })}
-              placeholder="如：前端负责人"
+              placeholder="例如：负责页面开发的小组成员"
             />
           </div>
           <DateRangeField

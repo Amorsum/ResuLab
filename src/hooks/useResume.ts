@@ -14,6 +14,7 @@ export function useResume() {
   const { state, dispatch, undo, redo, canUndo, canRedo } = ctx;
 
   return {
+    saveStatus: ctx.saveStatus,
     resume: state,
     applyAgentChanges: (payload: AgentApplication) => dispatch({ type: 'APPLY_AGENT_CHANGES', payload }),
     importAIResume: (payload: AIImportPlan) => dispatch({ type: 'IMPORT_AI_RESUME', payload }),

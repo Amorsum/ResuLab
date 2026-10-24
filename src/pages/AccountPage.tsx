@@ -1,3 +1,4 @@
+import AppHeader from '../components/layout/AppHeader';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -92,22 +93,9 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="studio-utility-page min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* 导航栏 */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary-700">
-            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-            </svg>
-            ResuLab
-          </Link>
-          <Link to="/my-resumes" className="text-sm text-gray-500 hover:text-gray-700">
-            我的简历
-          </Link>
-        </div>
-      </nav>
+      <AppHeader />
 
       <div className="max-w-xl mx-auto px-6 py-12">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">账号设置</h1>

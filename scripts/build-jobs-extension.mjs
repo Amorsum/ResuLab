@@ -1,0 +1,12 @@
+import { build } from 'esbuild';
+import { mkdir, copyFile, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+const root = fileURLToPath(new URL('..', import.meta.url));
+const outdir = path.join(root, 'release-artifacts/jobs-extension');
+await mkdir(outdir, { recursive: true });
+await build({ entryPoints: ['background', 'boss', 'bridge', 'popup'].map(name => path.join(root, `extension/src/${name}.ts`)), bundle: true, outdir, platform: 'browser', target: 'chrome120', format: 'iife', sourcemap: false, minify: false });
+for (const name of ['manifest.json', 'popup.html', 'popup.css']) await copyFile(path.join(root, 'extension', name), path.join(outdir, name));
+const manifest = JSON.parse(await readFile(path.join(outdir, 'manifest.json'), 'utf8'));
+if (manifest.permissions.some(permission => ['cookies', 'debugger'].includes(permission)) || manifest.host_permissions.includes('<all_urls>')) throw new Error('Unexpected broad permissions');
+console.log(`Extension built: ${outdir}`);

@@ -623,3 +623,14 @@ test("persisted checkpoint survives database close/reopen and resumes with a new
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("personal usage can create another task after twenty completed tasks today", async () => {
+  for (let i = 0; i < 20; i++) {
+    const id = await createRun(context.store, `personal-history-${i}`);
+    await context.db.query("update agent_runs set status='completed' where id=$1", [id]);
+  }
+  const response = await fixtureApp(context.store).request("/api/agent/runs", {
+    method: "POST", headers, body: JSON.stringify(await fixtureInput("personal-task-21")),
+  });
+  assert.equal(response.status, 202);
+});

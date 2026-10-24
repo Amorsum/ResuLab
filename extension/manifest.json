@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "ResuLab 求职助手（个人预览版）",
+  "version": "0.1.2",
+  "description": "连接 ResuLab 求职工作台，读取岗位、准备专用简历并管理审核批次。未经真实验收的发送动作禁用。",
+  "minimum_chrome_version": "120",
+  "permissions": ["alarms"],
+  "host_permissions": ["https://www.zhipin.com/*", "http://127.0.0.1:3000/*", "https://resulab.amorsum.top/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup.html" },
+  "content_scripts": [
+    { "matches": ["https://www.zhipin.com/*"], "js": ["boss.js"], "run_at": "document_idle" },
+    { "matches": ["http://127.0.0.1:3000/*", "https://resulab.amorsum.top/*"], "js": ["bridge.js"], "run_at": "document_idle" }
+  ]
+}

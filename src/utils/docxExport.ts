@@ -209,7 +209,7 @@ export async function exportToDocx(data: ResumeData, filename: string) {
       });
       reader.readAsDataURL(blob);
       const base64 = await base64Promise;
-      (core.invoke as (cmd: string, args: Record<string, unknown>) => Promise<unknown>)('save_pdf', { data: base64, filename: `${filename}.docx` });
+      await (core.invoke as (cmd: string, args: Record<string, unknown>) => Promise<unknown>)('save_pdf', { data: base64, filename: `${filename}.docx` });
       return;
     }
   }

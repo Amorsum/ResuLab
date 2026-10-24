@@ -27,8 +27,8 @@ const schemas: Record<CareerSection, Record<string, 'text' | 'boolean' | 'list'>
   languages: { language: 'text', level: 'text', score: 'text' },
 };
 const enumFields: Record<string, string[]> = {
-  'education.degree': ['高中', '中专', '大专', '本科', '学士', '硕士', '博士', 'MBA', 'EMBA'],
-  'skills.level': ['了解', '掌握', '熟练', '精通'], 'languages.level': ['母语', '精通', '熟练', '良好', '一般'],
+  'education.degree': ['', '高中', '中专', '大专', '本科', '学士', '硕士', '博士', 'MBA', 'EMBA'],
+  'skills.level': ['', '了解', '掌握', '熟练', '精通'], 'languages.level': ['', '母语', '精通', '熟练', '良好', '一般'],
 };
 export class CareerValidationError extends Error {
   constructor(public rule: string, public path: string) { super(`${rule} at ${path}`); }

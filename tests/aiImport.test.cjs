@@ -87,3 +87,13 @@ test('one batch uses one actual undo history entry; rejected imports do not cons
   assert.equal(render().state, state); assert.equal(render().canUndo, false);
   render().redo(); assert.equal(render().state, imported);
 });
+
+test('faithful file imports preserve unknown degree and skill/language levels', () => {
+  const state = createEmptyResume();
+  const plan = prepareAIImport({ education:[{schoolName:'合成学校'}], skills:[{skillName:'React'}], languages:[{language:'英语'}] }, state, true);
+  assert.equal(plan.items.education[0].degree,'');
+  assert.equal(plan.items.skills[0].level,'');
+  assert.equal(plan.items.languages[0].level,'');
+  const imported = resumeReducer(state, action(plan));
+  assert.equal(imported.skills[0].skillName,'React');
+});

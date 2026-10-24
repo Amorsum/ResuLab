@@ -1,8 +1,9 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useAI } from '../../hooks/useAI';
 import { useResume } from '../../hooks/useResume';
 import { useAIContext } from '../../hooks/useAIContext';
 import { hasImportChanges, IMPORT_LABELS, IMPORT_SECTIONS, importRevision, prepareAIImport, type AIImportPlan } from '../../utils/aiImport';
+import { MAX_RESUME_TEXT, readResumeFile, type ResumeFileText } from '../../utils/resumeFile';
 
 const FIELD_LABELS: Record<string, string> = {
   fullName: '姓名', gender: '性别', birthYear: '出生年', birthMonth: '出生月', phone: '电话', email: '邮箱', city: '城市', jobTitle: '职位', yearsOfExperience: '工作年限',
@@ -25,14 +26,39 @@ export function AIBulkGenerate() {
 
   const [plan, setPlan] = useState<AIImportPlan | null>(null);
   const [notice, setNotice] = useState('');
+  const [reading, setReading] = useState(false), [readProgress, setReadProgress] = useState('');
+  const [fileSource, setFileSource] = useState(''), [fileWarning, setFileWarning] = useState('');
+  const [pendingFile, setPendingFile] = useState<ResumeFileText | null>(null);
+  const reader = useRef<AbortController | null>(null);
+  const readLock = useRef(false);
+  useEffect(() => () => reader.current?.abort(), []);
   const busy = useRef(false);
   const latestResume = useRef(resume.resume);
   latestResume.current = resume.resume;
 
   const accessError = checkAccess('generate');
 
+  const useFile = (file: ResumeFileText, append = false) => {
+    const text = append ? `${rawText.trim()}\n\n${file.text}` : file.text;
+    if (text.length > MAX_RESUME_TEXT) { setError('合并后的文字超过 60000 字，请精简当前输入再追加。'); return; }
+    setRawText(text); setFileSource(file.name); setFileWarning(file.warning); setPendingFile(null); setError(null);
+    setNotice('文件已在本地读取。请核对文本，再点击“提取并预览”。');
+  };
+  const handleFile = async (file: File) => {
+    if (busy.current || readLock.current) return;
+    readLock.current = true; setReading(true); setError(null); setNotice(''); setPendingFile(null);
+    const controller = new AbortController(); reader.current = controller;
+    let timedOut = false;
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 60000);
+    try {
+      const result = await readResumeFile(file, controller.signal, setReadProgress);
+      if (rawText.trim()) setPendingFile(result); else useFile(result);
+    } catch (err) { setError(timedOut ? '读取超过 60 秒，原输入保留。请缩小文件或转换格式后重试。' : err instanceof Error ? err.message : '读取失败，原输入保留。'); }
+    finally { clearTimeout(timeout); setReading(false); setReadProgress(''); readLock.current = false; }
+  };
+
   const handleGenerate = async () => {
-    if (busy.current) return;
+    if (busy.current || readLock.current || pendingFile) return;
     if (accessError) { setError(accessError); return; }
     busy.current = true;
     setNotice('');
@@ -40,9 +66,9 @@ export function AIBulkGenerate() {
     setLoading(true);
 
     try {
-      const result = await generateResume(rawText);
+      const result = await generateResume(rawText, fileSource ? 'resume-import' : undefined);
 
-      const next = prepareAIImport(result, latestResume.current);
+      const next = prepareAIImport(result, latestResume.current, Boolean(fileSource));
       if (!hasImportChanges(next)) throw new Error('没有可导入的新内容，重复或无效条目已跳过。');
       setPlan(next);
     } catch (err) {
@@ -61,6 +87,7 @@ export function AIBulkGenerate() {
     busy.current = true;
     resume.importAIResume(plan);
     setPlan(null); setIsOpen(false); setRawText('');
+    setFileSource(''); setFileWarning(''); setPendingFile(null);
     setNotice('已追加导入，可用 Ctrl+Z 一次撤销本次全部修改。');
     busy.current = false;
   };
@@ -72,9 +99,9 @@ export function AIBulkGenerate() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
-            bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium
-            hover:from-violet-600 hover:to-purple-700
+          className="ai-bulk-trigger w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+            bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium
+            hover:from-primary-600 hover:to-primary-700
             transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -89,17 +116,17 @@ export function AIBulkGenerate() {
 
       {/* 展开面板 */}
       {isOpen && (
-        <div className="border border-violet-200 rounded-xl overflow-hidden bg-white shadow-sm">
-          <div className="px-4 py-3 bg-violet-50 border-b border-violet-100 flex items-center justify-between">
+        <div className="ai-bulk-panel border border-primary-200 rounded-xl overflow-hidden bg-white shadow-sm">
+          <div className="px-4 py-3 bg-primary-50 border-b border-primary-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
               </svg>
-              <span className="font-medium text-sm text-violet-700">AI 智能填写简历</span>
+              <span className="font-medium text-sm text-primary-700">AI 智能填写简历</span>
             </div>
             <button
               onClick={() => { setIsOpen(false); setPlan(null); setError(null); }}
-              disabled={loading} aria-label="关闭智能填写" className="min-h-11 min-w-11 text-violet-700 disabled:opacity-50"
+              disabled={loading || reading} aria-label="关闭智能填写" className="min-h-11 min-w-11 text-primary-700 disabled:opacity-50"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -109,7 +136,7 @@ export function AIBulkGenerate() {
 
           <div className="p-4 space-y-3">
             <p className="text-xs text-gray-500">
-              粘贴你的职业经历、项目简介或个人介绍，AI 将自动提取信息并填入简历各栏目。
+              导入已有简历，或粘贴经历文本。AI 整理后先核对，确认才会填入编辑器。
             </p>
 
             {plan ? <div className="space-y-3 text-sm">
@@ -129,18 +156,30 @@ export function AIBulkGenerate() {
               <p>跳过重复或无效条目：{plan.skipped} 条。请核实事实后确认。</p>
               {importRevision(resume.resume) !== plan.baseRevision && <p role="alert" className="text-red-700">简历已变更，请返回重新生成，避免覆盖新内容。</p>}
             </div> : <>
+            <div className="rounded-lg border border-dashed border-primary-200 bg-primary-50 p-3 space-y-2">
+              <label className="text-sm font-medium text-primary-700 block">导入已有简历
+                <input type="file" accept=".pdf,.docx,.txt,.md" disabled={loading || reading} className="block w-full mt-2 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-primary-700" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleFile(file); }} />
+              </label>
+              <p className="text-xs text-gray-600">PDF、Word（.docx）、TXT / Markdown，最大 10 MB，PDF 最多 20 页。扫描版需先做文字识别。</p>
+              <p className="text-xs text-gray-600">文件在浏览器本地读取；点击提取后，仅下方文本发送给当前配置的 AI。</p>
+            </div>
+            {reading && <div role="status" className="text-xs text-primary-700">{readProgress}<button className="min-h-11 px-3 underline" onClick={() => reader.current?.abort()}>停止读取</button></div>}
+            {pendingFile && <div className="rounded-lg border border-amber-200 p-3 text-sm space-y-2"><p>已读取 {pendingFile.name}，共 {pendingFile.text.length} 字。当前输入已有内容，选择如何导入：</p><div className="flex flex-wrap gap-2"><button className="btn-secondary" onClick={() => useFile(pendingFile, true)}>追加到当前文本</button><button className="btn-secondary" onClick={() => useFile(pendingFile)}>替换输入文本</button><button className="btn-ghost" onClick={() => setPendingFile(null)}>保留当前输入</button></div><p className="text-xs text-gray-500">此处只修改输入文本，不会更改编辑器中的简历。</p></div>}
+            {fileSource && <p className="text-xs text-gray-600 break-all">文件来源：{fileSource} · {rawText.length} 字</p>}
+            {fileWarning && <p className="text-xs text-amber-800">{fileWarning}</p>}
             <label htmlFor={textInputId} className="sr-only">原始经历文本</label>
             <textarea id={textInputId}
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
               placeholder={
-                '例如：\n\n李小明，3年Java后端开发经验，熟悉Spring Boot和MySQL。\n在腾讯做过电商系统，负责订单模块开发，日均处理10万+订单...'
+                '粘贴简历正文，或选择上方文件。\n\n例如：计算机专业在读，参与校园二手交易平台课程项目，负责商品列表和筛选页面，提交了课程报告。'
               }
               rows={6}
+              maxLength={MAX_RESUME_TEXT}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg
-                focus:ring-2 focus:ring-violet-400 focus:border-transparent
+                focus:ring-2 focus:ring-primary-400 focus:border-transparent
                 resize-none placeholder-gray-300"
-              disabled={loading}
+              disabled={loading || reading || Boolean(pendingFile)}
             />
 
             </>}
@@ -154,13 +193,13 @@ export function AIBulkGenerate() {
               </div>
             )}
 
-            {plan && <button onClick={() => { setPlan(null); setError(null); }} className="min-h-11 px-3 text-sm text-violet-700">返回修改</button>}
+            {plan && <button onClick={() => { setPlan(null); setError(null); }} className="min-h-11 px-3 text-sm text-primary-700">返回修改</button>}
             <div className="flex gap-2">
               <button
                 onClick={plan ? confirmImport : handleGenerate}
-                disabled={loading || !rawText.trim() || Boolean(plan && importRevision(resume.resume) !== plan.baseRevision)}
-                className="flex-1 min-h-11 px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-lg
-                  hover:bg-violet-700 disabled:bg-gray-300 disabled:cursor-not-allowed
+                disabled={loading || reading || Boolean(pendingFile) || rawText.trim().length < 20 || Boolean(plan && importRevision(resume.resume) !== plan.baseRevision)}
+                className="flex-1 min-h-11 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg
+                  hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                   transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? (
@@ -169,14 +208,14 @@ export function AIBulkGenerate() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    AI 正在生成...
+                    {fileSource ? 'AI 正在整理简历内容…' : 'AI 正在生成…'}
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                     </svg>
-                    {plan ? '确认追加导入' : '生成并预览'}
+                    {plan ? '确认追加导入' : fileSource ? '提取并预览' : '生成并预览'}
                   </>
                 )}
               </button>
@@ -184,7 +223,7 @@ export function AIBulkGenerate() {
               <button
                 onClick={() => { setIsOpen(false); setPlan(null); setError(null); }}
                 className="min-h-11 px-4 py-2 text-sm text-gray-600 hover:text-gray-700 transition-colors"
-                disabled={loading}
+                disabled={loading || reading}
               >
                 取消
               </button>

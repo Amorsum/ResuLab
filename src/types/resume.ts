@@ -5,15 +5,18 @@ export type TemplateId = 'classic' | 'modern' | 'minimal' | 'professional';
 export type Gender = '' | '男' | '女';
 
 export type DegreeLevel =
+  | ''
   | '高中' | '中专' | '大专'
   | '本科' | '学士'
   | '硕士' | '博士'
   | 'MBA' | 'EMBA';
 
 export type LanguageLevel =
+  | ''
   | '母语' | '精通' | '熟练' | '良好' | '一般';
 
 export type SkillLevel =
+  | ''
   | '精通' | '熟练' | '掌握' | '了解';
 
 export type JobType = '' | '全职' | '兼职' | '实习';

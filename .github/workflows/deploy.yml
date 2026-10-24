@@ -28,18 +28,18 @@ jobs:
 
       - name: Build
         run: |
-          node -e "for (const name of ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_AGENT_API_BASE']) { if (!process.env[name]?.trim()) throw new Error('Missing deployment config: ' + name); } if (new URL(process.env.VITE_AGENT_API_BASE).protocol !== 'https:') throw new Error('Agent API must use HTTPS');"
+          node -e "for (const name of ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_AI_API_BASE', 'VITE_AGENT_API_BASE']) { if (!process.env[name]?.trim()) throw new Error('Missing deployment config: ' + name); } for (const name of ['VITE_AI_API_BASE','VITE_AGENT_API_BASE']) if (new URL(process.env[name]).protocol !== 'https:') throw new Error(name + ' must use HTTPS');"
           npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_AI_API_BASE: ${{ secrets.VITE_AI_API_BASE }}
+          VITE_AI_API_BASE: ${{ secrets.VITE_AI_API_BASE || 'https://api.amorsum.top' }}
           VITE_AGENT_API_BASE: ${{ vars.VITE_AGENT_API_BASE }}
           VITE_AGENT_MOCK: 'false'
 
       - name: Record deployed version
         run: |
-          node -e "require('node:fs').writeFileSync('dist/version.json', JSON.stringify({commit: process.env.GITHUB_SHA, builtAt: new Date().toISOString()}))"
+          node -e "const fs=require('node:fs'); fs.writeFileSync('dist/version.json', JSON.stringify({commit: process.env.GITHUB_SHA, builtAt: new Date().toISOString(), apiMode: 'split-services', extension: JSON.parse(fs.readFileSync('dist/downloads/extension.json','utf8')).version}))"
 
       - name: Copy index.html to 404.html (SPA routing fix)
         run: cp dist/index.html dist/404.html

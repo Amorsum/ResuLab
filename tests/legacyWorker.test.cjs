@@ -60,18 +60,18 @@ test('rejected Supabase token exposes the original error without accepting the r
   assert.equal(calls, 1);
 });
 
-test('usage limit stays a readable 429 and never calls the model', async () => {
-  const response = await worker(authenticatedFetch({ usage: [{ id: '1' }, { id: '2' }, { id: '3' }] })).fetch(request('/api/ai/generate', {
-    method: 'POST', headers: { Authorization: 'Bearer valid-test-token' }, body: JSON.stringify({ rawText: '用于测试的足够长的合成经历文本，不发送任何个人信息。' }),
+test('old accumulated usage does not block personal AI calls', async () => {
+  const response = await worker(authenticatedFetch({ usage: [{ id: '1' }, { id: '2' }, { id: '3' }] })).fetch(request('/api/ai/polish', {
+    method: 'POST', headers: { Authorization: 'Bearer valid-test-token' }, body: JSON.stringify({ fieldLabel:'项目', currentValue:'合成经历' }),
   }), env);
-  cors(response, 429);
-  assert.equal((await response.json()).error, 'USAGE_LIMIT_REACHED');
+  cors(response, 200);
+  assert.equal((await response.json()).polished,'保留原有事实的合成润色结果');
 });
 
-test('dependency failure stays a readable 503 with safe diagnostics', async () => {
+test('membership database failure cannot block the compatibility endpoint', async () => {
   const response = await worker(authenticatedFetch({ databaseError: true })).fetch(request('/api/membership/status', { headers: { Authorization: 'Bearer valid-test-token' } }), env);
-  cors(response, 503);
-  assert.equal((await response.json()).error, 'DATABASE_UNAVAILABLE');
+  cors(response, 200);
+  assert.equal((await response.json()).unlimited, true);
 });
 
 test('successful authenticated polish preserves its response and CORS', async () => {

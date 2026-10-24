@@ -141,7 +141,7 @@ export default function ProfessionalTemplate({ data }: Props) {
                 </span>
               </div>
               {proj.description && (
-                <p className="text-gray-600 mt-1" style={{ fontSize: '0.93em' }}>{proj.description}</p>
+                <p className="text-gray-600 mt-1 whitespace-pre-line" style={{ fontSize: '0.93em' }}>{proj.description}</p>
               )}
               {proj.techStack.length > 0 && (
                 <p className="text-gray-400 mt-1" style={{ fontSize: '0.85em' }}>
@@ -174,7 +174,7 @@ export default function ProfessionalTemplate({ data }: Props) {
                 {edu.degree}{edu.major ? ` · ${edu.major}` : ''}{edu.gpa ? ` · GPA ${edu.gpa}` : ''}
               </p>
               {edu.description && (
-                <p className="text-gray-500 mt-0.5" style={{ fontSize: '0.85em' }}>{edu.description}</p>
+                <p className="text-gray-500 mt-0.5 whitespace-pre-line" style={{ fontSize: '0.85em' }}>{edu.description}</p>
               )}
             </div>
           ))}

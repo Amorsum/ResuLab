@@ -1,5 +1,7 @@
 # ResuLab Agent API
 
+现行部署见 [deploy/production.md](../deploy/production.md)：前端使用 GitHub Pages，原 AI 和账号注销使用 Cloudflare Worker，本服务器继续只运行 Agent，沿用既有 HTTPS 隧道。无需迁移域名或新增反向代理。
+
 Node.js 22 + Hono + Supabase。与原 `workers/` 独立，旧 AI 接口继续走旧服务。本目录不实现前端写回或撤销。
 
 当前部署约定：后端运行在本机，使用 `http://localhost:8788`；默认 `HOST=127.0.0.1` 仅接受本机连接。已有前端域名 `resulab.amorsum.top`，公网访问本机后端的入口后续统一配置；当前不需要云主机、不改DNS。Docker内显式设 `HOST=0.0.0.0` 供同网络代理访问。完整本机验收步骤见 `../docs/competition/local-acceptance.md`。
@@ -35,7 +37,7 @@ health 是进程探活和配置状态，`degraded` 表示缺配置；200 不代�
 
 模型适配当前是 OpenAI-compatible `/chat/completions`，使用 JSON response_format 和结构化动作输出，不使用原生 tool calling。提供方必须支持这些参数；未确认接口能力前不能宣称适配成功。模型名称由实际 `MODEL_ID` 决定，代码未写死比赛模型。价格按每百万 Token 配置，未确认时留空。
 
-限制：每任务默认6次模型请求（包括修复和重试），瞬时错误默认重试1次，JSON最多修复1次，执行并发2，每用户最多3个未结束任务、每天最多20个新任务（UTC日界）。手动重试最多3次且不重置模型预算。无自动取消/任务删除接口；测试管理员可在比赛后按保留策略清理数据。
+限制：每任务默认6次模型请求（包括修复和重试），瞬时错误默认重试1次，JSON最多修复1次，执行并发2，每用户最多3个未结束任务，不设每日任务配额。手动重试最多3次且不重置模型预算。无自动取消/任务删除接口；测试管理员可在比赛后按保留策略清理数据。
 
 共享协议与A的对接见 `../shared/README.md`。启动后若配置齐全，调度器每秒轮询数据库；90秒执行租约，每15秒续租。多个实例通过数据库全局领取锁限制并发。生产主推单实例。
 
