@@ -1,0 +1,128 @@
+{
+  "at": "2026-10-24T10:53:48.909Z",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "syntheticOnly": true,
+  "realAuth": true,
+  "realProvider": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/agent/runs",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 401,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 202,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+      "status": 200,
+      "cors": true
+    }
+  ],
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRunsRemoved": true
+  },
+  "success": true,
+  "runId": "e75a27cd-84bc-4ff3-8c26-cab5b6bb4e11",
+  "status": "completed",
+  "modelCalls": 4,
+  "changes": [
+    {
+      "id": "change-1",
+      "target": {
+        "section": "workExperience",
+        "itemId": "work-1",
+        "field": "description"
+      },
+      "before": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。",
+      "after": "使用TypeScript开发订单查询接口，实现筛选条件和分页逻辑，并与前端核对接口字段；协助查看日志定位接口报错。参与接口实现，接口方案由同事确定。日常整理发版说明。",
+      "reason": "对应岗位要求的使用TypeScript开发业务接口、实现筛选与分页、与前端核对字段及协助查日志；原文将发版说明置于句首，核心接口工作被淹没，且职责与方法混在一起。此次将接口开发相关工作前置，保留“参与实现、方案由同事确定”的责任边界，并把日常事务后置。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    },
+    {
+      "id": "change-2",
+      "target": {
+        "section": "workExperience",
+        "itemId": "work-1",
+        "field": "highlights"
+      },
+      "before": [
+        "参与订单查询接口开发，编写筛选条件和分页逻辑，与前端核对字段。"
+      ],
+      "after": [
+        "使用TypeScript开发订单查询接口，实现筛选条件和分页逻辑，并与前端核对接口字段。"
+      ],
+      "reason": "对应接口开发、筛选分页和前后端字段核对要求；原亮点与description重复且未点明TypeScript。此次保留参与边界，补充已有技术名，使重点更集中。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:highlights",
+          "quote": "参与订单查询接口开发，编写筛选条件和分页逻辑，与前端核对字段。"
+        },
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    }
+  ],
+  "substantiveChanges": 2
+}
