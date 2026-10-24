@@ -3,15 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const ts = require('typescript');
-
-const code = ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../workers/src/index.ts'), 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText;
+const { createRequire } = require('node:module');
+const wranglerRequire = createRequire(path.resolve(__dirname, '../workers/node_modules/wrangler/package.json'));
+const code = wranglerRequire('esbuild').buildSync({ entryPoints: [path.resolve(__dirname, '../workers/src/index.ts')], bundle: true, write: false, format: 'cjs', platform: 'browser', target: 'es2022' }).outputFiles[0].text;
 
 function worker(fetch) {
   const module = { exports: {} };
-  vm.runInNewContext(code, { module, exports: module.exports, fetch, Request, Response, Headers, URL });
+  vm.runInNewContext(code, { module, exports: module.exports, fetch, Request, Response, Headers, URL, crypto, structuredClone, TextEncoder, TextDecoder });
   return module.exports.default;
 }
 const env = { SUPABASE_URL: 'https://database.example.test', SUPABASE_SERVICE_ROLE_KEY: 'test-server-key', PLATFORM_API_KEY: 'test-model-key' };
@@ -26,7 +24,7 @@ function cors(response, status) {
 function authenticatedFetch({ usage = [], databaseError = false } = {}) {
   return async (input, init) => {
     const url = new URL(input);
-    if (url.pathname === '/auth/v1/user') return Response.json({ id: 'test-user' });
+    if (url.pathname === '/auth/v1/user') return Response.json({ id: '00000000-0000-4000-8000-00000000000a' });
     if (databaseError) throw new Error('database temporarily unavailable');
     if (url.pathname === '/rest/v1/memberships') return Response.json([{ tier: 'free', status: 'active' }]);
     if (url.pathname === '/rest/v1/ai_usage_logs') return Response.json(usage);
@@ -70,10 +68,10 @@ test('usage limit stays a readable 429 and never calls the model', async () => {
   assert.equal((await response.json()).error, 'USAGE_LIMIT_REACHED');
 });
 
-test('unexpected upstream failure stays a readable 500', async () => {
+test('dependency failure stays a readable 503 with safe diagnostics', async () => {
   const response = await worker(authenticatedFetch({ databaseError: true })).fetch(request('/api/membership/status', { headers: { Authorization: 'Bearer valid-test-token' } }), env);
-  cors(response, 500);
-  assert.equal((await response.json()).error, 'INTERNAL_ERROR');
+  cors(response, 503);
+  assert.equal((await response.json()).error, 'DATABASE_UNAVAILABLE');
 });
 
 test('successful authenticated polish preserves its response and CORS', async () => {

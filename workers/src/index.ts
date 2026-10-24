@@ -5,6 +5,8 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY: string;
   PLATFORM_API_KEY: string;
   DEEPSEEK_BASE_URL?: string;
+  DEEPSEEK_MODEL?: string;
+  DEEPSEEK_THINKING?: 'enabled' | 'disabled';
 }
 
 // ==================== Helpers ====================
@@ -23,14 +25,36 @@ function json(body: unknown, status = 200): Response {
 }
 
 function withCors(response: Response): Response {
-  // Thrown authentication/quota Responses also need CORS or browsers hide their JSON.
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(CORS_HEADERS)) headers.set(name, value);
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+class ApiError extends Error {
+  constructor(public code: string, message: string, public status = 503) { super(message); }
+}
+
+function requireSupabase(env: Env): string {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)
+    throw new ApiError('CONFIG_MISSING', 'AI 服务尚未配置完成，请联系管理员');
+  try {
+    const url = new URL(env.SUPABASE_URL);
+    if (url.protocol !== 'https:') throw new Error();
+    return url.origin;
+  } catch { throw new ApiError('CONFIG_INVALID', 'AI 服务配置异常，请联系管理员'); }
+}
+
+async function dependencyFetch(url: string, init: RequestInit, dependency: 'auth' | 'database' | 'model'): Promise<Response> {
+  try { return await fetch(url, init); }
+  catch {
+    throw new ApiError(dependency === 'auth' ? 'AUTH_UNAVAILABLE' : dependency === 'database' ? 'DATABASE_UNAVAILABLE' : 'MODEL_UNAVAILABLE',
+      dependency === 'auth' ? '登录验证服务暂时不可用，请稍后重试' : dependency === 'database' ? 'AI 用量服务暂时不可用，请稍后重试' : 'AI 模型服务暂时不可用，请稍后重试');
+  }
+}
+
+async function dependencyJson<T>(response: Response): Promise<T> {
+  try { return await response.json() as T; }
+  catch { throw new ApiError('UPSTREAM_INVALID', 'AI 依赖服务返回异常，请稍后重试'); }
 }
 
 type Handler = (req: Request, env: Env, params: Record<string, string>) => Promise<Response> | Response;
@@ -68,7 +92,7 @@ function match(req: Request): { handler: Handler; params: Record<string, string>
 // ==================== Routes ====================
 
 // Health
-add('GET', '/api/health', () => json({ status: 'ok', timestamp: Date.now() }));
+add('GET', '/api/health', () => json({ status: 'ok', version: 'legacy-auth-cors-20261024', timestamp: Date.now() }));
 
 // Membership status
 add('GET', '/api/membership/status', async (req, env) => {
@@ -187,16 +211,16 @@ add('POST', '/api/ai/interview/respond', async (req, env) => {
 // ==================== Supabase REST ====================
 
 async function supabaseQuery(env: Env, path: string): Promise<unknown[]> {
-  const url = `${env.SUPABASE_URL}/rest/v1/${path}`;
-  const res = await fetch(url, {
+  const url = `${requireSupabase(env)}/rest/v1/${path}`;
+  const res = await dependencyFetch(url, {
     headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` },
-  });
-  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
-  return res.json();
+  }, 'database');
+  if (!res.ok) throw new ApiError('DATABASE_UNAVAILABLE', 'AI 用量服务配置异常，请联系管理员');
+  return dependencyJson<unknown[]>(res);
 }
 
 async function supabaseInsert(env: Env, table: string, data: Record<string, unknown>): Promise<unknown> {
-  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}`, {
+  const res = await dependencyFetch(`${requireSupabase(env)}/rest/v1/${table}`, {
     method: 'POST',
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
@@ -205,25 +229,29 @@ async function supabaseInsert(env: Env, table: string, data: Record<string, unkn
       Prefer: 'return=representation',
     },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
-  return res.json();
+  }, 'database');
+  if (!res.ok) throw new ApiError('DATABASE_UNAVAILABLE', 'AI 用量服务配置异常，请联系管理员');
+  return dependencyJson<unknown>(res);
 }
 
 // ==================== Auth & Membership ====================
 
 async function authenticate(req: Request, env: Env): Promise<string> {
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (!authHeader || !/^Bearer \S+$/i.test(authHeader)) {
     throw new Response(JSON.stringify({ error: 'UNAUTHORIZED', message: '请先登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
-  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+  const res = await dependencyFetch(`${requireSupabase(env)}/auth/v1/user`, {
     headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: authHeader },
-  });
+  }, 'auth');
   if (!res.ok) {
+    if (![400, 401, 403].includes(res.status))
+      throw new ApiError('AUTH_UNAVAILABLE', '登录验证服务暂时不可用，请稍后重试');
     throw new Response(JSON.stringify({ error: 'UNAUTHORIZED', message: '登录已过期' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
-  const data = await res.json() as { id: string };
+  const data = await dependencyJson<{ id: string }>(res);
+  if (!data.id || !/^[0-9a-f-]{36}$/i.test(data.id))
+    throw new ApiError('AUTH_UNAVAILABLE', '登录验证服务返回异常，请稍后重试');
   return data.id;
 }
 
@@ -277,23 +305,26 @@ async function chatCompletion(
   messages: Array<{ role: string; content: string }>,
   options?: { temperature?: number; max_tokens?: number; response_format?: { type: string } }
 ): Promise<string> {
+  if (!env.PLATFORM_API_KEY) throw new ApiError('CONFIG_MISSING', 'AI 模型尚未配置完成，请联系管理员');
   const baseUrl = env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
   const body: Record<string, unknown> = {
-    model: 'deepseek-chat',
+    model: env.DEEPSEEK_MODEL || 'deepseek-chat',
     messages,
     temperature: options?.temperature ?? 0.7,
     max_tokens: options?.max_tokens ?? 4096,
   };
+  if (env.DEEPSEEK_THINKING === 'enabled' || env.DEEPSEEK_THINKING === 'disabled')
+    body.thinking = { type: env.DEEPSEEK_THINKING };
   if (options?.response_format?.type === 'json_object') {
     body.response_format = { type: 'json_object' };
   }
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+  const res = await dependencyFetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.PLATFORM_API_KEY}` },
     body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`DeepSeek API error ${res.status}: ${await res.text()}`);
-  const data = await res.json() as { choices: Array<{ message: { content: string } }> };
+  }, 'model');
+  if (!res.ok) throw new ApiError('MODEL_UNAVAILABLE', 'AI 模型服务暂时不可用，请稍后重试', 502);
+  const data = await dependencyJson<{ choices: Array<{ message: { content: string } }> }>(res);
   return data.choices[0]?.message?.content || '';
 }
 
@@ -383,17 +414,17 @@ export default {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
-    let response: Response;
     try {
       const matched = match(request);
-      response = matched
-        ? await matched.handler(request, env, matched.params)
-        : json({ error: 'NOT_FOUND', message: '接口不存在' }, 404);
+      if (matched) {
+        return withCors(await matched.handler(request, env, matched.params));
+      }
+      return json({ error: 'NOT_FOUND', message: '接口不存在' }, 404);
     } catch (err) {
-      response = err instanceof Response
-        ? err
-        : json({ error: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : '服务器内部错误' }, 500);
+      if (err instanceof Response) return withCors(err);
+      if (err instanceof ApiError) return json({ error: err.code, message: err.message }, err.status);
+      if (err instanceof SyntaxError) return json({ error: 'BAD_REQUEST', message: '请求数据格式不正确' }, 400);
+      return json({ error: 'INTERNAL_ERROR', message: 'AI 服务暂时不可用，请稍后重试' }, 500);
     }
-    return withCors(response);
   },
 };
