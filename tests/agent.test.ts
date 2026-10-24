@@ -3,10 +3,18 @@ import assert from 'node:assert/strict';
 import { agentExamples, exampleSnapshot } from '../shared/agent.examples';
 import { resumeRevision, snapshotFromResume } from '../shared/agent';
 import { createEmptyResume } from '../src/constants/defaultResume';
-import { applyAgentChanges, prepareAgentApplication } from '../src/utils/agentChanges';
+import { applyAgentChanges, isFormattingOnlyChange, prepareAgentApplication } from '../src/utils/agentChanges';
 import { AgentApiError, agentRequest } from '../src/utils/agentApi';
 
 const sample = () => ({ ...createEmptyResume(), ...structuredClone(exampleSnapshot) });
+
+test('formatting notice recognizes pasted whitespace and final punctuation without hiding rewritten content', () => {
+  assert.equal(isFormattingOnlyChange({ before: '实现\u00a0Agent\u00a0Runtime，\n支持工具调\n用。', after: '实现 Agent Runtime，支持工具调用。' }), true);
+  assert.equal(isFormattingOnlyChange({ before: '重视可靠性\n验证输出质量', after: '重视可靠性\n验证输出质量。' }), true);
+  assert.equal(isFormattingOnlyChange({ before: '参与接口开发', after: '独立负责接口开发' }), false);
+  assert.equal(isFormattingOnlyChange({ before: '耗时 11 秒', after: '耗时 3 秒' }), false);
+  assert.equal(isFormattingOnlyChange({ before: ['开发接口', '编写测试'], after: ['开发接口\n编写测试'] }), false);
+});
 async function completed() { const state = sample(); return { state, run: { ...structuredClone(agentExamples.completed), resumeRevision: await resumeRevision(state) } }; }
 test('snapshot excludes identity/layout; shared revision detects ordering and facts', async () => {
   const state = sample(); state.personalInfo.phone = 'private'; state.personalInfo.avatar = 'private';

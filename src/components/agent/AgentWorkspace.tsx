@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { RunView } from '../../../shared/agent';
+import { snapshotFromResume, stableStringify, targetValue } from '../../../shared/agent';
 import { useAgent } from '../../hooks/useAgent';
 import { useResume } from '../../hooks/useResume';
 import { useAuth } from '../../hooks/useAuth';
-import { prepareAgentApplication, validateAgentChanges } from '../../utils/agentChanges';
+import { isFormattingOnlyChange, prepareAgentApplication, validateAgentChanges } from '../../utils/agentChanges';
 import './agent.css';
 
 const statuses: Record<string, string> = { queued: '排队中', running: '分析中', awaiting_input: '等待你补充', completed: '建议已生成', failed: '分析失败' };
@@ -63,6 +64,10 @@ export function AgentWorkspace({ open, onClose, onPreview }: { open: boolean; on
   const [applied, setApplied] = useState(false);
   const [showChanges, setShowChanges] = useState(false);
   const run = agent.run;
+  const appliedSelection = applied ? run?.changes.filter(change => selected.includes(change.id)) ?? [] : [];
+  const currentSnapshot = appliedSelection.length ? snapshotFromResume(resume.resume) : null;
+  const restored = currentSnapshot !== null && appliedSelection.every(change =>
+    stableStringify(targetValue(currentSnapshot, change.target)) === stableStringify(change.before));
   const userId = agent.mock ? 'development-mock' : user?.id ?? '';
   useEffect(() => {
     const el = dialog.current;
@@ -126,8 +131,8 @@ export function AgentWorkspace({ open, onClose, onPreview }: { open: boolean; on
             {run.status === 'completed' && <section className="agent-panel"><h2>核对修改建议</h2><p className="agent-muted">完成分析不代表已经修改简历。勾选你认可的内容，再确认应用。</p>
               {!run.changes.length ? <p className="agent-notice">没有可应用的修改。可补充真实经历后重新分析；不会从岗位描述中补造技能。</p> : <>
                 {!showChanges && <button className="agent-button" onClick={() => setShowChanges(true)}>查看 {run.changes.length} 条修改建议</button>}
-                {showChanges && run.changes.map(change => <article className="agent-change" key={change.id}><label className="agent-choice"><input type="checkbox" checked={selected.includes(change.id)} disabled={applied || applying} onChange={event => setSelected(previous => event.target.checked ? [...previous, change.id] : previous.filter(id => id !== change.id))} /><strong>{sections[change.target.section]} · {change.target.field === 'highlights' ? '工作亮点' : '描述'}</strong></label><div className="agent-diff"><div><h3>原文</h3><p>{text(change.before) || '（空）'}</p></div><div><h3>建议</h3><p>{text(change.after) || '（空）'}</p></div></div><p>修改原因：{change.reason}</p><p className="agent-muted">待你确认：以下引用是否准确、建议是否符合你的实际经历。</p>{change.sources.map((source, i) => <blockquote key={i}>{source.kind === 'answer' ? '你的回答' : '简历事实'}：{source.quote}</blockquote>)}</article>)}
-                {showChanges && <button className="agent-button agent-primary" disabled={!selected.length || applied || applying} onClick={() => void apply()}>{applied ? '本批建议已应用' : applying ? '正在核对…' : `确认应用 ${selected.length} 条建议`}</button>}
+                {showChanges && run.changes.map(change => <article className="agent-change" key={change.id}><label className="agent-choice"><input type="checkbox" checked={selected.includes(change.id)} disabled={applied || applying} onChange={event => setSelected(previous => event.target.checked ? [...previous, change.id] : previous.filter(id => id !== change.id))} /><strong>{sections[change.target.section]} · {change.target.field === 'highlights' ? '工作亮点' : '描述'}</strong></label>{isFormattingOnlyChange(change) && <p className="agent-notice">空白/标点整理：仅检测到空格、换行或句末句号变化，未检测到文字内容重写。预览和导出可能看起来相同。</p>}<div className="agent-diff"><div><h3>原文</h3><p>{text(change.before) || '（空）'}</p></div><div><h3>建议</h3><p>{text(change.after) || '（空）'}</p></div></div><p>修改原因：{change.reason}</p><p className="agent-muted">待你确认：以下引用是否准确、建议是否符合你的实际经历。</p>{change.sources.map((source, i) => <blockquote key={i}>{source.kind === 'answer' ? '你的回答' : '简历事实'}：{source.quote}</blockquote>)}</article>)}
+                {showChanges && <button className="agent-button agent-primary" disabled={!selected.length || applied || applying} onClick={() => void apply()}>{restored ? '本批建议已恢复原文' : applied ? '本批建议已应用' : applying ? '正在核对…' : `确认应用 ${selected.length} 条建议`}</button>}
               </>}
             </section>}
           </>}

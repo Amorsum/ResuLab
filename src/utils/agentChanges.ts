@@ -7,6 +7,18 @@ export interface AgentApplication {
   baseSnapshot: string;
   changes: RunView['changes'];
 }
+// A literal comparison only: this does not evaluate relevance or factual quality.
+export function isFormattingOnlyChange(change: Pick<RunView['changes'][number], 'before' | 'after'>): boolean {
+  const sameText = (before: string, after: string) => {
+    const a = before.replace(/\s+/gu, '');
+    const b = after.replace(/\s+/gu, '');
+    return a === b || (a.length > 0 && b === `${a}。`) || (b.length > 0 && a === `${b}。`);
+  };
+  if (typeof change.before === 'string' && typeof change.after === 'string') return sameText(change.before, change.after);
+  return Array.isArray(change.before) && Array.isArray(change.after)
+    && change.before.length === change.after.length
+    && change.before.every((before, index) => sameText(before, change.after[index]));
+}
 export function validateAgentChanges(state: ResumeData, payload: AgentApplication): void {
   const snapshot = snapshotFromResume(state);
   if (stableStringify(snapshot) !== payload.baseSnapshot) throw new Error('简历已修改或重排，请重新分析后再应用建议。');

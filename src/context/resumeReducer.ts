@@ -113,6 +113,7 @@ export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeDa
       };
 
     case 'SET_TEMPLATE':
+      if (state.templateId === action.payload) return state;
       return {
         ...state,
         lastModified: Date.now(),
