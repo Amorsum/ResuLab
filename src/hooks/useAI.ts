@@ -6,7 +6,7 @@ import { useAuth } from './useAuth';
 import { aiRequest } from '../utils/aiApi';
 import type { CareerInput, CareerResult } from '../../shared/career';
 
-const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE ?? 'https://api.amorsum.top').trim().replace(/\/$/, '');
+const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, '');
 
 export interface AIGenerateResult {
   personalInfo?: Record<string, string>;

@@ -1,6 +1,6 @@
 # ResuLab Agent API
 
-完整生产站点部署见 [deploy/production.md](../deploy/production.md)。当前 Node 入口同时支持原 AI API 共用模块、Agent、账号注销和前端静态资源；Windows 发布运行器会自动设置前端目录。下面保留独立 Agent 的开发与数据库说明。
+现行部署见 [deploy/production.md](../deploy/production.md)：前端使用 GitHub Pages，原 AI 和账号注销使用 Cloudflare Worker，本服务器继续只运行 Agent，沿用既有 HTTPS 隧道。无需迁移域名或新增反向代理。
 
 Node.js 22 + Hono + Supabase。与原 `workers/` 独立，旧 AI 接口继续走旧服务。本目录不实现前端写回或撤销。
 

@@ -48,8 +48,6 @@ Promise.resolve()
       quiet: true,
     });
     if (loaded.error) throw new Error("Server configuration could not be read");
-    const staticRoot = path.join(releaseRoot, 'dist');
-    if (fs.existsSync(path.join(staticRoot, 'index.html'))) process.env.STATIC_ROOT = staticRoot;
     await import(
       pathToFileURL(path.join(releaseRoot, "server/dist/server/src/index.js"))
         .href

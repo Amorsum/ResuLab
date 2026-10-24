@@ -11,7 +11,6 @@ const configSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  STATIC_ROOT: z.string().optional(),
   ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),

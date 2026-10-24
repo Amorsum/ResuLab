@@ -1,68 +1,83 @@
-# 转给队长：ResuLab 正式域名切换
+# 转给队长：沿用现有方式发布 ResuLab
 
-服务器应用、前端、两套 API、下载页面和网关已经部署。本次无需重新安装依赖或重新上传扩展；剩余的是 Cloudflare 域名切换和 HTTPS 激活。
+继续使用原架构，不改 DNS、不切换 Cloudflare 代理或 SSL 模式，也不把前端迁移到服务器。
 
-## 已完成
+| 部分 | 原部署位置 | 本次操作 |
+| --- | --- | --- |
+| 前端与扩展下载 | GitHub Pages → resulab.amorsum.top | 合并 PR #15，原 Actions 自动发布 |
+| 生成、润色、匹配、定制与本人注销 | 原 Cloudflare Worker → api.amorsum.top | 使用原 Cloudflare 账号更新已有 resulab-api |
+| 岗位优化 Agent | 原 Windows Server + 既有 HTTPS 隧道 | 后端已更新，沿用原地址，不需要增加代理 |
+| 登录、云端简历 | 原 Supabase 项目 | 沿用原配置，核对实际邮件和回调 |
 
-- 服务器：`117.50.196.22`，Windows Server。
-- 运行源码：`fef9eca508e8bf430e00557e8a92fff116ec7ea7`。
-- 发布目录：`C:\ResuLab\releases\fef9eca508e8bf430e00557e8a92fff116ec7ea7`。
-- 前端与 AI / Agent 统一同源，Node 仅监听 `127.0.0.1:8788`，Caddy 提供外部入口。
-- 计划任务 `ResuLab-Agent-API`、`ResuLab-Web-Gateway` 开机运行并自动重启。服务器私有配置沿用原文件。
-- 源码和完整 README：[PR #15](https://github.com/Amorsum/ResuLab/pull/15)，分支 `codex/career-library`。
-- 扩展源码：`extension/`；[0.1.2 安装包与校验值](https://github.com/Amorsum/ResuLab/releases/tag/jobs-extension-v0.1.2)。
+## 1. 先更新原 Cloudflare Worker
 
-## 1. 修改 Cloudflare 记录
-
-在 `amorsum.top` 的 DNS 页面，把原记录：
-
-```text
-CNAME  resulab  amorsum.github.io
-```
-
-改成：
-
-```text
-类型：A
-名称：resulab
-IPv4：117.50.196.22
-代理：仅 DNS（灰云）
-TTL：Auto
-```
-
-不要同时保留同名旧 CNAME；检查同名 AAAA 是否指向别处。不更改其他子域名。云主机安全组须允许入站 TCP 80、443，Windows 防火墙规则已经建立。
-
-## 2. 在服务器开启正式 HTTPS
-
-DNS 生效后，登录服务器，以管理员 PowerShell 执行：
+拉取本次分支：
 
 ```powershell
-powershell -NoProfile -File C:\ResuLab\ops\activate-https.ps1
+git fetch origin
+git checkout codex/career-library
+git pull --ff-only
+npm ci
+npm --prefix workers ci
+npm --prefix workers run typecheck
+npm --prefix workers test
 ```
 
-该脚本核对 A 记录并载入已经上传的 Caddy HTTPS 配置，自动申请和续期域名证书。首次申请可能需稍等片刻。无需改前端 API 地址，无需修改模型密钥，无需部署 Cloudflare Worker。
+在已登录原 Cloudflare 账号的开发机执行：
 
-## 3. 验证四个地址
+```powershell
+cd workers
+npm run deploy
+```
+
+沿用 `workers/wrangler.toml` 的既有服务 `resulab-api` 和 `api.amorsum.top` 自定义域名。不新建 Worker，不改 DNS。保留已有 SUPABASE_URL、SUPABASE_SERVICE_ROLE_KEY、PLATFORM_API_KEY 及已设置的 DEEPSEEK_* 配置；前后端必须使用同一 Supabase 项目。`.dev.vars` 只是本地开发配置，不会代替线上 Secret。
+
+发布后核对：
+
+- `https://api.amorsum.top/api/health` 返回正常，`resumeWriterVersion` 为 `resulab-resume-writer/1.1.0`。
+- 未登录 POST `/api/ai/job-match`、`/api/ai/tailor`、`/api/account/delete` 返回带 CORS 的 401。
+- 登录后验证经历提取、匹配和定制；不通过关闭认证解决配置错误。
+
+当前执行机没有 Cloudflare 授权，所以这一步需要队长操作，不能把服务器候选测试当作原 Worker 已更新。
+
+## 2. 合并前端并等待原 Pages 发布
+
+PR：https://github.com/Amorsum/ResuLab/pull/15
+
+把 `codex/career-library` 合并到 `codex/contest-b`，沿用既有 `.github/workflows/deploy.yml` 自动发布到 `gh-pages`，域名继续为 `resulab.amorsum.top`。
+
+仓库公开构建配置沿用原设置：
+
+```text
+VITE_SUPABASE_URL       原 Supabase 项目（Secret）
+VITE_SUPABASE_ANON_KEY  原公开 key（Secret）
+VITE_AI_API_BASE        https://api.amorsum.top（Secret；未填时工作流使用此默认地址）
+VITE_AGENT_API_BASE     现有 HTTPS Agent 地址（Variable，保持原值）
+VITE_AGENT_MOCK         false（工作流固定）
+```
+
+不要把 API 基地址改为空或 localhost。`resulab` 仍是原 CNAME `amorsum.github.io`；无需 A 记录或 Caddy，不执行已撤回方案的 HTTPS 激活命令。
+
+`npm run build` 自动打包扩展并把 ZIP 和校验 JSON 放进 `dist/downloads`，Pages 会一起发布，不需另建下载服务器。
+
+## 3. 验收网页与下载
 
 ```text
 https://resulab.amorsum.top/version.json
-https://resulab.amorsum.top/api/health
-https://resulab.amorsum.top/api/ai/health
+https://resulab.amorsum.top/
+https://resulab.amorsum.top/library
+https://resulab.amorsum.top/jobs
 https://resulab.amorsum.top/extension
 ```
 
-`version.json` 应包含上述源码 SHA、`apiMode: same-origin`、`extension: 0.1.2`；两个 health 均为 `status: ok`。下载页应能下载有效 ZIP；首页、`/builder`、`/library`、`/jobs` 均可直接刷新打开。
+版本文件应为本次合并提交，`apiMode: split-services`、`extension: 0.1.2`。登录并实际操作一次经历提取、匹配、定制、云端保存及 Agent 优化。
 
-正式 HTTPS 可用后，如需 Cloudflare 代理可开启橙云，SSL/TLS 使用 **Full (strict)**，不要用 Flexible。不要缓存 `/api/*`。旧 HTML 若仍显示，清理该主机名的 Cloudflare 缓存。
+下载页要能下载 ZIP，SHA256 与 `/downloads/extension.json` 一致。安装包也已发布到：https://github.com/Amorsum/ResuLab/releases/tag/jobs-extension-v0.1.2
 
-## 4. 核对 Supabase 与体验
+Supabase 的普通邮箱注册、找回密码投递及回调按原流程核验。BOSS 搜索/详情仍待实站验收，自动沟通与附件发送保持禁用。
 
-前后端使用同一 Supabase 项目。Site URL 为 `https://resulab.amorsum.top`，注册与重置密码回调白名单包含实际前端地址（`/builder`、`/update-password`）。使用普通测试邮箱验证注册邮件和密码找回邮件，确认项目的 SMTP 能实际投递。
+## 服务器说明
 
-服务器已通过真实合成账号的登录、本人云简历保存/读回/删除、简历提取、岗位匹配、定制简历及本人注销验证；这些验证不等于真实邮箱邮件投递已通过。
+Agent 继续运行在现有服务器，`C:\ResuLab\deployment.json` 记录实际源码；仍只有 `ResuLab-Agent-API`、`ResuLab-Agent-HTTPS` 两个既有任务。误加的 Caddy 网关、80/443 规则已撤销，未修改服务器私有配置和正式域名记录。
 
-BOSS 自动沟通和附件发送仍禁用，搜索/读取仍需真实页面验收。部署不会把未验证能力变成可用能力，下载页已说明。
-
-## 回滚和后续更新
-
-旧源码与配置均保留。回滚命令与以后重新构建、上传、发布步骤见 [production.md](production.md)。原临时隧道和旧 Pages 入口先保留，正式域名与登录验收通过后再安排下线。合并 PR 只更新仓库/旧 Pages，不会自动改变服务器发布版本。
+只合并 PR 不会自动再次更新 Agent；后续后端改动仍按原 Windows 发布脚本部署。完整说明见 [production.md](production.md)。

@@ -10,7 +10,7 @@
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "test": "tsx --test tests/*.test.ts",
-    "build": "tsc && node ../scripts/build-server-runtime.mjs",
+    "build": "tsc",
     "start": "node dist/server/src/index.js",
     "examples": "tsx scripts/examples.ts",
     "smoke": "tsx scripts/smoke.ts",

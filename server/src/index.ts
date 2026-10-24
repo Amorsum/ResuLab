@@ -8,7 +8,6 @@ import { supabaseStore } from "./store.js";
 import { openAIProvider } from "./provider.js";
 import { startScheduler } from "./engine.js";
 import { configureEnvironmentProxy } from "./network.js";
-import { createSiteApp, loadLegacyApi } from './site.js';
 
 const config = loadConfig();
 configureEnvironmentProxy();
@@ -55,9 +54,8 @@ const scheduler =
   store && ready.model
     ? startScheduler(store, openAIProvider(config, store), config)
     : undefined;
-const site = createSiteApp({ agent: request => app.fetch(request), legacy: await loadLegacyApi(config), staticRoot: config.STATIC_ROOT });
 const server = serve(
-  { fetch: site.fetch, hostname: config.HOST, port: config.PORT },
+  { fetch: app.fetch, hostname: config.HOST, port: config.PORT },
   () =>
     console.log(
       JSON.stringify({

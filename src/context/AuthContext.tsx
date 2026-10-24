@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return { error: '请先登录' };
     try {
-      const base = (import.meta.env.VITE_AI_API_BASE ?? 'https://api.amorsum.top').trim().replace(/\/$/, '');
+      const base = (import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, '');
       await aiRequest(base, '/api/account/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ confirmation: '确认注销' }) }, '账号注销未完成，请稍后重试');
       return { error: null };
     } catch (error) {

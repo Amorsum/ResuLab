@@ -2,7 +2,7 @@
 
 在线入口：[resulab.amorsum.top](https://resulab.amorsum.top) · [浏览器扩展下载与安装](https://resulab.amorsum.top/extension)
 
-从真实经历出发，编辑简历、按岗位整理表达、核对事实来源并导出。当前版本的目标生产架构是 **Windows Server + Node.js + Caddy + Supabase**，前端与两套 AI API 统一使用本站来源。服务器与域名切换步骤见 [完整部署说明](deploy/production.md)；DNS 由域名管理员切换，切换前正式域名仍可能展示旧版 GitHub Pages。
+从真实经历出发，编辑简历、按岗位整理表达、核对事实来源并导出。生产继续沿用 **GitHub Pages 前端 + Cloudflare Worker AI API + Windows Server Agent + Supabase**。域名、Cloudflare 代理及既有 HTTPS 入口保持不变。发布步骤见 [现行部署说明](deploy/production.md)。
 
 ## 功能与当前状态
 
@@ -51,27 +51,23 @@ npm --prefix workers ci
 
 从 `.env.example` 创建前端配置、从 `server/.env.example` 创建后端配置。公开的 Supabase URL / anon key 放前端；service role 与模型密钥仅放服务端。旧开发流程 `npm run dev:upgrade` 使用既有 `workers/.dev.vars` 并启动独立本地 Worker；详情见 [本机使用说明](docs/competition/personal-use.md)。
 
-统一站点开发也可先构建生产产物，在服务端环境设置 `STATIC_ROOT` 为前端 `dist` 的绝对路径，再运行：
-
-```sh
-npm run build:production
-npm --prefix server start
-```
-
-Node 生产入口同时承接页面、下载和 `/api/*`。默认只监听 `127.0.0.1:8788`，外部访问经 Caddy。生产部署继续沿用服务器上的私有配置，不将本机代理和开发地址复制上线。
+本地开发沿用 `npm run dev:upgrade`。生产前端由 GitHub Pages 工作流构建，AI 使用原 Worker，Agent 使用原服务器；本机构建不会自动发布任何服务。
 
 ## 生产部署
 
-可直接转发 [队长域名切换操作单](deploy/captain-handoff.md)。完整部署见 [deploy/production.md](deploy/production.md)，本次已完成事项与验收记录见 [服务器发布验收](docs/competition/production-site-deployment.md)。
+可直接转发 [队长现行发布单](deploy/captain-handoff.md)。完整说明见 [deploy/production.md](deploy/production.md)。无需修改 DNS、Cloudflare 代理或 SSL 模式。
 
-- 前端 `VITE_AI_API_BASE=`、`VITE_AGENT_API_BASE=` 显式留空，表示同源；生产固定 `VITE_AGENT_MOCK=false`。
-- `/api/health`：Agent 配置和进程状态；`/api/ai/health`：原 AI 接口版本。
-- `/api/ai/generate`、`/api/ai/polish`、`/api/ai/tailor`、`/api/ai/job-match`：复用 `workers/src/index.ts`，在 Node 中运行相同逻辑。
-- `/api/agent/*`：持久化岗位优化任务，使用 Supabase 的 Agent 表和 RPC。
-- `/api/account/delete`：经用户会话验证，只能注销本人；不依赖缺失的数据库注销 RPC。
-- 云端简历经 Supabase RLS 访问 `resumes`；SQL 位于 `supabase/migrations/`，部署前核对迁移状态，勿重复变更既有数据。
+1. 在已有授权的机器发布原 `resulab-api` Cloudflare Worker，更新匹配、定制及本人注销接口，保留既有服务端 Secret。
+2. Worker 验收通过后，将 [PR #15](https://github.com/Amorsum/ResuLab/pull/15) 合入 `codex/contest-b`，沿用原 GitHub Pages Actions 发布；页面和扩展 ZIP 一起上线。
+3. Agent 已更新到原服务器，继续使用原 HTTPS 隧道；Supabase 沿用原项目并核对邮件回调。
 
-`workers/` 仍可独立部署到 Cloudflare Worker，但完整服务器部署不需要重新发布 Worker，也不需要在网页配置 `api.amorsum.top`。现有 Pages 工作流保留作旧站回退；DNS 切至服务器后，推送源码不会自动更新服务器，必须执行发布步骤。
+前端 `VITE_AI_API_BASE=https://api.amorsum.top`，`VITE_AGENT_API_BASE` 沿用仓库原 HTTPS 地址，生产固定 `VITE_AGENT_MOCK=false`。不要把生产 API 地址改为空或 localhost。
+
+- Worker：`/api/ai/generate`、`/api/ai/polish`、`/api/ai/tailor`、`/api/ai/job-match`、`/api/account/delete`；未登录仍返回 401。
+- Agent：服务器 `/api/health` 和 `/api/agent/*`，使用既有持久化任务表与 RPC。
+- 云简历直接通过 Supabase RLS 访问本人 `resumes`。数据库迁移位于 `supabase/migrations/`，发布前核对状态，不重复执行。
+
+之前准备的统一服务器/Caddy 方案已撤回，新增网关与防火墙规则已撤销，正式 DNS 未更改。执行机没有 Cloudflare 账号授权，Worker 更新需要由队长完成；服务器模型验收不代表 Worker 已发布。
 
 ## 检查与构建
 
@@ -97,11 +93,11 @@ React 18 / TypeScript / Vite / Tailwind，Hono / Node.js，Supabase Auth / Postg
 | --- | --- |
 | `src/` | 网页、编辑器、经历库、求职工作台与扩展下载页 |
 | `shared/` | 简历事实、选材、改写、Agent 和扩展通信协议 |
-| `server/` | Agent 调度、统一 HTTP/静态资源入口、Node 部署与测试 |
-| `workers/` | 原 AI API 共用实现、可独立运行的 Worker |
+| `server/` | Agent 调度、Node 部署与测试 |
+| `workers/` | Cloudflare AI API、岗位匹配/定制和本人注销 |
 | `extension/` | BOSS 内容脚本、通信桥、持久化后台及弹窗 |
 | `scripts/` | 构建、打包、浏览器回归和生产构建 |
-| `deploy/` | Windows Server / Caddy / Docker 部署与回滚说明 |
+| `deploy/` | 现行 Pages / Worker / Windows Agent 发布、回滚与可选 Docker 方案 |
 | `supabase/migrations/` | Agent 与旧云端功能的数据库迁移 |
 | `src-tauri/` | Windows 桌面与 Android 工程 |
 

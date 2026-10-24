@@ -141,7 +141,7 @@ export default function JobsPage() {
       try {
         const input = libraryInput(library, row.job.jdText), revision = await careerRevision(input);
         if (row.match?.inputRevision === revision && !row.error) continue;
-        const raw = await aiRequest<JobMatch>((import.meta.env.VITE_AI_API_BASE ?? 'https://api.amorsum.top').trim().replace(/\/$/, ''), '/api/ai/job-match', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(input), signal: abort.signal }, '匹配失败');
+        const raw = await aiRequest<JobMatch>((import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, ''), '/api/ai/job-match', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(input), signal: abort.signal }, '匹配失败');
         await patch(row.job.id, { match: await verifyJobMatch(raw, input), error: undefined, reviewed: false });
       } catch (e) { await patch(row.job.id, { error: message(e) }); }
     }

@@ -7,8 +7,6 @@ RUN npm --prefix server ci
 COPY shared ./shared
 COPY server/tsconfig.json ./server/tsconfig.json
 COPY server/src ./server/src
-COPY workers/src ./workers/src
-COPY scripts/build-server-runtime.mjs ./scripts/build-server-runtime.mjs
 RUN npm --prefix server run build
 
 FROM node:22-alpine AS runtime

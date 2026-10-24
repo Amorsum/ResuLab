@@ -1,5 +1,7 @@
 # 完整服务器发布验收（2026-10-25）
 
+> 历史记录：以下统一服务器与 Caddy 方案已按用户要求撤回。现行方式恢复为 GitHub Pages + Cloudflare Worker + 原服务器 Agent，不修改 DNS 或 Cloudflare 代理。新增网关任务和防火墙规则已撤销，运行源码以当前 `C:\ResuLab\deployment.json` 为准。以下测试只证明当时服务器候选方案，不代表正式域名或当前 Worker 已发布。请仅按 [队长现行发布单](../../deploy/captain-handoff.md) 操作，不执行下文旧的域名切换步骤。
+
 服务器已部署完整站点，正式域名的 DNS 和 HTTPS 切换按用户要求交由队长完成。可直接转发 [队长操作单](../../deploy/captain-handoff.md)。
 
 ## 本次发布

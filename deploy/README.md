@@ -1,6 +1,6 @@
 # 比赛环境部署
 
-**当前完整站点发布请使用 [production.md](production.md)**（Windows Server、同源前后端、扩展下载与队长 DNS 交接）。以下为保留的 Docker / 独立 Agent 基线说明；同源 API 代理已覆盖 `/api/*`。
+**当前发布请使用 [production.md](production.md)**（沿用 GitHub Pages、Cloudflare Worker 和服务器 Agent，无需改 DNS 或代理）。以下为保留的可选 Docker / 独立 Agent 基线说明，不是本次上线方式。
 
 基于仓库根构建，独立于 main 的 GitHub Pages 工作流。推送 codex/contest-b 仅更新源码和触发检查，**不会自动把 Agent 部署到云主机**。需实际配置资源、迁移并运行本说明。
 
