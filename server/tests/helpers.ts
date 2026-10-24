@@ -193,7 +193,6 @@ export function modelFetch(
                         itemId: "work-1",
                         field: "description",
                       },
-                      before: "使用 TypeScript 开发接口",
                       after: options.newNumber
                         ? "使用 TypeScript 开发接口，性能提升 90%"
                         : options.useAnswer

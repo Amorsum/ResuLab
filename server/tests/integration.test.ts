@@ -70,6 +70,87 @@ const headers = {
 };
 const signal = () => new AbortController().signal;
 
+test("step-3 semantic failures are repaired once before publication and preserve call usage", async () => {
+  const { store } = context,
+    id = await createRun(store),
+    config = testConfig(),
+    scripted = modelFetch();
+  const events: Record<string, unknown>[] = [];
+  let drafts = 0;
+  const fetcher: typeof fetch = async (url, init) => {
+    const response = await scripted(url, init),
+      payload = await response.json();
+    const action = JSON.parse(payload.choices[0].message.content);
+    if (action.tool === "draft_resume_changes" && ++drafts === 1)
+      action.result.changes[0].target.itemId = "missing-target";
+    payload.choices[0].message.content = JSON.stringify(action);
+    payload.choices[0].finish_reason = "stop";
+    return new Response(JSON.stringify(payload));
+  };
+  await executeRun(
+    (await claim(store))!,
+    store,
+    openAIProvider(config, store, fetcher, (event) => events.push(event)),
+    config,
+    signal(),
+  );
+  const run = await getRun(store, id),
+    draftEvents = events.filter((e) => e.stepId === "step-3");
+  assert.equal(run.status, "completed");
+  assert.equal(run.run_view.changes[0].before, "使用 TypeScript 开发接口");
+  assert.equal(run.run_view.usage.calls, 4);
+  assert.equal(run.run_view.usage.inputTokens, 400);
+  assert.equal(run.run_view.usage.outputTokens, 80);
+  assert.equal(draftEvents.length, 2);
+  assert.deepEqual(draftEvents[0].validation, {
+    kind: "semantic_validation",
+    issues: [{ path: "$.result.changes[0].target", code: "target_not_found" }],
+  });
+  assert.equal(draftEvents[0].status, "failed");
+  assert.equal(draftEvents[1].status, "completed");
+});
+
+test("unfixable draft semantics and exhausted budgets cannot publish partial changes or retry indefinitely", async () => {
+  for (const maxCalls of [6, 3]) {
+    await reset(context.db);
+    const { store } = context,
+      id = await createRun(store),
+      config = {
+        ...testConfig(),
+        MAX_MODEL_CALLS_PER_RUN: maxCalls,
+        MAX_MODEL_RETRIES: 2,
+      },
+      scripted = modelFetch();
+    let drafts = 0;
+    const fetcher: typeof fetch = async (url, init) => {
+      const payload = await (await scripted(url, init)).json(),
+        action = JSON.parse(payload.choices[0].message.content);
+      if (action.tool === "draft_resume_changes") {
+        drafts++;
+        action.result.changes[0].after = ["错误字段类型"];
+      }
+      payload.choices[0].message.content = JSON.stringify(action);
+      return new Response(JSON.stringify(payload));
+    };
+    await executeRun(
+      (await claim(store))!,
+      store,
+      openAIProvider(config, store, fetcher, () => {}),
+      config,
+      signal(),
+    );
+    const run = await getRun(store, id);
+    assert.equal(run.status, "failed");
+    assert.deepEqual(run.run_view.changes, []);
+    assert.equal(drafts, maxCalls === 3 ? 1 : 2);
+    assert.equal(run.run_view.usage.calls, maxCalls === 3 ? 3 : 4);
+    assert.equal(
+      run.run_view.error?.code,
+      maxCalls === 3 ? "BUDGET_EXHAUSTED" : "TOOL_RESULT_INVALID",
+    );
+  }
+});
+
 test("authentication, CORS preflight and authentication errors are browser-readable", async () => {
   const app = fixtureApp(context.store);
   const preflight = await app.request("/api/agent/runs", {
