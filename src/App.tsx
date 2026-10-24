@@ -8,6 +8,7 @@ import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import MyResumesPage from './pages/MyResumesPage';
 import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import CareerLibraryPage from './pages/CareerLibraryPage';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
+      <Route path="/library" element={<ProtectedRoute><CareerLibraryPage /></ProtectedRoute>} />
       <Route
         path="/my-resumes"
         element={

@@ -4,6 +4,7 @@
  */
 import { useAuth } from './useAuth';
 import { aiRequest } from '../utils/aiApi';
+import type { CareerInput, CareerResult } from '../../shared/career';
 
 const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, '');
 
@@ -92,9 +93,17 @@ export function useAI() {
     }, '生成失败，请重试');
   };
 
-  /**
-   * 润色单个字段 - 返回润色后的文本
-   */
+  const tailorResume = (input: CareerInput, signal?: AbortSignal): Promise<CareerResult> =>
+    aiRequest<CareerResult>(AI_API_BASE, '/api/ai/tailor', {
+      method: 'POST', headers: headers(), body: JSON.stringify(input), signal,
+    }, '岗位简历生成失败，请稍后重试');
+
+  const extractLibraryFacts = (rawText: string): Promise<AIGenerateResult> =>
+    aiRequest<AIGenerateResult>(AI_API_BASE, '/api/ai/generate', {
+      method: 'POST', headers: headers(), body: JSON.stringify({ rawText, purpose: 'career-library' }),
+    }, '经历提取失败，请稍后重试');
+
+  /** 润色单个字段 */
   const polishField = async (
     fieldLabel: string,
     currentValue: string,
@@ -135,6 +144,8 @@ export function useAI() {
   };
 
   return {
+    tailorResume,
+    extractLibraryFacts,
     getMembershipStatus,
     generateResume,
     polishField,

@@ -1,7 +1,9 @@
 import type { RunRecord } from "./store.js";
 import { draftSourceCatalog, draftTargets } from "./drafting.js";
+import { RESUME_WRITING_RULES } from "../../shared/resumeWritingSkill.js";
 
-export const draftingInstruction = `你是针对目标岗位的简历编辑。目标是让招聘者更快看出候选人已经做过的相关工作，改善岗位相关表达和信息组织。
+export const draftingInstruction = `${RESUME_WRITING_RULES}
+你是针对目标岗位的简历编辑。目标是让招聘者更快看出候选人已经做过的相关工作，改善岗位相关表达和信息组织。
 先在内部完成：识别优先岗位要求 → 找到对应事实和所属经历 → 判断原文的表达问题 → 起草具体改进。不输出分析过程。
 
 改写标准：

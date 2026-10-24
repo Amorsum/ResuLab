@@ -1,0 +1,92 @@
+{
+  "at": "2026-10-24T10:52:52.622Z",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "syntheticOnly": true,
+  "realAuth": true,
+  "realProvider": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/agent/runs",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 401,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 202,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+      "status": 200,
+      "cors": true
+    }
+  ],
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRunsRemoved": true,
+    "recheckedByRunId": true
+  },
+  "success": false,
+  "runId": "fec96212-9cda-4ea1-8f16-f942345d86b6",
+  "status": "failed",
+  "modelCalls": 4,
+  "changes": [],
+  "errorCode": "MODEL_SCHEMA_INVALID",
+  "substantiveChanges": 0,
+  "failure": {
+    "stage": "GET /api/agent/runs/fec96212-9cda-4ea1-8f16-f942345d86b6",
+    "code": "RUN_NOT_COMPLETED"
+  }
+}

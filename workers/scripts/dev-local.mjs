@@ -9,7 +9,7 @@ const workerRequire = createRequire(path.join(directory, 'package.json'));
 const wranglerRequire = createRequire(path.join(directory, 'node_modules/wrangler/package.json'));
 const serverRequire = createRequire(path.join(directory, '../server/package.json'));
 const { Miniflare, Response: WorkerResponse, Log, LogLevel } = wranglerRequire('miniflare');
-const ts = workerRequire('typescript');
+const esbuild = wranglerRequire('esbuild');
 const dotenv = serverRequire('dotenv');
 const { EnvHttpProxyAgent, setGlobalDispatcher } = serverRequire('undici');
 if (process.env.HTTP_PROXY || process.env.HTTPS_PROXY)
@@ -22,7 +22,7 @@ function options() {
   const allowedOrigins = new Set([bindings.SUPABASE_URL, bindings.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'].map((value) => new URL(value).origin));
   return {
     host: '127.0.0.1', port: 8787, modules: true, compatibilityDate: '2025-07-01',
-    script: ts.transpileModule(fs.readFileSync(sourceFile, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText,
+    script: esbuild.buildSync({ entryPoints: [sourceFile], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', logLevel: 'silent' }).outputFiles[0].text,
     bindings, log: new Log(LogLevel.WARN), cf: false,
     outboundService: async (request) => {
       const url = new URL(request.url);
@@ -48,11 +48,12 @@ const runtime = new Miniflare(options());
 await runtime.ready;
 console.log('Local AI Worker ready: http://127.0.0.1:8787 (real Supabase/model; no Cloudflare deployment)');
 let reloading = false;
-fs.watchFile(sourceFile, { interval: 500 }, async () => {
+const watchedFiles = [sourceFile, path.join(directory, '../shared/careerComposer.ts'), path.join(directory, '../shared/career.ts'), path.join(directory, '../shared/resumeWritingSkill.ts')];
+for (const watched of watchedFiles) fs.watchFile(watched, { interval: 500 }, async () => {
   if (reloading) return;
   reloading = true;
   try { await runtime.setOptions(options()); console.log('Local AI Worker reloaded'); }
   catch { console.error('Local Worker reload failed; run the Worker typecheck.'); }
   finally { reloading = false; }
 });
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { fs.unwatchFile(sourceFile); await runtime.dispose(); process.exit(0); });
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { for (const file of watchedFiles) fs.unwatchFile(file); await runtime.dispose(); process.exit(0); });

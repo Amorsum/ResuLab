@@ -1,0 +1,331 @@
+{
+  "at": "2026-10-24T09:57:24.196Z",
+  "apiOrigin": "http://127.0.0.1:8787",
+  "syntheticOnly": true,
+  "realAuth": true,
+  "realProvider": true,
+  "configuredModel": "deepseek-flash",
+  "cases": [
+    {
+      "caseId": "backend",
+      "status": "completed",
+      "httpStatus": 200,
+      "cors": true,
+      "skillVersion": "resulab-resume-writer/1.0.0",
+      "modelCalls": 2,
+      "plan": {
+        "roleTitle": "后端开发",
+        "requirements": [
+          {
+            "id": "req-1",
+            "text": "使用TypeScript开发业务接口",
+            "jdQuote": "使用TypeScript开发业务接口",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          },
+          {
+            "id": "req-2",
+            "text": "实现筛选条件和分页逻辑",
+            "jdQuote": "实现筛选条件和分页逻辑",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          },
+          {
+            "id": "req-3",
+            "text": "与前端协作核对字段",
+            "jdQuote": "与前端协作核对字段",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          },
+          {
+            "id": "req-4",
+            "text": "协助定位接口报错",
+            "jdQuote": "协助定位接口报错",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          }
+        ],
+        "selected": [
+          {
+            "factId": "work-backend",
+            "requirementIds": [
+              "req-1",
+              "req-2",
+              "req-3",
+              "req-4"
+            ],
+            "reason": "使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错；方案由同事确定，仅参与实现。"
+          },
+          {
+            "factId": "skill-0",
+            "requirementIds": [
+              "req-1"
+            ],
+            "reason": "已确认掌握TypeScript，与岗位要求的开发语言一致。"
+          }
+        ]
+      },
+      "edits": [
+        {
+          "factId": "work-backend",
+          "field": "description",
+          "before": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。接口方案由同事确定。",
+          "after": "使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑；与前端核对接口字段，协助查看日志定位接口报错。接口方案由同事确定。",
+          "reason": "将岗位相关职责前置，重组为具体行动条目，保留方案由同事确定的边界，移除与岗位无关的发版说明整理。",
+          "sources": [
+            {
+              "id": "source-4",
+              "factId": "work-backend",
+              "field": "description",
+              "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。接口方案由同事确定。"
+            }
+          ]
+        },
+        {
+          "factId": "work-backend",
+          "field": "highlights",
+          "before": [
+            "参与实现订单查询接口"
+          ],
+          "after": [
+            "参与实现订单查询接口，使用TypeScript编写筛选条件和分页逻辑，并与前端核对接口字段。"
+          ],
+          "reason": "将亮点与岗位要求的具体方法结合，明确参与边界，不升级为主导或架构。",
+          "sources": [
+            {
+              "id": "source-4",
+              "factId": "work-backend",
+              "field": "description",
+              "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。接口方案由同事确定。"
+            },
+            {
+              "id": "source-5",
+              "factId": "work-backend",
+              "field": "highlights",
+              "quote": "参与实现订单查询接口"
+            }
+          ]
+        }
+      ],
+      "summary": "使用TypeScript参与订单查询接口开发，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。",
+      "snapshot": {
+        "education": [],
+        "workExperience": [
+          {
+            "id": "work-backend",
+            "companyName": "合成电商团队",
+            "position": "开发实习生",
+            "startDate": "2025-01",
+            "endDate": "",
+            "isCurrent": true,
+            "city": "",
+            "description": "使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑；与前端核对接口字段，协助查看日志定位接口报错。接口方案由同事确定。",
+            "highlights": [
+              "参与实现订单查询接口，使用TypeScript编写筛选条件和分页逻辑，并与前端核对接口字段。"
+            ]
+          }
+        ],
+        "projects": [],
+        "skills": [
+          {
+            "id": "skill-0",
+            "skillName": "TypeScript",
+            "level": "掌握",
+            "category": "编程语言"
+          }
+        ],
+        "certificates": [],
+        "languages": [],
+        "selfEvaluation": "使用TypeScript参与订单查询接口开发，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。"
+      },
+      "needsMoreFacts": false
+    },
+    {
+      "caseId": "data-operations",
+      "status": "completed",
+      "httpStatus": 200,
+      "cors": true,
+      "skillVersion": "resulab-resume-writer/1.0.0",
+      "modelCalls": 2,
+      "plan": {
+        "roleTitle": "数据运营",
+        "requirements": [
+          {
+            "id": "req-1",
+            "text": "使用SQL按渠道汇总活动报名数据",
+            "jdQuote": "使用SQL按渠道汇总活动报名数据",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          },
+          {
+            "id": "req-2",
+            "text": "使用Excel对数据进行去重",
+            "jdQuote": "使用Excel进行数据去重",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          },
+          {
+            "id": "req-3",
+            "text": "整理周报",
+            "jdQuote": "周报整理",
+            "required": true,
+            "coverage": "supported",
+            "gap": ""
+          },
+          {
+            "id": "req-4",
+            "text": "说明数据口径",
+            "jdQuote": "并说明数据口径",
+            "required": true,
+            "coverage": "partial",
+            "gap": "现有材料只说明周报按渠道展示报名人数、不含转化率分析，没有记录对数据口径的具体说明或交付物"
+          }
+        ],
+        "selected": [
+          {
+            "factId": "project-data",
+            "requirementIds": [
+              "req-1",
+              "req-2",
+              "req-3",
+              "req-4"
+            ],
+            "reason": "该经历明确使用SQL按渠道汇总报名数据、用Excel对报名数据去重并制作周报，周报按渠道展示报名人数；同时注明不含转化率分析，可作为口径边界的事实依据，但没有口径说明文档或具体口径描述"
+          },
+          {
+            "factId": "skill-1",
+            "requirementIds": [
+              "req-1"
+            ],
+            "reason": "已确认SQL技能等级为掌握，与按渠道汇总数据的工具要求对应"
+          },
+          {
+            "factId": "skill-2",
+            "requirementIds": [
+              "req-2",
+              "req-3"
+            ],
+            "reason": "已确认Excel技能等级为掌握，与数据去重和周报整理的工具要求对应"
+          }
+        ]
+      },
+      "edits": [
+        {
+          "factId": "project-data",
+          "field": "description",
+          "before": "先发报名通知，还会用Excel对报名数据去重，做周报；使用SQL按渠道汇总报名数据，周报按渠道展示报名人数，不包含转化率分析。",
+          "after": "参与活动报名数据整理：使用SQL按渠道汇总报名数据，并用Excel对报名数据进行去重，整理为周报；周报按渠道展示报名人数，不包含转化率分析。",
+          "reason": "将原文重组为与岗位要求对应的具体行动条目，明确SQL按渠道汇总、Excel去重、周报整理三项动作，并保留“不含转化率分析”的口径边界，不添加未记录的口径说明或成果。",
+          "sources": [
+            {
+              "id": "source-5",
+              "factId": "project-data",
+              "field": "description",
+              "quote": "先发报名通知，还会用Excel对报名数据去重，做周报；使用SQL按渠道汇总报名数据，周报按渠道展示报名人数，不包含转化率分析。"
+            },
+            {
+              "id": "source-6",
+              "factId": "project-data",
+              "field": "techStack",
+              "quote": "SQL\nExcel"
+            }
+          ]
+        }
+      ],
+      "summary": "参与活动报名数据整理，使用SQL按渠道汇总报名数据，使用Excel对报名数据去重并整理周报，周报按渠道展示报名人数。",
+      "snapshot": {
+        "education": [],
+        "workExperience": [],
+        "projects": [
+          {
+            "id": "project-data",
+            "projectName": "活动报名数据整理",
+            "role": "数据整理参与者",
+            "startDate": "2024-06",
+            "endDate": "2024-09",
+            "isCurrent": false,
+            "description": "参与活动报名数据整理：使用SQL按渠道汇总报名数据，并用Excel对报名数据进行去重，整理为周报；周报按渠道展示报名人数，不包含转化率分析。",
+            "techStack": [
+              "SQL",
+              "Excel"
+            ],
+            "url": ""
+          }
+        ],
+        "skills": [
+          {
+            "id": "skill-1",
+            "skillName": "SQL",
+            "level": "掌握",
+            "category": "数据库"
+          },
+          {
+            "id": "skill-2",
+            "skillName": "Excel",
+            "level": "掌握",
+            "category": "工具"
+          }
+        ],
+        "certificates": [],
+        "languages": [],
+        "selfEvaluation": "参与活动报名数据整理，使用SQL按渠道汇总报名数据，使用Excel对报名数据去重并整理周报，周报按渠道展示报名人数。"
+      },
+      "needsMoreFacts": false
+    },
+    {
+      "caseId": "missing",
+      "status": "completed",
+      "httpStatus": 200,
+      "cors": true,
+      "skillVersion": "resulab-resume-writer/1.0.0",
+      "modelCalls": 1,
+      "plan": {
+        "roleTitle": "兽医",
+        "requirements": [
+          {
+            "id": "req-1",
+            "text": "持有执业兽医资格",
+            "jdQuote": "要求持有执业兽医资格",
+            "required": true,
+            "coverage": "missing",
+            "gap": "经历库中无任何执业兽医资格或相关证书信息"
+          },
+          {
+            "id": "req-2",
+            "text": "具备动物外科手术经验",
+            "jdQuote": "具备动物外科手术经验",
+            "required": true,
+            "coverage": "missing",
+            "gap": "经历库中无动物医学、外科手术或相关临床实践记录"
+          }
+        ],
+        "selected": []
+      },
+      "edits": [],
+      "summary": "",
+      "snapshot": {
+        "education": [],
+        "workExperience": [],
+        "projects": [],
+        "skills": [],
+        "certificates": [],
+        "languages": [],
+        "selfEvaluation": ""
+      },
+      "needsMoreFacts": true
+    }
+  ],
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRowsRemoved": true
+  },
+  "success": true,
+  "differentJobSelections": true,
+  "sourceFactsUnmodified": true
+}
