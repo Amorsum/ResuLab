@@ -70,6 +70,68 @@ const headers = {
 };
 const signal = () => new AbortController().signal;
 
+test("cosmetic drafts get one bounded content repair with usage retained; repeated cosmetics cannot publish", async () => {
+  for (const repairSucceeds of [true, false]) {
+    await reset(context.db);
+    const { store } = context, id = await createRun(store), config = testConfig();
+    const scripted = modelFetch();
+    let drafts = 0;
+    const events: Record<string, unknown>[] = [];
+    const fetcher: typeof fetch = async (url, init) => {
+      const payload = await (await scripted(url, init)).json();
+      const action = JSON.parse(payload.choices[0].message.content);
+      if (action.tool === "draft_resume_changes" && (++drafts === 1 || !repairSucceeds))
+        action.result.changes[0].after = "使用 TypeScript 开发接口。";
+      if (drafts === 2) {
+        const instruction = JSON.parse(init!.body as string).messages[0].content;
+        assert.ok(instruction.includes("cosmetic_only_change"));
+        assert.ok(instruction.includes("事实、数字和来源约束仍全部生效"));
+      }
+      payload.choices[0].message.content = JSON.stringify(action);
+      return new Response(JSON.stringify(payload));
+    };
+    await executeRun((await claim(store))!, store, openAIProvider(config, store, fetcher, (event) => events.push(event)), config, signal());
+    const run = await getRun(store, id);
+    assert.equal(drafts, 2);
+    assert.equal(run.run_view.usage.calls, 4);
+    assert.equal(run.run_view.usage.inputTokens, 400);
+    assert.equal(run.run_view.usage.outputTokens, 80);
+    assert.equal(run.status, repairSucceeds ? "completed" : "failed");
+    assert.equal(run.run_view.changes.length, repairSucceeds ? 1 : 0);
+    assert.deepEqual(events.find((event) => event.stepId === "step-3")?.validation, {
+      kind: "semantic_validation",
+      issues: [{ path: "$.result.changes[0].after", code: "cosmetic_only_change" }],
+    });
+  }
+});
+
+test("a cosmetic repair cannot introduce unsupported metrics or obtain a second repair", async () => {
+  const { store } = context, id = await createRun(store), config = testConfig();
+  const scripted = modelFetch();
+  let drafts = 0;
+  const events: Record<string, unknown>[] = [];
+  const fetcher: typeof fetch = async (url, init) => {
+    const payload = await (await scripted(url, init)).json();
+    const action = JSON.parse(payload.choices[0].message.content);
+    if (action.tool === "draft_resume_changes")
+      action.result.changes[0].after = ++drafts === 1
+        ? "使用 TypeScript 开发接口。"
+        : "使用 TypeScript 开发接口，性能提升90%";
+    payload.choices[0].message.content = JSON.stringify(action);
+    return new Response(JSON.stringify(payload));
+  };
+  await executeRun((await claim(store))!, store, openAIProvider(config, store, fetcher, (event) => events.push(event)), config, signal());
+  const run = await getRun(store, id);
+  assert.equal(drafts, 2);
+  assert.equal(run.status, "failed");
+  assert.deepEqual(run.run_view.changes, []);
+  assert.equal(run.run_view.usage.calls, 4);
+  assert.deepEqual(events.at(-1)?.validation, {
+    kind: "semantic_validation",
+    issues: [{ path: "$.result.changes[0].after", code: "unsupported_number" }],
+  });
+});
+
 test("step-3 semantic failures are repaired once before publication and preserve call usage", async () => {
   const { store } = context,
     id = await createRun(store),
