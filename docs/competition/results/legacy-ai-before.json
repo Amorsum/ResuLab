@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-24T08:37:14.464Z",
+  "apiOrigin": "https://api.amorsum.top",
+  "supabaseHost": "junromgokspodibpphkg.supabase.co",
+  "syntheticOnly": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/ai/generate",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/ai/generate",
+      "status": 401,
+      "cors": false,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/membership/status",
+      "status": 401,
+      "cors": false,
+      "errorCode": "UNAUTHORIZED"
+    }
+  ],
+  "generateRequested": false,
+  "realModelCompleted": false,
+  "cleanup": {
+    "userDeleted": true
+  },
+  "success": false,
+  "currentProjectTokenVerified": true,
+  "workerAcceptsCurrentProjectToken": false,
+  "failureStage": "GET /api/membership/status",
+  "failure": "WORKER_REJECTED_VERIFIED_CURRENT_PROJECT_TOKEN"
+}

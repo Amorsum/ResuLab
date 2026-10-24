@@ -26,6 +26,8 @@ jobs:
       - run: node --test tests/aiImport.test.cjs tests/useAgent.test.cjs tests/pdfExport.test.cjs tests/resumeUndo.test.cjs tests/serviceWorker.test.cjs
       - run: node server/node_modules/tsx/dist/cli.mjs --test tests/agent.test.ts
       - run: npm --prefix workers run typecheck
+      - run: npm --prefix workers test
+      - run: node --test tests/aiApi.test.cjs
       - run: npm --prefix server run typecheck
       - run: npm --prefix server test
       - run: npm --prefix server run build
