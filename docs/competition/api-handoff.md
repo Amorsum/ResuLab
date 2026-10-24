@@ -1,6 +1,6 @@
 # 独立前端接入 Agent API
 
-当前应用源码来自 `codex/contest-b` 的 `0b815ee5f5e8bf0f853e0f166ada6183265a68e9`。前端 PR #1 与后端 PR #3 均已合入该分支。云电脑只运行后端；前端由前端团队在自己的托管环境发布，当前 Origin 为 `https://resulab.amorsum.top`。
+开发集成基线为 `codex/contest-b`。前端 PR #1 与后端 PR #3 均已合入该分支，后续模型修复见 PR #5；服务器实际版本以 `C:\ResuLab\deployment.json` 为准。云电脑只运行后端；前端由前端团队在自己的托管环境发布，当前 Origin 为 `https://resulab.amorsum.top`。
 
 ## 前端构建配置
 
