@@ -38,7 +38,7 @@ VITE_SUPABASE_ANON_KEY=本次项目的公开key
 ## 当前依赖与联调边界
 
 - API已配置本次Supabase项目，Agent五表可访问。`health.dependencies.databaseConfigured`仅表示配置已载入，实际连接和鉴权另见验收记录。
-- DeepSeek尚未配置，`health.status=degraded`、`modelConfigured=false`；创建分析任务会返回503/`CONFIG_MISSING`。这不是模型完成，也没有发送模型请求。模型配置到位后再验收完整分析、追问和建议链路。
+- DeepSeek密钥已通过鉴权并载入，`modelConfigured=true`。2026-10-24针对真实任务的step-1截断增加诊断、调整结构化输出参数；详情与费用口径见[模型诊断记录](model-schema-diagnostic.md)。早先的零模型请求验收报告仅代表当时的状态，完整模型链路以本次回归报告为准。
 - 当前项目允许邮箱注册，邮箱确认已开启。前端团队/队长需确认发信服务和 `https://resulab.amorsum.top/builder`、`https://resulab.amorsum.top/update-password` 回调白名单。回调应返回前端网址。若使用默认SMTP，Supabase只向组织成员邮箱发信，其他团队成员邮箱需符合项目发信配置；具体见[官方SMTP说明](https://supabase.com/docs/guides/auth/auth-smtp)。本次没有向真实人员发送验证邮件。
 - 只读检查中，`resumes` 和 `profiles` 的REST访问返回404；原有云简历功能仍需队长按基线要求准备相应表及RLS。Agent迁移只有五张Agent表，不能替代原有云保存迁移。不要将管理员密钥放到前端绕过权限。
 - `VITE_AI_API_BASE` 对应原有AI/会员服务，与本次Agent四接口不同，前端需单独核对原服务与新Supabase项目的兼容性。

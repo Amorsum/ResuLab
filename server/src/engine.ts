@@ -220,7 +220,7 @@ export async function executeRun(
           run,
           stepId,
           matchingSchema,
-          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported|needs_clarification|missing","refs":[{"id":"给定证据ID","section":"给定section","itemId":"给定条目ID（自我评价省略）","field":"给定field","quote":"给定原文的连续片段"}]}],"questions":[{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}]}}。每个要求一个evidence；supported须有引用，missing须无引用。根据真实缺口决定是否追问，只对非supported要求提问，最多3题，可以无问题。不得在问题中预设用户已做过或诱导虚构。',
+          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"给定证据ID","section":"给定section","itemId":"给定条目ID（自我评价省略）","field":"给定field","quote":"给定原文的连续片段"}]}],"questions":[{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}]}}。coverage只能是supported、needs_clarification、missing三者之一，不要用竖线拼接。refs逐字段复制references中的定位信息，自我评价省略itemId，其余条目保留itemId，不使用null。quote只取必要的原文短片段，避免整段重复。每个要求一个evidence；supported须有引用，missing须无引用。根据真实缺口决定是否追问，只对非supported要求提问，最多3题，可以无问题。不得在问题中预设用户已做过或诱导虚构。',
           {
             requirements: run.run_view.requirements,
             references: snapshotReferences(run.resume_snapshot),
@@ -243,7 +243,7 @@ export async function executeRun(
           run,
           stepId,
           draftingSchema,
-          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"原条目ID","field":"description"},"before":"原文","after":"建议","reason":"理由","sources":[{"kind":"resume|answer","refId":"证据ID或问题ID","quote":"原文连续片段"}],"needsConfirmation":true}]}}。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。before逐字匹配字段，highlights是字符串数组，其余是字符串。每个目标至多一项，最多20项。来源只用给定evidence或已回答questions。没有证据的事实不新增，不复制JD为个人能力，不编造数字/技能；没有安全修改时返回空changes。',
+          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"原条目ID","field":"description"},"before":"原文","after":"建议","reason":"理由","sources":[{"kind":"resume","refId":"证据ID或问题ID","quote":"原文连续片段"}],"needsConfirmation":true}]}}。sources.kind只能为resume或answer之一，不要用竖线拼接。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。before逐字匹配字段，highlights是字符串数组，其余是字符串。每个目标至多一项，最多20项。来源只用给定evidence或已回答questions。没有证据的事实不新增，不复制JD为个人能力，不编造数字/技能；没有安全修改时返回空changes。',
           {
             snapshot: run.resume_snapshot,
             requirements: run.run_view.requirements,
