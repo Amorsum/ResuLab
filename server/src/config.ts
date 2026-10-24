@@ -18,6 +18,8 @@ const configSchema = z.object({
   MODEL_API_KEY: z.string().optional(),
   MODEL_ID: z.string().optional(),
   MODEL_TIMEOUT_MS: integer(45000, 120000),
+  MODEL_MAX_OUTPUT_TOKENS: integer(8000, 32000),
+  MODEL_THINKING: z.enum(["enabled", "disabled"]).optional(),
   MAX_CONCURRENT_RUNS: integer(2, 10),
   MAX_MODEL_CALLS_PER_RUN: integer(6, 20),
   MAX_MODEL_RETRIES: z.coerce.number().int().min(0).max(2).default(1),

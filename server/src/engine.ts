@@ -1,7 +1,6 @@
 import {
   draftingSchema,
   extractionSchema,
-  matchingSchema,
   runViewSchema,
   toolSchema,
 } from "../../shared/agent.schema.js";
@@ -11,15 +10,24 @@ import {
   targetValue,
   type RunView,
 } from "../../shared/agent.js";
-import { AgentError, safeError } from "./errors.js";
+import { AgentError, ToolResultError, safeError } from "./errors.js";
 import type { Store, RunRecord } from "./store.js";
 import type { ModelProvider } from "./provider.js";
 import type { Config } from "./config.js";
+import {
+  evidenceCatalog,
+  evidenceSelectionSchema,
+  resolveEvidenceSelections,
+} from "./evidence.js";
 
 const tools = toolSchema.options;
-function ensure(condition: unknown, message: string): asserts condition {
-  if (!condition)
-    throw new AgentError("TOOL_RESULT_INVALID", message, 502, true);
+function ensure(
+  condition: unknown,
+  message: string,
+  path = "$",
+  rule = "invalid_tool_result",
+): asserts condition {
+  if (!condition) throw new ToolResultError(message, path, rule);
 }
 function unique(ids: string[]) {
   return new Set(ids).size === ids.length;
@@ -42,30 +50,62 @@ export function validateEvidence(run: RunRecord) {
     view.evidence.length === requirements.size &&
       unique(view.evidence.map((e) => e.requirementId)),
     "每项岗位要求必须有且只有一条覆盖判断",
+    "$.result.evidence",
+    "requirement_coverage_count",
   );
-  for (const evidence of view.evidence) {
+  for (const [index, evidence] of view.evidence.entries()) {
+    const path = `$.result.evidence[${index}]`;
     ensure(
       requirements.has(evidence.requirementId),
       "证据引用了不存在的岗位要求",
+      path + ".requirementId",
+      "unknown_requirement",
     );
     if (evidence.coverage === "supported")
-      ensure(evidence.refs.length > 0, "已支持的要求必须有证据");
+      ensure(
+        evidence.refs.length > 0,
+        "已支持的要求必须有证据",
+        path + ".refs",
+        "supported_requires_reference",
+      );
     if (evidence.coverage === "missing")
-      ensure(evidence.refs.length === 0, "缺口不能伪造证据");
-    for (const ref of evidence.refs) {
+      ensure(
+        evidence.refs.length === 0,
+        "缺口不能伪造证据",
+        path + ".refs",
+        "missing_requires_empty_refs",
+      );
+    for (const [refIndex, ref] of evidence.refs.entries()) {
+      const refPath = path + `.refs[${refIndex}]`;
       const original = refs.get(ref.id);
       ensure(
-        original &&
-          original.section === ref.section &&
-          original.itemId === ref.itemId &&
-          original.field === ref.field &&
-          original.quote.includes(ref.quote),
+        original,
         "简历证据必须能定位到当前快照原文",
+        refPath + ".id",
+        "unknown_reference",
+      );
+      for (const field of ["section", "itemId", "field"] as const)
+        ensure(
+          original[field] === ref[field],
+          "简历证据必须能定位到当前快照原文",
+          refPath + "." + field,
+          "reference_locator_mismatch",
+        );
+      ensure(
+        original.quote.includes(ref.quote),
+        "简历证据必须能定位到当前快照原文",
+        refPath + ".quote",
+        "quote_not_in_source",
       );
     }
   }
-  ensure(unique(view.questions.map((q) => q.id)), "追问 ID 重复");
-  for (const q of view.questions)
+  ensure(
+    unique(view.questions.map((q) => q.id)),
+    "追问 ID 重复",
+    "$.result.questions",
+    "duplicate_question_id",
+  );
+  for (const [index, q] of view.questions.entries())
     ensure(
       requirements.has(q.requirementId) &&
         view.evidence.some(
@@ -73,6 +113,8 @@ export function validateEvidence(run: RunRecord) {
             e.requirementId === q.requirementId && e.coverage !== "supported",
         ),
       "仅对真实缺口或模糊经历追问",
+      `$.result.questions[${index}].requirementId`,
+      "question_requires_gap",
     );
 }
 export function validateChanges(
@@ -216,17 +258,33 @@ export async function executeRun(
           throw error;
         }
       } else if (stage === 1) {
-        const result = await provider.generate(
+        const catalog = evidenceCatalog(run.resume_snapshot);
+        const selection = await provider.generate(
           run,
           stepId,
-          matchingSchema,
-          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported|needs_clarification|missing","refs":[{"id":"给定证据ID","section":"给定section","itemId":"给定条目ID（自我评价省略）","field":"给定field","quote":"给定原文的连续片段"}]}],"questions":[{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}]}}。每个要求一个evidence；supported须有引用，missing须无引用。根据真实缺口决定是否追问，只对非supported要求提问，最多3题，可以无问题。不得在问题中预设用户已做过或诱导虚构。',
+          evidenceSelectionSchema,
+          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"evidence-1"}]}],"questions":[]}}。coverage只能是supported、needs_clarification、missing三者之一。refs只含给定references.id；禁止输出quote、section、itemId、field，后端根据编号回填原文与定位。必须选择语义相关的真实证据；没有相关证据就标缺口，不能用无关引用宣称支持。每个要求一个evidence，supported须有引用，missing须无引用。只对非supported要求提问，最多3题，可以无问题；问题格式为{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}。不得预设用户已做过或诱导虚构。',
           {
             requirements: run.run_view.requirements,
-            references: snapshotReferences(run.resume_snapshot),
+            references: [...catalog].map(([id, reference]) => ({
+              ...reference,
+              id,
+            })),
           },
           signal,
+          (candidate) => {
+            const resolved = resolveEvidenceSelections(candidate, catalog);
+            validateEvidence({
+              ...run,
+              run_view: {
+                ...run.run_view,
+                evidence: resolved.result.evidence,
+                questions: resolved.result.questions,
+              },
+            });
+          },
         );
+        const result = resolveEvidenceSelections(selection, catalog);
         run.run_view.evidence = result.result.evidence;
         run.run_view.questions = result.result.questions;
         try {
@@ -243,7 +301,7 @@ export async function executeRun(
           run,
           stepId,
           draftingSchema,
-          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"原条目ID","field":"description"},"before":"原文","after":"建议","reason":"理由","sources":[{"kind":"resume|answer","refId":"证据ID或问题ID","quote":"原文连续片段"}],"needsConfirmation":true}]}}。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。before逐字匹配字段，highlights是字符串数组，其余是字符串。每个目标至多一项，最多20项。来源只用给定evidence或已回答questions。没有证据的事实不新增，不复制JD为个人能力，不编造数字/技能；没有安全修改时返回空changes。',
+          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"原条目ID","field":"description"},"before":"原文","after":"建议","reason":"理由","sources":[{"kind":"resume","refId":"证据ID或问题ID","quote":"原文连续片段"}],"needsConfirmation":true}]}}。sources.kind只能为resume或answer之一，不要用竖线拼接。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。before逐字匹配字段，highlights是字符串数组，其余是字符串。每个目标至多一项，最多20项。来源只用给定evidence或已回答questions。没有证据的事实不新增，不复制JD为个人能力，不编造数字/技能；没有安全修改时返回空changes。',
           {
             snapshot: run.resume_snapshot,
             requirements: run.run_view.requirements,
