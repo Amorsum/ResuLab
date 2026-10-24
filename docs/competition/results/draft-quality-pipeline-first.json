@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-24T06:45:19.645Z",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "realDatabase": true,
+  "realAuth": true,
+  "realProvider": true,
+  "sourceRunId": null,
+  "originalRunUnmodified": true,
+  "revision": "90a6e470608c99da00b6b98275ef154b11dfe197",
+  "cases": [],
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRunsRemoved": true
+  },
+  "success": false,
+  "failure": "VERIFICATION_FAILED"
+}
