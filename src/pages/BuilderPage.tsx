@@ -160,8 +160,9 @@ export default function BuilderPage() {
           ResuLab
         </Link>
 
-        <div className="flex items-center gap-3">
-          <button onClick={() => setAgentOpen(true)} className="min-h-10 px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100">针对岗位优化</button>
+        <div className="flex items-center gap-1 sm:gap-3">
+          <Link to="/library" aria-label="经历库 / 定向写作" className="min-h-10 flex items-center px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100"><span className="hidden sm:inline">经历库 / 定向写作</span><span className="sm:hidden">经历库</span></Link>
+          <button onClick={() => setAgentOpen(true)} className="min-h-10 px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100"><span className="hidden sm:inline">针对岗位优化</span><span className="sm:hidden">岗位优化</span></button>
           {saveMsg && (
             <span className={`text-xs ${saveMsg.includes('失败') ? 'text-red-500' : 'text-green-600'}`}>
               {saveMsg}
@@ -173,7 +174,7 @@ export default function BuilderPage() {
               disabled={saving}
               className="text-xs px-3 py-1.5 rounded-md bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors disabled:opacity-50"
             >
-              {saving ? '保存中...' : '保存到云端'}
+              {saving ? '保存中...' : <><span className="hidden sm:inline">保存到云端</span><span className="sm:hidden">云保存</span></>}
             </button>
           )}
           <UserMenu />

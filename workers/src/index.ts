@@ -1,4 +1,6 @@
 // ResuLab AI API Worker — 单文件，零依赖
+import { CAREER_LIMITS, CareerValidationError, parseCareerInput } from '../../shared/career';
+import { composeCareer } from '../../shared/careerComposer';
 
 interface Env {
   SUPABASE_URL: string;
@@ -119,13 +121,15 @@ add('GET', '/api/membership/status', async (req, env) => {
 add('POST', '/api/ai/generate', async (req, env) => {
   const userId = await authenticate(req, env);
   await checkAccess(env, userId, 'generate');
-  const { rawText } = await req.json() as { rawText: string };
-  if (!rawText || rawText.length < 20) return json({ error: 'BAD_REQUEST', message: '文本太短' }, 400);
+  const { rawText, purpose } = await req.json() as { rawText: string; purpose?: string };
+  if (typeof rawText !== 'string' || rawText.trim().length < 20) return json({ error: 'BAD_REQUEST', message: '文本太短或格式不正确' }, 400);
+  if (purpose !== undefined && purpose !== 'career-library') return json({ error: 'BAD_REQUEST', message: '不支持的提取用途' }, 400);
+  if (purpose === 'career-library' && rawText.length > 20000) return json({ error: 'BAD_REQUEST', message: '补充经历不能超过20000字' }, 400);
 
   try {
     // 第一轮：提取结构化数据（不含自我评价）
     const round1 = await chatCompletion(env, [
-      { role: 'system', content: GENERATE_ROUND1_SYSTEM },
+      { role: 'system', content: GENERATE_ROUND1_SYSTEM + (purpose === 'career-library' ? '\n本次用于事实库，只提取原文事实。没有明确技能等级时level留空，不从“使用过”推断熟练。不要写自我评价、求职目标或推测人物信息。' : '') },
       { role: 'user', content: rawText },
     ], { temperature: 0.2, max_tokens: 4096, response_format: { type: 'json_object' } });
 
@@ -134,7 +138,7 @@ add('POST', '/api/ai/generate', async (req, env) => {
     // 第二轮：基于第一轮结果生成自我评价
     const context = buildSelfEvalContext(structured);
     let selfEvaluation = '';
-    if (context) {
+    if (context && purpose !== 'career-library') {
       const round2 = await chatCompletion(env, [
         { role: 'system', content: GENERATE_ROUND2_SYSTEM },
         { role: 'user', content: context },
@@ -148,6 +152,49 @@ add('POST', '/api/ai/generate', async (req, env) => {
   } catch (err) {
     if (err instanceof SyntaxError) return json({ error: 'PARSE_ERROR', message: 'AI返回无效数据' }, 500);
     throw err;
+  }
+});
+
+async function readCareerInput(req: Request) {
+  const reader = req.body?.getReader();
+  if (!reader) throw new ApiError('BAD_REQUEST', '请提供岗位描述和已确认的经历', 400);
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      length += value.length;
+      if (length > CAREER_LIMITS.bytes) throw new ApiError('INPUT_TOO_LARGE', '本次材料过多，请减少参与生成的来源', 413);
+      parts.push(value);
+    }
+  } finally { await reader.cancel().catch(() => {}); }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) { bytes.set(part, offset); offset += part.length; }
+  try { return parseCareerInput(JSON.parse(new TextDecoder().decode(bytes))); }
+  catch (error) {
+    if (error instanceof CareerValidationError || error instanceof SyntaxError)
+      throw new ApiError('INVALID_INPUT', '请检查岗位描述和经历材料，减少超长内容或未完成的条目', 400);
+    throw error;
+  }
+}
+
+// Two bounded stages: select verified facts, then write a separate job-specific draft.
+add('POST', '/api/ai/tailor', async (req, env) => {
+  const userId = await authenticate(req, env);
+  await checkAccess(env, userId, 'generate');
+  const input = await readCareerInput(req);
+  try {
+    const result = await composeCareer(input, (instruction, data) => chatCompletion(env, [
+      { role: 'system', content: instruction }, { role: 'user', content: JSON.stringify(data) },
+    ], { temperature: 0.2, max_tokens: 6000, response_format: { type: 'json_object' } }));
+    await recordUsage(env, userId, 'generate');
+    return json(result);
+  } catch (error) {
+    if (error instanceof CareerValidationError || error instanceof SyntaxError)
+      throw new ApiError('MODEL_RESULT_INVALID', '生成内容未通过来源或事实校验，请补充具体经历后重试', 502);
+    throw error;
   }
 });
 

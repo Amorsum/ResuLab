@@ -34,6 +34,8 @@ npm run dev -- --host 127.0.0.1 --port 3000 --strictPort
 
 自动验收命令（使用临时合成账号，结束后清理，不发送邮件）：
 
+经历库新增接口 `/api/ai/tailor` 也由这个本地 Worker 提供。访问前端 `/library` 可测试“保存大简历 + 粘贴补充经历 + 根据 JD 生成独立副本”；原始事实、结果与备份首版保存在当前浏览器，详细边界见 `docs/competition/career-library.md`。本地运行器会打包并监听共享写作模块的变化。
+
 ```powershell
 $env:LEGACY_FRONTEND_ORIGIN='http://127.0.0.1:3000'
 node workers/scripts/verify-live.mjs server server/.env http://127.0.0.1:8787 docs/competition/results/legacy-ai-local.json --generate

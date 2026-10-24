@@ -73,6 +73,7 @@ export default function UserMenu() {
             <p className="text-xs text-gray-500 truncate">{email}</p>
           </div>
 
+          <Link to="/library" onClick={() => setOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">经历库与岗位简历</Link>
           <Link
             to="/my-resumes"
             onClick={() => setOpen(false)}
