@@ -1,0 +1,141 @@
+{
+  "at": "2026-10-24T17:04:24.098Z",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "syntheticOnly": true,
+  "realAuth": true,
+  "realProvider": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/agent/runs",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 401,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 202,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/8a6f36f9-ca5b-4ca6-8754-a1d84dcd74b1",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/8a6f36f9-ca5b-4ca6-8754-a1d84dcd74b1",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/8a6f36f9-ca5b-4ca6-8754-a1d84dcd74b1",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/8a6f36f9-ca5b-4ca6-8754-a1d84dcd74b1",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/8a6f36f9-ca5b-4ca6-8754-a1d84dcd74b1",
+      "status": 200,
+      "cors": true
+    }
+  ],
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRunsRemoved": true
+  },
+  "success": true,
+  "runId": "8a6f36f9-ca5b-4ca6-8754-a1d84dcd74b1",
+  "status": "completed",
+  "modelCalls": 3,
+  "changes": [
+    {
+      "id": "change-1",
+      "target": {
+        "section": "workExperience",
+        "itemId": "work-1",
+        "field": "description"
+      },
+      "before": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。",
+      "after": "使用TypeScript开发订单查询接口，实现筛选条件和分页逻辑，并与前端核对接口字段；协助查看日志定位接口报错。参与接口实现，接口方案由同事确定。日常整理发版说明。",
+      "reason": "对应岗位的TypeScript接口开发、筛选分页、前后端字段核对和日志排查要求。原文将发版说明整理置于句首，核心接口工作被流水账式罗列，责任边界分散在句末。此次将接口开发与协作工作前置，保留“参与实现、方案由同事确定”的责任边界，并将发版说明作为日常事务后置。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    },
+    {
+      "id": "change-2",
+      "target": {
+        "section": "workExperience",
+        "itemId": "work-1",
+        "field": "highlights"
+      },
+      "before": [
+        "参与订单查询接口开发，编写筛选条件和分页逻辑，与前端核对字段。"
+      ],
+      "after": [
+        "使用TypeScript开发订单查询接口，实现筛选条件和分页逻辑。",
+        "与前端核对接口字段，并协助查看日志定位接口报错。"
+      ],
+      "reason": "对应岗位的接口开发、筛选分页、字段核对和日志排查要求。原highlight仅覆盖接口开发与字段核对，遗漏日志排查，且未体现TypeScript。此次按“开发实现”和“协作排查”两条独立重点重组，保留参与性质，不新增方案设计或成果。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:highlights",
+          "quote": "参与订单查询接口开发，编写筛选条件和分页逻辑，与前端核对字段。"
+        },
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    },
+    {
+      "id": "change-3",
+      "target": {
+        "section": "selfEvaluation",
+        "field": "selfEvaluation"
+      },
+      "before": "",
+      "after": "参与使用TypeScript开发订单查询接口，实现筛选条件和分页逻辑，并与前端核对接口字段；协助查看日志定位接口报错。",
+      "reason": "原自我评价为空。岗位强调TypeScript接口开发、筛选分页、字段核对和日志排查，故用一句已验证事实概括最相关的工作内容，不添加年限、职级或自评性形容词。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    }
+  ],
+  "substantiveChanges": 3
+}

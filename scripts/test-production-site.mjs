@@ -30,6 +30,7 @@ try {
  for(const route of ['/api/ai/job-match','/api/ai/tailor','/api/account/delete','/api/agent/runs']) assert.equal((await page.request.post('http://127.0.0.1:3186'+route,{data:{}})).status(),401);
  assert.equal((await page.request.get('http://127.0.0.1:3186/downloads/missing.zip')).status(),404);
  const results=path.join(root,'docs/competition/results/production-site');await mkdir(results,{recursive:true});
+ await page.evaluate(()=>window.scrollTo(0,0));
  await page.screenshot({path:path.join(results,'extension-desktop.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(results,'extension-mobile.png'),fullPage:true});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));

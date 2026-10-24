@@ -62,7 +62,7 @@ Node 生产入口同时承接页面、下载和 `/api/*`。默认只监听 `127.
 
 ## 生产部署
 
-详见 [deploy/production.md](deploy/production.md)，包含本次服务器、队长 DNS 交接、HTTPS、发布、回滚和验收命令。
+可直接转发 [队长域名切换操作单](deploy/captain-handoff.md)。完整部署见 [deploy/production.md](deploy/production.md)，本次已完成事项与验收记录见 [服务器发布验收](docs/competition/production-site-deployment.md)。
 
 - 前端 `VITE_AI_API_BASE=`、`VITE_AGENT_API_BASE=` 显式留空，表示同源；生产固定 `VITE_AGENT_MOCK=false`。
 - `/api/health`：Agent 配置和进程状态；`/api/ai/health`：原 AI 接口版本。

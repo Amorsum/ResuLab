@@ -1,0 +1,77 @@
+{
+  "at": "2026-10-24T17:03:18.390Z",
+  "origin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "syntheticOnly": true,
+  "checks": [
+    {
+      "name": "frontend",
+      "ok": true
+    },
+    {
+      "name": "extension-download",
+      "ok": true,
+      "version": "0.1.2",
+      "bytes": 103626
+    },
+    {
+      "name": "auth-guard:/api/ai/job-match",
+      "ok": true
+    },
+    {
+      "name": "auth-guard:/api/ai/tailor",
+      "ok": true
+    },
+    {
+      "name": "auth-guard:/api/account/delete",
+      "ok": true
+    },
+    {
+      "name": "auth-guard:/api/agent/runs",
+      "ok": true
+    },
+    {
+      "name": "password-sign-in",
+      "ok": true
+    },
+    {
+      "name": "cloud-save",
+      "ok": true
+    },
+    {
+      "name": "cloud-read",
+      "ok": true
+    },
+    {
+      "name": "cloud-delete-own-fixture",
+      "ok": true
+    },
+    {
+      "name": "resume-extraction",
+      "ok": true,
+      "http": 200
+    },
+    {
+      "name": "job-match",
+      "ok": true,
+      "http": 200
+    },
+    {
+      "name": "career-tailor",
+      "ok": true,
+      "http": 200,
+      "calls": 2
+    },
+    {
+      "name": "delete-own-account",
+      "ok": true
+    },
+    {
+      "name": "deleted-account-absent",
+      "ok": true
+    }
+  ],
+  "success": true,
+  "cleanup": {
+    "userDeleted": true
+  }
+}
