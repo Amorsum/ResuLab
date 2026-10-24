@@ -44,4 +44,6 @@ Supabase Auth 回调白名单需包含 `https://resulab.amorsum.top/builder` 和
 
 用户亲自授权官方 Wrangler 后，经本机代理部署至原 `resulab-api`，版本 `37617292-0c38-4ba5-99e6-477b617afeb8`；原版本 `cea5ef0e-f98b-47a0-aa55-60882c9d0aed` 可用于回滚。公网无效 token 请求仍返回 401，现已包含 CORS。正式网站使用已登录账号重试，错误由 `Failed to fetch` 变为“请先登录后再使用”，证实浏览器可读取认证失败，但旧 Worker 尚未接受新项目账号。
 
-下一步对齐旧 Worker 的 `SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY` 到新项目；URL 已知，服务端 key 由项目所有者在被 Git 忽略的本地私有文件填写，不通过聊天或 PR 传递。仅同步旧 Worker 的两项 Supabase 配置，保留模型密钥，不修改 Agent。私有配置同步和真实生成尚未完成前，不能标记本功能完全恢复。
+项目所有者在被 Git 忽略的本地私有文件填写新项目的 service role key 后，已核对 JWT 项目/角色及新项目会员表访问权限（HEAD 200），再通过 Wrangler bulk 同步旧 Worker 的 `SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY`。没有输出或提交 key，也没有修改模型密钥或 Agent 配置。
+
+正式域名的已登录测试账号再次生成成功：同一段不含个人信息的虚构经历经过真实模型调用，进入“核对待导入内容”预览，包含项目、技能和自我评价；未确认应用，简历正文保持原样。由此确认旧智能填写的账号认证、会员/用量表、模型调用及生成预览已恢复。跨域错误修复和配置同步共同解决本次故障；不以此代替云保存、邮箱回调、润色或新 Agent 全链路的独立验收。
