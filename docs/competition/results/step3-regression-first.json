@@ -1,0 +1,168 @@
+{
+  "at": "2026-10-24T04:04:08.538Z",
+  "revision": "26a3c5dbd60858c02bf94bcd9d6a23b53037e896",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "sourceRunId": "0e51143e-4d32-4a06-bda3-9bcb7a21313a",
+  "originalRunUnmodified": true,
+  "realDatabase": true,
+  "realAuth": true,
+  "realProvider": true,
+  "seededCheckpointStage": 3,
+  "success": false,
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRunsRemoved": true
+  },
+  "runId": "59042454-75e5-420e-b1a6-cc70727ff770",
+  "status": "failed",
+  "errorCode": "TOOL_RESULT_INVALID",
+  "changesCount": 0,
+  "integrity": [],
+  "steps": [
+    {
+      "id": "step-0",
+      "status": "completed"
+    },
+    {
+      "id": "step-1",
+      "status": "completed"
+    },
+    {
+      "id": "step-2",
+      "status": "completed"
+    },
+    {
+      "id": "step-3",
+      "status": "failed"
+    }
+  ],
+  "usage": {
+    "calls": 2,
+    "inputTokens": 9829,
+    "outputTokens": 2403,
+    "elapsedMs": 13260,
+    "waitingMs": 0,
+    "estimatedCost": 0.038882,
+    "currency": "CNY"
+  },
+  "calls": [
+    {
+      "id": "f65351be-5372-4dbe-a675-5aad2a925d93",
+      "step_id": "step-3",
+      "attempt": 1,
+      "status": "failed",
+      "error_code": "TOOL_RESULT_INVALID",
+      "input_tokens": 4884,
+      "output_tokens": 1076,
+      "estimated_cost": 0.018376,
+      "config": {
+        "repair": false,
+        "pricing": {
+          "basis": "configured_flat_rates",
+          "currency": "CNY",
+          "inputPerMillion": 2,
+          "outputPerMillion": 8
+        },
+        "thinking": "disabled",
+        "timeoutMs": 90000,
+        "max_tokens": 8000,
+        "stepAttempt": 1,
+        "temperature": 0.2
+      }
+    },
+    {
+      "id": "3ff8beb3-4bdf-44e9-8c11-7ad42d9dd01b",
+      "step_id": "step-3",
+      "attempt": 2,
+      "status": "failed",
+      "error_code": "TOOL_RESULT_INVALID",
+      "input_tokens": 4945,
+      "output_tokens": 1327,
+      "estimated_cost": 0.020506,
+      "config": {
+        "repair": true,
+        "pricing": {
+          "basis": "configured_flat_rates",
+          "currency": "CNY",
+          "inputPerMillion": 2,
+          "outputPerMillion": 8
+        },
+        "thinking": "disabled",
+        "timeoutMs": 90000,
+        "max_tokens": 8000,
+        "stepAttempt": 1,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "events": [
+    {
+      "event": "model_call",
+      "at": "2026-10-24T04:04:18.191Z",
+      "runId": "59042454-75e5-420e-b1a6-cc70727ff770",
+      "stepId": "step-3",
+      "callId": "f65351be-5372-4dbe-a675-5aad2a925d93",
+      "attempt": 1,
+      "status": "failed",
+      "code": "TOOL_RESULT_INVALID",
+      "requestId": "7c6cee98-f16e-4803-87b8-ec6dc2d747c5",
+      "finish_reason": "stop",
+      "validation": {
+        "kind": "semantic_validation",
+        "issues": [
+          {
+            "path": "$.result.changes[0].after",
+            "code": "unsupported_number"
+          }
+        ]
+      },
+      "contentChars": 2366,
+      "prompt_tokens": 4884,
+      "completion_tokens": 1076,
+      "reasoning_tokens": null,
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 4884,
+      "max_tokens": 8000,
+      "thinking": "disabled",
+      "estimatedCost": 0.018376,
+      "currency": "CNY",
+      "pricingBasis": "configured_flat_rates"
+    },
+    {
+      "event": "model_call",
+      "at": "2026-10-24T04:04:24.669Z",
+      "runId": "59042454-75e5-420e-b1a6-cc70727ff770",
+      "stepId": "step-3",
+      "callId": "3ff8beb3-4bdf-44e9-8c11-7ad42d9dd01b",
+      "attempt": 2,
+      "status": "failed",
+      "code": "TOOL_RESULT_INVALID",
+      "requestId": "c2bbb7e4-ebb2-4e6b-84ba-e9aff4746626",
+      "finish_reason": "stop",
+      "validation": {
+        "kind": "semantic_validation",
+        "issues": [
+          {
+            "path": "$.result.changes[1].sources[0].quote",
+            "code": "source_quote_mismatch"
+          }
+        ]
+      },
+      "contentChars": 2923,
+      "prompt_tokens": 4945,
+      "completion_tokens": 1327,
+      "reasoning_tokens": null,
+      "prompt_cache_hit_tokens": 128,
+      "prompt_cache_miss_tokens": 4817,
+      "max_tokens": 8000,
+      "thinking": "disabled",
+      "estimatedCost": 0.020506,
+      "currency": "CNY",
+      "pricingBasis": "configured_flat_rates"
+    }
+  ],
+  "tokensMatch": true,
+  "costsMatch": true,
+  "responseTokensMatch": true,
+  "failure": "DRAFTING_REGRESSION_FAILED"
+}
