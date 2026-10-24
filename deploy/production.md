@@ -4,6 +4,8 @@
 
 队长可直接按 [captain-handoff.md](captain-handoff.md) 发布。无需改 DNS、灰云/橙云或 SSL 模式，不新增 Caddy 或前端服务器。
 
+2026-10-25 已完成原 Worker 与 Pages 的正式发布，PR #15 已合并；实际版本和独立服务验收见 [正式发布记录](../docs/competition/split-services-release.md)。
+
 ## 先发布 Worker，再发布前端
 
 在已有 Cloudflare 授权的机器拉取 `codex/career-library`，安装根目录和 Worker 依赖，运行 Worker 类型检查与测试，然后在 `workers/` 执行 `npm run deploy`。沿用现有 `resulab-api`、自定义域名及服务端 Secret，不上传本机 `.dev.vars`。

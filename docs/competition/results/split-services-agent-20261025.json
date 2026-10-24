@@ -1,0 +1,147 @@
+{
+  "at": "2026-10-24T17:29:25.099Z",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "syntheticOnly": true,
+  "realAuth": true,
+  "realProvider": true,
+  "operations": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "OPTIONS",
+      "route": "/api/agent/runs",
+      "status": 204,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 401,
+      "cors": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/agent/runs",
+      "status": 202,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e6d69d9e-3270-4afa-93ce-2468496d1521",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e6d69d9e-3270-4afa-93ce-2468496d1521",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e6d69d9e-3270-4afa-93ce-2468496d1521",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e6d69d9e-3270-4afa-93ce-2468496d1521",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e6d69d9e-3270-4afa-93ce-2468496d1521",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/agent/runs/e6d69d9e-3270-4afa-93ce-2468496d1521",
+      "status": 200,
+      "cors": true
+    }
+  ],
+  "cleanup": {
+    "userDeleted": true,
+    "ownedRunsRemoved": true
+  },
+  "success": true,
+  "runId": "e6d69d9e-3270-4afa-93ce-2468496d1521",
+  "status": "completed",
+  "modelCalls": 3,
+  "changes": [
+    {
+      "id": "change-1",
+      "target": {
+        "section": "workExperience",
+        "itemId": "work-1",
+        "field": "description"
+      },
+      "before": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。",
+      "after": "使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，并与前端核对接口字段；协助查看日志定位接口报错。参与接口实现，接口方案由同事确定。日常整理发版说明。",
+      "reason": "对应岗位要求中的TypeScript业务接口开发、筛选与分页逻辑、前后端字段核对及日志排查。原文将发版说明等事务性工作前置，接口开发相关内容分散且责任边界表述不够清晰；此次将接口开发与协作工作前置，保留“参与实现、方案由同事确定”的责任边界，并将发版说明压缩后置。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    },
+    {
+      "id": "change-2",
+      "target": {
+        "section": "workExperience",
+        "itemId": "work-1",
+        "field": "highlights"
+      },
+      "before": [
+        "参与订单查询接口开发，编写筛选条件和分页逻辑，与前端核对字段。"
+      ],
+      "after": [
+        "使用TypeScript开发订单查询接口，编写筛选条件和分页逻辑，并与前端核对接口字段。",
+        "协助查看日志定位接口报错；参与接口实现，接口方案由同事确定。"
+      ],
+      "reason": "对应岗位对接口开发、筛选分页、字段核对和日志排查的要求。原highlight只覆盖接口开发与字段核对，遗漏日志排查，且未体现参与实现的责任边界；此次补充已有事实并明确参与范围，避免与description重复堆叠。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:highlights",
+          "quote": "参与订单查询接口开发，编写筛选条件和分页逻辑，与前端核对字段。"
+        },
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    },
+    {
+      "id": "change-3",
+      "target": {
+        "section": "selfEvaluation",
+        "field": "selfEvaluation"
+      },
+      "before": "",
+      "after": "具备使用TypeScript参与订单查询接口开发的经验，负责筛选条件和分页逻辑，并与前端核对接口字段；协助查看日志定位接口报错。",
+      "reason": "原自我评价为空，岗位要求集中在TypeScript接口开发、筛选分页、字段核对和日志排查。此次仅用工作经历中已验证的事实做一句概括，不新增技能等级、年限或成果。",
+      "sources": [
+        {
+          "kind": "resume",
+          "refId": "resume:workExperience:work-1:description",
+          "quote": "每天整理发版说明，使用TypeScript开发订单查询接口，负责筛选条件和分页逻辑，与前端核对接口字段，协助查看日志定位接口报错。只参与实现，接口方案由同事确定。"
+        }
+      ],
+      "needsConfirmation": true
+    }
+  ],
+  "substantiveChanges": 3
+}

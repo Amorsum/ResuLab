@@ -57,6 +57,8 @@ npm --prefix workers ci
 
 可直接转发 [队长现行发布单](deploy/captain-handoff.md)。完整说明见 [deploy/production.md](deploy/production.md)。无需修改 DNS、Cloudflare 代理或 SSL 模式。
 
+2026-10-25 已按该顺序更新原 Worker，并将 PR #15 合入 `codex/contest-b` 完成 Pages 与扩展下载发布。[正式发布与验收结果](docs/competition/split-services-release.md) 记录实际版本、真实接口、下载校验及待验收边界；以下步骤用于后续维护。
+
 1. 在已有授权的机器发布原 `resulab-api` Cloudflare Worker，更新匹配、定制及本人注销接口，保留既有服务端 Secret。
 2. Worker 验收通过后，将 [PR #15](https://github.com/Amorsum/ResuLab/pull/15) 合入 `codex/contest-b`，沿用原 GitHub Pages Actions 发布；页面和扩展 ZIP 一起上线。
 3. Agent 已更新到原服务器，继续使用原 HTTPS 隧道；Supabase 沿用原项目并核对邮件回调。
@@ -67,7 +69,7 @@ npm --prefix workers ci
 - Agent：服务器 `/api/health` 和 `/api/agent/*`，使用既有持久化任务表与 RPC。
 - 云简历直接通过 Supabase RLS 访问本人 `resumes`。数据库迁移位于 `supabase/migrations/`，发布前核对状态，不重复执行。
 
-之前准备的统一服务器/Caddy 方案已撤回，新增网关与防火墙规则已撤销，正式 DNS 未更改。执行机没有 Cloudflare 账号授权，Worker 更新需要由队长完成；服务器模型验收不代表 Worker 已发布。
+之前准备的统一服务器/Caddy 方案已撤回，新增网关与防火墙规则已撤销。本次沿用既有 Wrangler 授权更新 Worker，没有改动正式 DNS、代理或 SSL；Worker 与 Agent 分别完成了公网真实验收。
 
 ## 检查与构建
 

@@ -2,6 +2,8 @@
 
 继续使用原架构，不改 DNS、不切换 Cloudflare 代理或 SSL 模式，也不把前端迁移到服务器。
 
+**2026-10-25 状态：已发布。** 队长已更新原 Worker，PR #15 已以 merge commit 合入 `codex/contest-b`，正式前端和扩展下载已上线。以下保留维护步骤；实际版本、验收和回滚见 [正式发布记录](../docs/competition/split-services-release.md)。
+
 | 部分 | 原部署位置 | 本次操作 |
 | --- | --- | --- |
 | 前端与扩展下载 | GitHub Pages → resulab.amorsum.top | 合并 PR #15，原 Actions 自动发布 |
@@ -38,7 +40,7 @@ npm run deploy
 - 未登录 POST `/api/ai/job-match`、`/api/ai/tailor`、`/api/account/delete` 返回带 CORS 的 401。
 - 登录后验证经历提取、匹配和定制；不通过关闭认证解决配置错误。
 
-当前执行机没有 Cloudflare 授权，所以这一步需要队长操作，不能把服务器候选测试当作原 Worker 已更新。
+原交接机没有 Cloudflare 授权；本次已由有既有授权的队长执行并独立验收原 Worker，不以服务器候选测试代替。
 
 ## 2. 合并前端并等待原 Pages 发布
 
