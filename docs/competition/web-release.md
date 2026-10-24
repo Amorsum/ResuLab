@@ -36,4 +36,4 @@ Supabase Auth 回调白名单需包含 `https://resulab.amorsum.top/builder` 和
 - PR #8（后端质量修复）、#6（前端）、#9（比赛分支直接发布）均已审核并以 merge commit 合入 `codex/contest-b`。首个已核实的比赛部署为 `2df3e49`，Pages 工作流与同版本 CI 均成功；正式域名 `/version.json` 返回该完整 commit。后续以该接口核对当前版本。
 - `main` 保持发布前的 `8878fc8`，没有合入或推送比赛代码；比赛前端源码为 `codex/contest-b`，`gh-pages` 为构建产物分支。原 `main` 仍保留其历史部署工作流，比赛期间避免从该基线触发其他正式域名发布。
 - 正式域名 `/builder/classic` 可打开新版岗位优化工作区；未登录时显示登录提示并禁用分析。该检查未提交真实简历或调用模型。用户此前反馈的真实联调通过来自本机前端，不自动视为正式域名完整验收。
-- 原 AI Worker 的健康接口可达，但 Cloudflare 管理浏览器未登录、Wrangler 亦无授权，尚未核对它是否仍连接旧 Supabase；需管理员登录后检查私有配置。Supabase 的真实邮箱回调、云保存和正式域名模型操作仍待实际账号验收。
+- 正式网站已用测试账号登录成功，线上 bundle 核对包含新 Supabase、现有 Agent API 和旧 AI 自定义域名。Cloudflare 管理页已登录，但 Worker 的 Supabase URL/key 均加密，无法读取比较。旧 AI 智能填写使用虚构验收文本请求后显示 `Failed to fetch`，未生成或应用内容；仅此错误无法区分网络、跨域与服务端认证配置，交由 B 排查。用户明确本轮先完成比赛前端合并与发布，其余问题后续处理。云保存、邮箱回调、旧 AI 和正式域名模型完整链路仍不标记通过。
