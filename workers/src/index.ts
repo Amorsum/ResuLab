@@ -1,6 +1,7 @@
-// ResuLab AI API Worker — 单文件，零依赖
+// ResuLab AI API Worker with bundled shared resume-writing rules.
 import { CAREER_LIMITS, CareerValidationError, parseCareerInput } from '../../shared/career';
 import { composeCareer } from '../../shared/careerComposer';
+import { RESUME_WRITER_VERSION } from '../../shared/resumeWritingSkill';
 
 interface Env {
   SUPABASE_URL: string;
@@ -94,7 +95,7 @@ function match(req: Request): { handler: Handler; params: Record<string, string>
 // ==================== Routes ====================
 
 // Health
-add('GET', '/api/health', () => json({ status: 'ok', version: 'legacy-auth-cors-20261024', timestamp: Date.now() }));
+add('GET', '/api/health', () => json({ status: 'ok', version: 'career-library-20261024', resumeWriterVersion: RESUME_WRITER_VERSION, timestamp: Date.now() }));
 
 // Membership status
 add('GET', '/api/membership/status', async (req, env) => {
