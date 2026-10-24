@@ -20,6 +20,7 @@ import {
 import {
   draftProposalSchema,
   draftTargets,
+  draftSourceCatalog,
   originalTargetValue,
   resolveDraftProposals,
 } from "./drafting.js";
@@ -331,14 +332,20 @@ export async function executeRun(
       } else if (stage === 2) {
         awaitInput = run.run_view.questions.length > 0;
       } else if (stage === 3) {
+        const sources = draftSourceCatalog(run);
         const result = await provider.generate(
           run,
           stepId,
           draftProposalSchema,
-          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"给定条目ID","field":"description"},"after":"建议","reason":"理由","sources":[{"kind":"resume","refId":"给定证据ID","quote":"原文连续片段"}],"needsConfirmation":true}]}}。禁止输出before，由后端从当前简历快照按合法target回填原值。target必须逐字段复制给定targets之一，不得猜测条目ID。sources.kind只能为resume或answer之一。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。highlights的after必须是字符串数组，其余after是字符串。每个目标至多一项，最多20项。来源只用给定evidence或已回答questions，quote必须是对应原文的连续片段，不改写引用。没有证据的事实不新增，不复制JD为个人能力，不编造数字/技能；没有安全修改时返回空changes。',
+          '返回 {"tool":"draft_resume_changes","result":{"changes":[{"id":"change-1","target":{"section":"workExperience","itemId":"给定条目ID","field":"description"},"after":"建议","reason":"理由","sources":[{"id":"source-1"}],"needsConfirmation":true}]}}。禁止输出before，由后端从当前简历快照按合法target回填原值。sources只含给定sourceCatalog.id，禁止输出kind/refId/quote，由后端回填真实来源原文。target必须逐字段复制给定targets之一，不得猜测条目ID。只允许education.description、workExperience.description/highlights、projects.description、selfEvaluation.selfEvaluation（该section无itemId）。highlights的after必须是字符串数组，其余after是字符串。每个目标至多一项，最多20项。after中每个数字字面量（包括保留的原文数字）必须原样出现在所选sources对应的quote中；检查给定numbers，选择覆盖全部数字的来源，不能从未选中的原文借用数字。不新增、换算、改写数字、单位或百分比。没有证据的事实不新增，不复制JD为个人能力，不编造技能；没有安全修改时返回空changes。',
           {
             snapshot: run.resume_snapshot,
             targets: draftTargets(run.resume_snapshot),
+            sourceCatalog: [...sources].map(([id, source]) => ({
+              id,
+              ...source,
+              numbers: source.quote.match(/\d+(?:[.,]\d+)*(?:%|％)?/g) ?? [],
+            })),
             requirements: run.run_view.requirements,
             evidence: run.run_view.evidence,
             questions: run.run_view.questions,
@@ -347,13 +354,13 @@ export async function executeRun(
           (candidate) => {
             validateChanges(
               run,
-              resolveDraftProposals(candidate, run.resume_snapshot),
+              resolveDraftProposals(candidate, run.resume_snapshot, sources),
             );
           },
         );
         run.run_view.changes = validateChanges(
           run,
-          resolveDraftProposals(result, run.resume_snapshot),
+          resolveDraftProposals(result, run.resume_snapshot, sources),
         );
       } else {
         run.run_view.changes = validateChanges(run, run.run_view.changes);

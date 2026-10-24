@@ -5,6 +5,7 @@ import { draftingSchema } from "../../shared/agent.schema.js";
 import {
   draftProposalSchema,
   draftTargets,
+  draftSourceCatalog,
   originalTargetValue,
   resolveDraftProposals,
 } from "../src/drafting.js";
@@ -22,7 +23,7 @@ const proposal = () => {
   );
   return {
     tool: "draft_resume_changes" as const,
-    result: { changes: [change] },
+    result: { changes: [{ ...change, sources: [{ id: "source-1" }] }] },
   };
 };
 test("missing targets and mismatched before are distinct and strict byte-for-byte comparisons remain", () => {
@@ -58,6 +59,7 @@ test("only legal existing targets supply exact string/array/empty before, with d
   let changes = resolveDraftProposals(
     draftProposalSchema.parse(data),
     run.resume_snapshot,
+    draftSourceCatalog(run),
   );
   assert.equal(
     changes[0].before,
@@ -72,6 +74,7 @@ test("only legal existing targets supply exact string/array/empty before, with d
   changes = resolveDraftProposals(
     draftProposalSchema.parse(data),
     run.resume_snapshot,
+    draftSourceCatalog(run),
   );
   assert.deepEqual(changes[0].before, ["保留顺序", "含有空格 "]);
   (changes[0].before as string[]).push("不得修改快照");
@@ -110,6 +113,7 @@ test("model before and protected/arbitrary target fields are rejected instead of
   const changes = resolveDraftProposals(
     draftProposalSchema.parse(proposal()),
     exampleSnapshot,
+    draftSourceCatalog(fixture()),
   );
   draftingSchema.parse({ tool: "draft_resume_changes", result: { changes } });
 });
@@ -125,6 +129,7 @@ test("backfilling before preserves after types, duplicate targets, source quotes
       changes = resolveDraftProposals(
         draftProposalSchema.parse(proposal()),
         run.resume_snapshot,
+        draftSourceCatalog(run),
       );
     if (fault === "type") changes[0].after = ["数组类型"];
     if (fault === "source") changes[0].sources[0].refId = "missing-source";
@@ -138,4 +143,65 @@ test("backfilling before preserves after types, duplicate targets, source quotes
       path,
     });
   }
+});
+test("draft sources select only allowed resume/answered facts, and cannot retype quotes or invent IDs", () => {
+  const run = fixture();
+  run.run_view.questions = [
+    {
+      id: "q-1",
+      requirementId: "req-1",
+      question: "实际负责的功能？",
+      answer: "我负责登录鉴权接口。",
+    },
+  ];
+  const catalog = draftSourceCatalog(run),
+    data = proposal();
+  assert.equal(
+    [...catalog.values()].filter((source) => source.kind === "resume").length,
+    1,
+  );
+  assert.ok(
+    [...catalog.values()].some(
+      (source) => source.kind === "answer" && source.refId === "q-1",
+    ),
+  );
+  assert.equal(
+    draftProposalSchema.safeParse({
+      ...data,
+      result: {
+        changes: [
+          {
+            ...data.result.changes[0],
+            sources: [{ id: "source-1", quote: "伪造引用" }],
+          },
+        ],
+      },
+    }).success,
+    false,
+  );
+  data.result.changes[0].sources = [{ id: "unknown-source" }];
+  assert.throws(
+    () =>
+      resolveDraftProposals(
+        draftProposalSchema.parse(data),
+        run.resume_snapshot,
+        catalog,
+      ),
+    { rule: "unknown_source", path: "$.result.changes[0].sources[0].id" },
+  );
+  const valid = resolveDraftProposals(
+    draftProposalSchema.parse(proposal()),
+    run.resume_snapshot,
+    catalog,
+  );
+  assert.equal(
+    valid[0].sources[0].quote,
+    exampleSnapshot.workExperience[0].description,
+  );
+  validateChanges(run, valid);
+  valid[0].sources[0].quote = "更改返回的副本";
+  assert.equal(
+    catalog.get("source-1")?.quote,
+    exampleSnapshot.workExperience[0].description,
+  );
 });

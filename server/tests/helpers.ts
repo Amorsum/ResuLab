@@ -201,16 +201,20 @@ export function modelFetch(
                       reason: "突出岗位相关经历",
                       sources: [
                         {
-                          kind: "resume",
-                          refId: ref.id,
-                          quote: "使用 TypeScript 开发接口",
+                          id: input.sourceCatalog.find(
+                            (source: { kind: string; refId: string }) =>
+                              source.kind === "resume" &&
+                              source.refId === ref.id,
+                          ).id,
                         },
                         ...(options.useAnswer
                           ? [
                               {
-                                kind: "answer",
-                                refId: "q-1",
-                                quote: "负责登录鉴权接口",
+                                id: input.sourceCatalog.find(
+                                  (source: { kind: string; refId: string }) =>
+                                    source.kind === "answer" &&
+                                    source.refId === "q-1",
+                                ).id,
                               },
                             ]
                           : []),
