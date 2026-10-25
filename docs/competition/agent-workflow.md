@@ -22,10 +22,10 @@ stateDiagram-v2
   running --> running: 旧租约过期后新执行者从检查点恢复
 ```
 
-上下文控制：JD最多12000字符、整个快照最多48000字符、每字段4000字符、回答每题2000字符；HTTP体最多128KiB。超长输入拒绝，避免静默截断原文后出现伪引用。岗位提取仅给JD，匹配给要求和按ID定位的字段目录，建议阶段给快照/要求/证据/回答。模型输出限制3500 tokens、接收体限制256KiB，JSON/schema至多修复一次。
+上下文控制：JD最多12000字符、整个快照最多48000字符、每字段4000字符、回答每题2000字符；HTTP体最多128KiB。超长输入拒绝，避免静默截断原文后出现伪引用。岗位提取仅给JD，匹配给要求和按ID定位的字段目录，建议阶段给快照/要求/证据/回答。MODEL_MAX_OUTPUT_TOKENS默认8000、配置上限32000，接收体限制256KiB，JSON/schema至多修复一次。
 
 JD、简历、回答均放在user数据消息；system固定规则禁止改变权限或把JD当候选人事实。源引用由本地重新验证，不相信模型自报来源。拒绝无来源的新数字；所有合法建议仍强制needsConfirmation=true。此方法不能证明语义绝无幻觉或抵御全部提示注入，需要用户确认和失败案例验收。
 
 本地脚本轨迹（合成输入、可控provider，**不是实际模型轨迹**）：岗位解析 → 模糊证据 → 持久化追问/awaiting_input → 提交回答 → 领取同一任务 → 建议与规则验证 → completed。集成测试验证前两步不重复执行、共3个模拟上游请求、5个工具步骤。原始记录在results/local-tests.tap.txt。
 
-真实轨迹待有实际模型和Supabase后运行smoke取得；不能用本段或agent.examples.ts替代真实Demo证据。
+真实公网轨迹见 [2026-10-25 Agent 验收](results/split-services-agent-20261025.json)：真实认证与模型任务 completed，3次模型请求、3条实质修改。另见 [完整回归](results/draft-quality-pipeline-regression.json)，缺少 Kubernetes 经历的场景经过真实追问回答后完成，返回0条建议。两份记录均用合成输入，不代表用户价值统计。现场 Demo 使用真实运行，历史记录仅作佐证。

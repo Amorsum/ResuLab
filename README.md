@@ -2,7 +2,15 @@
 
 在线入口：[resulab.amorsum.top](https://resulab.amorsum.top) · [浏览器扩展下载与安装](https://resulab.amorsum.top/extension)
 
-从真实经历出发，编辑简历、按岗位整理表达、核对事实来源并导出。生产继续沿用 **GitHub Pages 前端 + Cloudflare Worker AI API + Windows Server Agent + Supabase**。域名、Cloudflare 代理及既有 HTTPS 入口保持不变。发布步骤见 [现行部署说明](deploy/production.md)。
+从真实经历出发，编辑简历、按岗位整理表达、核对事实来源并导出。服务由 **GitHub Pages 前端 + Cloudflare Worker AI API + Windows Server Agent + Supabase** 组成。部署步骤见 [生产部署说明](deploy/production.md)。
+
+## 比赛项目与技术材料
+
+本分支为 AI Application 赛道作品，重点是岗位优化 Agent：分析 JD、匹配简历事实、针对缺口追问、生成有来源的局部修改，由用户确认应用并支持整批撤销。模型负责内容判断，服务端控制执行阶段、可写字段与调用预算。
+
+- [场景与价值](docs/competition/scenario-value.md) · [系统架构与选型](docs/competition/architecture.md)
+- [Agent 执行流程](docs/competition/agent-workflow.md) · [异常处理与可靠性](docs/competition/reliability.md)
+- [成本与性能证据](docs/competition/cost-performance.md) · [公网验收记录](docs/competition/split-services-release.md)
 
 ## 功能与当前状态
 
@@ -55,13 +63,11 @@ npm --prefix workers ci
 
 ## 生产部署
 
-可直接转发 [队长现行发布单](deploy/captain-handoff.md)。完整说明见 [deploy/production.md](deploy/production.md)。无需修改 DNS、Cloudflare 代理或 SSL 模式。
+完整步骤、配置与回滚见 [deploy/production.md](deploy/production.md)。各服务独立发布：
 
-2026-10-25 已按该顺序更新原 Worker，并将 PR #15 合入 `codex/contest-b` 完成 Pages 与扩展下载发布。[正式发布与验收结果](docs/competition/split-services-release.md) 记录实际版本、真实接口、下载校验及待验收边界；以下步骤用于后续维护。
-
-1. 在已有授权的机器发布原 `resulab-api` Cloudflare Worker，更新匹配、定制及本人注销接口，保留既有服务端 Secret。
-2. Worker 验收通过后，将 [PR #15](https://github.com/Amorsum/ResuLab/pull/15) 合入 `codex/contest-b`，沿用原 GitHub Pages Actions 发布；页面和扩展 ZIP 一起上线。
-3. Agent 已更新到原服务器，继续使用原 HTTPS 隧道；Supabase 沿用原项目并核对邮件回调。
+1. Cloudflare Worker：在 `workers/` 执行类型检查、测试和 `npm run deploy`，保留服务端 Secret。
+2. 前端：推送已验证的 `codex/contest-b` 提交后，GitHub Actions 构建并发布到 `gh-pages`，同时提供扩展 ZIP 下载。
+3. Agent：构建 `server/` 并按 [Windows 部署说明](deploy/windows/README.md) 发布，使用 HTTPS 入口访问。前端 push 不会更新服务器 Agent。
 
 前端 `VITE_AI_API_BASE=https://api.amorsum.top`，`VITE_AGENT_API_BASE` 沿用仓库原 HTTPS 地址，生产固定 `VITE_AGENT_MOCK=false`。不要把生产 API 地址改为空或 localhost。
 
@@ -69,7 +75,7 @@ npm --prefix workers ci
 - Agent：服务器 `/api/health` 和 `/api/agent/*`，使用既有持久化任务表与 RPC。
 - 云简历直接通过 Supabase RLS 访问本人 `resumes`。数据库迁移位于 `supabase/migrations/`，发布前核对状态，不重复执行。
 
-之前准备的统一服务器/Caddy 方案已撤回，新增网关与防火墙规则已撤销。本次沿用既有 Wrangler 授权更新 Worker，没有改动正式 DNS、代理或 SSL；Worker 与 Agent 分别完成了公网真实验收。
+[2026-10-25 公网验收记录](docs/competition/split-services-release.md)分别保存 Worker、Agent、云端简历与下载检查结果。Docker Compose 是可选部署方案，不是当前线上拓扑。
 
 ## 检查与构建
 

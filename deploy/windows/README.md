@@ -1,6 +1,6 @@
 # Windows Server 2022 后端部署
 
-适用于已完成测试库迁移、通过 SSH 密钥管理的 Windows Server 2022。前端和域名入口另行集成。本方案直接运行 Node.js，不要求在 Windows Server 上安装 Docker Desktop。
+适用于已完成数据库迁移、通过 SSH 密钥管理的 Windows Server 2022。当前前端由 GitHub Pages 提供，Agent 通过 HTTPS 隧道访问，整体拓扑见 [生产部署](../production.md)。本方案直接运行 Node.js，不要求安装 Docker Desktop。
 
 目录约定：
 
@@ -76,4 +76,4 @@ Invoke-RestMethod http://127.0.0.1:8789/api/health
 
 真实 Supabase 验收使用 `server/scripts/verify-supabase.ts`；`AGENT_API_BASE` 指定待验收 API，`AGENT_ACCEPTANCE_REPORT` 可指定单独的报告路径，防止覆盖历史记录。脚本保存执行平台、Node.js版本、是否配置出网代理，以及不含密钥的失败分类。缺模型时使用两个自行创建的合成账号验证数据库及 HTTP 查询，完成后清理；不请求模型，也不领取其他用户任务。服务器只有生产依赖时可用已安装的 esbuild 在开发机打包脚本（`--bundle --packages=external --platform=node --format=esm`），将结果置于发布目录的 `server` 下运行，并在启动前显式使用 dotenv 的 `config({ path, quiet: true })` 加载服务器配置。
 
-部署记录：应用归档 SHA256 为 `7a1fa5a7f8eb41238bb636ce50b1c791466582d18027a2fc9aa2a622c92e86ba`，Node.js v22.23.4 官方 ZIP 的 SHA256 为 `cbc74b5e0982c9dbb41525fd8fb5dcd32fbee237863f7829072f4639a1ce5f20`。验收报告见 `docs/competition/results/windows-server-*.json`。部署源码是 B 分支的1e701de，集成PR仍需队长审核；本次未替代集成分支合并。
+首次部署记录：应用归档 SHA256 为 `7a1fa5a7f8eb41238bb636ce50b1c791466582d18027a2fc9aa2a622c92e86ba`，Node.js v22.23.4 官方 ZIP 的 SHA256 为 `cbc74b5e0982c9dbb41525fd8fb5dcd32fbee237863f7829072f4639a1ce5f20`。历史验收报告见 `docs/competition/results/windows-server-*.json`，当前运行源码以服务器 `deployment.json` 为准。

@@ -1,18 +1,34 @@
-# 生产发布：保留现有部署方式
+# 生产部署
 
 当前架构保持不变：GitHub Pages 提供前端（`resulab.amorsum.top`），原 Cloudflare Worker 提供 AI API（`api.amorsum.top`），Windows Server 提供 Agent，继续使用已有 HTTPS 隧道。Supabase 继续负责登录、云简历和 Agent 数据。
 
-队长可直接按 [captain-handoff.md](captain-handoff.md) 发布。无需改 DNS、灰云/橙云或 SSL 模式，不新增 Caddy 或前端服务器。
-
-2026-10-25 已完成原 Worker 与 Pages 的正式发布，PR #15 已合并；实际版本和独立服务验收见 [正式发布记录](../docs/competition/split-services-release.md)。
+前端与后端使用独立发布流程，均从 `codex/contest-b` 的已验证提交构建。实际版本和独立服务验收见 [发布记录](../docs/competition/split-services-release.md)。
 
 ## 先发布 Worker，再发布前端
 
-在已有 Cloudflare 授权的机器拉取 `codex/career-library`，安装根目录和 Worker 依赖，运行 Worker 类型检查与测试，然后在 `workers/` 执行 `npm run deploy`。沿用现有 `resulab-api`、自定义域名及服务端 Secret，不上传本机 `.dev.vars`。
+在已配置 Cloudflare 授权的机器检出已验证的比赛分支提交，安装依赖后发布：
+
+```sh
+npm ci
+npm --prefix workers ci
+npm --prefix workers run typecheck
+npm --prefix workers test
+npm --prefix workers run deploy
+```
+
+沿用 `workers/wrangler.toml` 中的 `resulab-api`、自定义域名及服务端 Secret。本地 `.dev.vars` 不提交，也不能代替线上 Secret。
 
 新增的 `/api/ai/job-match`、最新 `/api/ai/tailor` 和 `/api/account/delete` 都属于此 Worker，不会因更新 Windows Agent 自动发布。验证 health、未登录 401/CORS 及登录后的真实模型结果。
 
-Worker 通过后，合并 [PR #15](https://github.com/Amorsum/ResuLab/pull/15) 至 `codex/contest-b`。原 Pages 工作流从仓库 Secret 读取 Supabase 公开配置与 `VITE_AI_API_BASE`，从 Variable 读取现有 `VITE_AGENT_API_BASE`，固定关闭模拟，构建并发布 `gh-pages`。工作流同时打包扩展和下载元数据，保留原 CNAME 和 SPA 404 回退。
+Worker 验收通过后，将已验证的前端提交推送到 `codex/contest-b`。`.github/workflows/deploy.yml` 自动构建并发布 `gh-pages`，同时打包扩展和下载元数据，保留 CNAME 和 SPA 404 回退。
+
+| 构建变量 | GitHub Actions 来源 | 用途 |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | Secret | Supabase 项目 URL |
+| `VITE_SUPABASE_ANON_KEY` | Secret | 前端公开 key |
+| `VITE_AI_API_BASE` | Secret，默认 `https://api.amorsum.top` | Worker 地址 |
+| `VITE_AGENT_API_BASE` | Variable，必填 HTTPS | Agent 地址 |
+| `VITE_AGENT_MOCK` | 工作流固定 `false` | 禁止生产模拟 |
 
 `VITE_AI_API_BASE` 应为 `https://api.amorsum.top`，Agent 使用原公开 HTTPS 地址；不要使用空值或本机地址。`npm run build:production` 可用于本机构建同样的分离服务版本，并编译 Agent，但本机构建不会自行部署 Pages 或 Worker。
 
@@ -33,4 +49,6 @@ Node.js 22，原应用仅监听 `127.0.0.1:8788`；保留 `ResuLab-Agent-API` �
 - 检查普通邮箱注册、找回密码和回调，云简历保存、经历提取、匹配、定制、Agent 修改及下载。
 - BOSS 搜索/读取仍待实站验收，自动沟通与附件发送禁用；上线不改变能力状态。
 
-此前统一服务器/Caddy 的候选部署记录仅保留作历史，不再作为操作步骤。新增网关和防火墙规则已撤销，DNS 未改。
+## 回滚
+
+记录前端 `/version.json`、Worker 版本和服务器 `deployment.json`。前端通过恢复已验证的源码提交并重新发布回滚；Worker 使用已保存的发行版本；Agent 使用保留的发布目录和安装脚本切回。跨服务接口变更须一起核对兼容性。数据库迁移单独评估，不通过删表或清理用户数据处理故障。
