@@ -33,3 +33,5 @@ if ('serviceWorker' in navigator && import.meta.env.PROD && !isTauri) {
     // Service Worker 注册失败不影响应用正常运行
   });
 }
+
+import './product.css';

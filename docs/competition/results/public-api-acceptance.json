@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-23T14:17:34.8304891Z",
+  "apiBase": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "sourceBranch": "codex/contest-b",
+  "sourceRevision": "0b815ee5f5e8bf0f853e0f166ada6183265a68e9",
+  "tlsCertificateValidated": true,
+  "temporaryUrl": true,
+  "frontendHostedOnServer": false,
+  "health": {
+    "version": "0.1.0",
+    "protocolVersion": "1.0.0",
+    "status": "degraded",
+    "dependencies": {
+      "databaseConfigured": true,
+      "modelConfigured": false
+    }
+  },
+  "checks": [
+    {
+      "passed": true,
+      "name": "public_https_health_and_database_configuration"
+    },
+    {
+      "passed": true,
+      "name": "formal_frontend_origin_allowed"
+    },
+    {
+      "passed": true,
+      "name": "request_id_forwarded"
+    },
+    {
+      "passed": true,
+      "name": "authenticated_post_cors_preflight_204"
+    },
+    {
+      "passed": true,
+      "name": "unlisted_browser_origin_not_allowed"
+    },
+    {
+      "passed": true,
+      "name": "unauthenticated_401_with_cors"
+    },
+    {
+      "passed": true,
+      "name": "invalid_token_401_with_cors"
+    }
+  ],
+  "modelRequestsSent": 0,
+  "success": true
+}

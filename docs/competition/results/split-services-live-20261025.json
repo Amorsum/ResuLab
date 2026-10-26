@@ -1,0 +1,103 @@
+{
+  "at": "2026-10-24T17:30:27.585Z",
+  "apiOrigin": "https://api.amorsum.top",
+  "frontendOrigin": "https://resulab.amorsum.top",
+  "syntheticOnly": true,
+  "operations": [
+    {
+      "route": "/api/health",
+      "method": "GET",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "route": "/api/ai/job-match",
+      "method": "POST",
+      "status": 401,
+      "cors": true,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "route": "/api/ai/tailor",
+      "method": "POST",
+      "status": 401,
+      "cors": true,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "route": "/api/account/delete",
+      "method": "POST",
+      "status": 401,
+      "cors": true,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "route": "/api/ai/generate",
+      "method": "POST",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "route": "/api/ai/job-match",
+      "method": "POST",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "route": "/api/ai/tailor",
+      "method": "POST",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "route": "/api/ai/polish",
+      "method": "POST",
+      "status": 200,
+      "cors": true
+    },
+    {
+      "route": "/api/account/delete",
+      "method": "POST",
+      "status": 400,
+      "cors": true,
+      "errorCode": "BAD_REQUEST"
+    },
+    {
+      "route": "/api/account/delete",
+      "method": "POST",
+      "status": 200,
+      "cors": true
+    }
+  ],
+  "checks": {
+    "writerVersion": "resulab-resume-writer/1.1.0",
+    "faithfulImport": true,
+    "jobMatch": {
+      "selected": 2,
+      "modelCalls": 1
+    },
+    "tailor": {
+      "edits": 2,
+      "selected": 2,
+      "modelCalls": 2,
+      "factsVerified": true
+    },
+    "polish": true,
+    "cloudResume": {
+      "saved": true,
+      "readBack": true,
+      "otherAccountInvisible": true
+    },
+    "selfDeletion": {
+      "authenticatedOwnerOnly": true,
+      "foreignIdRejected": true,
+      "controlAccountPreserved": true,
+      "ownedResumeRemoved": true
+    }
+  },
+  "cleanup": {
+    "disposableAccountsDeleted": true,
+    "accountCount": 2
+  },
+  "success": true
+}

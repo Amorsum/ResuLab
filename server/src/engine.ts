@@ -1,0 +1,468 @@
+import {
+  extractionSchema,
+  runViewSchema,
+  toolSchema,
+} from "../../shared/agent.schema.js";
+import {
+  snapshotReferences,
+  stableStringify,
+  type RunView,
+} from "../../shared/agent.js";
+import { AgentError, ToolResultError, safeError } from "./errors.js";
+import type { Store, RunRecord } from "./store.js";
+import type { ModelProvider } from "./provider.js";
+import type { Config } from "./config.js";
+import {
+  evidenceCatalog,
+  evidenceSelectionSchema,
+  resolveEvidenceSelections,
+} from "./evidence.js";
+import {
+  draftProposalSchema,
+  draftSourceCatalog,
+  originalTargetValue,
+  resolveDraftProposals,
+} from "./drafting.js";
+import { draftingInput, draftingInstruction } from "./drafting-instructions.js";
+import { validateDraftQuality } from "./draft-quality.js";
+
+const tools = toolSchema.options;
+function ensure(
+  condition: unknown,
+  message: string,
+  path = "$",
+  rule = "invalid_tool_result",
+): asserts condition {
+  if (!condition) throw new ToolResultError(message, path, rule);
+}
+function unique(ids: string[]) {
+  return new Set(ids).size === ids.length;
+}
+export function validateRequirements(run: RunRecord) {
+  ensure(
+    unique(run.run_view.requirements.map((r) => r.id)),
+    "岗位要求 ID 重复",
+  );
+  for (const requirement of run.run_view.requirements)
+    ensure(run.jd_text.includes(requirement.jdQuote), "岗位引用不在 JD 原文中");
+}
+export function validateEvidence(run: RunRecord) {
+  const view = run.run_view,
+    requirements = new Map(view.requirements.map((r) => [r.id, r]));
+  const refs = new Map(
+    snapshotReferences(run.resume_snapshot).map((ref) => [ref.id, ref]),
+  );
+  ensure(
+    view.evidence.length === requirements.size &&
+      unique(view.evidence.map((e) => e.requirementId)),
+    "每项岗位要求必须有且只有一条覆盖判断",
+    "$.result.evidence",
+    "requirement_coverage_count",
+  );
+  for (const [index, evidence] of view.evidence.entries()) {
+    const path = `$.result.evidence[${index}]`;
+    ensure(
+      requirements.has(evidence.requirementId),
+      "证据引用了不存在的岗位要求",
+      path + ".requirementId",
+      "unknown_requirement",
+    );
+    if (evidence.coverage === "supported")
+      ensure(
+        evidence.refs.length > 0,
+        "已支持的要求必须有证据",
+        path + ".refs",
+        "supported_requires_reference",
+      );
+    if (evidence.coverage === "missing")
+      ensure(
+        evidence.refs.length === 0,
+        "缺口不能伪造证据",
+        path + ".refs",
+        "missing_requires_empty_refs",
+      );
+    for (const [refIndex, ref] of evidence.refs.entries()) {
+      const refPath = path + `.refs[${refIndex}]`;
+      const original = refs.get(ref.id);
+      ensure(
+        original,
+        "简历证据必须能定位到当前快照原文",
+        refPath + ".id",
+        "unknown_reference",
+      );
+      for (const field of ["section", "itemId", "field"] as const)
+        ensure(
+          original[field] === ref[field],
+          "简历证据必须能定位到当前快照原文",
+          refPath + "." + field,
+          "reference_locator_mismatch",
+        );
+      ensure(
+        original.quote.includes(ref.quote),
+        "简历证据必须能定位到当前快照原文",
+        refPath + ".quote",
+        "quote_not_in_source",
+      );
+    }
+  }
+  ensure(
+    unique(view.questions.map((q) => q.id)),
+    "追问 ID 重复",
+    "$.result.questions",
+    "duplicate_question_id",
+  );
+  for (const [index, q] of view.questions.entries())
+    ensure(
+      requirements.has(q.requirementId) &&
+        view.evidence.some(
+          (e) =>
+            e.requirementId === q.requirementId && e.coverage !== "supported",
+        ),
+      "仅对真实缺口或模糊经历追问",
+      `$.result.questions[${index}].requirementId`,
+      "question_requires_gap",
+    );
+}
+export function validateChanges(
+  run: RunRecord,
+  changes: RunView["changes"],
+): RunView["changes"] {
+  const evidenceIds = new Set(
+    run.run_view.evidence.flatMap((e) => e.refs).map((ref) => ref.id),
+  );
+  const refs = new Map(
+    snapshotReferences(run.resume_snapshot)
+      .filter((ref) => evidenceIds.has(ref.id))
+      .map((ref) => [ref.id, ref]),
+  );
+  const answers = new Map(
+    run.run_view.questions
+      .filter((q) => q.answer)
+      .map((q) => [q.id, q.answer!]),
+  );
+  const ids = new Set<string>(),
+    targets = new Set<string>();
+  for (const [index, change] of changes.entries()) {
+    const path = `$.result.changes[${index}]`,
+      targetKey = stableStringify(change.target);
+    ensure(
+      !ids.has(change.id),
+      "修改 ID 重复",
+      path + ".id",
+      "duplicate_change_id",
+    );
+    ensure(
+      !targets.has(targetKey),
+      "修改目标字段重复",
+      path + ".target",
+      "duplicate_target",
+    );
+    ids.add(change.id);
+    targets.add(targetKey);
+    const before = originalTargetValue(
+      run.resume_snapshot,
+      change.target,
+      path + ".target",
+    );
+    ensure(
+      stableStringify(before) === stableStringify(change.before),
+      "before 与原文不符",
+      path + ".before",
+      "before_mismatch",
+    );
+    ensure(
+      Array.isArray(before) === Array.isArray(change.after),
+      "修改后的字段类型不合法",
+      path + ".after",
+      "after_type_mismatch",
+    );
+    const sourceTexts: string[] = [];
+    for (const [sourceIndex, source] of change.sources.entries()) {
+      const original =
+        source.kind === "resume"
+          ? refs.get(source.refId)?.quote
+          : answers.get(source.refId);
+      ensure(
+        original,
+        "修改来源无法定位",
+        path + `.sources[${sourceIndex}].refId`,
+        "unknown_source",
+      );
+      ensure(
+        original.includes(source.quote),
+        "修改来源引用与原文不匹配",
+        path + `.sources[${sourceIndex}].quote`,
+        "source_quote_mismatch",
+      );
+      sourceTexts.push(source.quote);
+    }
+    const after = Array.isArray(change.after)
+      ? change.after.join("\n")
+      : change.after;
+    const sourceText = sourceTexts.join("\n");
+    const numbers = (s: string) => s.match(/\d+(?:[.,]\d+)*(?:%|％)?/g) ?? [];
+    const known = new Set(numbers(sourceText));
+    ensure(
+      numbers(after).every((n) => known.has(n)),
+      "建议包含没有来源的数字或指标",
+      path + ".after",
+      "unsupported_number",
+    );
+    // Semantic truth cannot be proven by a schema; every accepted edit requires user review.
+    change.needsConfirmation = true;
+  }
+  return changes.filter(
+    (change) =>
+      stableStringify(change.before) !== stableStringify(change.after),
+  );
+}
+
+export async function executeRun(
+  initial: RunRecord,
+  store: Store,
+  provider: ModelProvider,
+  config: Config,
+  outerSignal: AbortSignal,
+): Promise<void> {
+  let run = initial;
+  const control = new AbortController();
+  const signal = AbortSignal.any([outerSignal, control.signal]);
+  let heartbeat: ReturnType<typeof setTimeout> | undefined;
+  let stopped = false;
+  const renew = async () => {
+    try {
+      const ok = await store.rpc<boolean>("agent_renew_lease", {
+        p_run: run.id,
+        p_token: initial.lease_token,
+        p_seconds: 90,
+      });
+      if (!ok)
+        control.abort(
+          new AgentError("LEASE_LOST", "任务执行权已失效", 409, true),
+        );
+    } catch {
+      control.abort(
+        new AgentError("LEASE_LOST", "无法续租执行权，等待恢复", 409, true),
+      );
+    }
+    if (!stopped && !signal.aborted) heartbeat = setTimeout(renew, 15000);
+  };
+  heartbeat = setTimeout(renew, 15000);
+  const checkpoint = async (stage: number, status: RunView["status"]) => {
+    signal.throwIfAborted();
+    runViewSchema.parse(run.run_view);
+    run = await store.rpc<RunRecord>("agent_checkpoint", {
+      p_run: run.id,
+      p_token: initial.lease_token,
+      p_view: run.run_view,
+      p_stage: stage,
+      p_status: status,
+    });
+  };
+  try {
+    while (run.stage < tools.length) {
+      signal.throwIfAborted();
+      const stage = run.stage,
+        stepId = `step-${stage}`,
+        tool = tools[stage];
+      const prior = run.run_view.steps.find((s) => s.id === stepId);
+      run.run_view.steps = run.run_view.steps.filter((s) => s.id !== stepId);
+      run.run_view.steps.push({
+        id: stepId,
+        tool,
+        status: "running",
+        attempt: (prior?.attempt ?? 0) + 1,
+        summary: "正在执行",
+      });
+      await checkpoint(stage, "running");
+      const started = performance.now();
+      let awaitInput = false;
+      if (stage === 0) {
+        const result = await provider.generate(
+          run,
+          stepId,
+          extractionSchema,
+          '返回 {"tool":"extract_job_requirements","result":{"requirements":[{"id":"req-1","text":"要求","jdQuote":"JD 原文逐字引用","required":true}]}}。最多20项，ID唯一。优先提取实际工作职责、技术/方法、业务对象和交付要求，合并重复要求；按JD强调程度排列，必需要求优先。text写具体要求，不要只抽取孤立关键词。jdQuote须逐字引用JD。',
+          { jdText: run.jd_text },
+          signal,
+        );
+        run.run_view.requirements = result.result.requirements;
+        try {
+          validateRequirements(run);
+        } catch (error) {
+          run.run_view.requirements = [];
+          throw error;
+        }
+      } else if (stage === 1) {
+        const catalog = evidenceCatalog(run.resume_snapshot);
+        const selection = await provider.generate(
+          run,
+          stepId,
+          evidenceSelectionSchema,
+          '返回 {"tool":"find_resume_evidence","result":{"evidence":[{"requirementId":"req-1","coverage":"supported","refs":[{"id":"evidence-1"}]}],"questions":[]}}。coverage只能是supported、needs_clarification、missing三者之一。refs只含给定references.id；禁止输出quote、section、itemId、field，后端根据编号回填原文与定位。必须选择语义相关的真实证据；没有相关证据就标缺口，不能用无关引用宣称支持。每个要求一个evidence，supported须有引用，missing须无引用。为后续改写选择足够的相关上下文：同一经历中能说明职责、行动、技术、业务对象、已有结果的description/highlights可共同入选，不要只选技能名称；不能为增加上下文而选无关经历。只对非supported要求提问，最多3题，可以无问题；优先询问能改善岗位表达的实际职责、具体做法或交付对象，而非一律索要增长数字。问题格式为{"id":"q-1","requirementId":"req-1","question":"需要补充的问题"}。不得预设用户已做过或诱导虚构。',
+          {
+            requirements: run.run_view.requirements,
+            references: [...catalog].map(([id, reference]) => ({
+              ...reference,
+              id,
+            })),
+          },
+          signal,
+          (candidate) => {
+            const resolved = resolveEvidenceSelections(candidate, catalog);
+            validateEvidence({
+              ...run,
+              run_view: {
+                ...run.run_view,
+                evidence: resolved.result.evidence,
+                questions: resolved.result.questions,
+              },
+            });
+          },
+        );
+        const result = resolveEvidenceSelections(selection, catalog);
+        run.run_view.evidence = result.result.evidence;
+        run.run_view.questions = result.result.questions;
+        try {
+          validateEvidence(run);
+        } catch (error) {
+          run.run_view.evidence = [];
+          run.run_view.questions = [];
+          throw error;
+        }
+      } else if (stage === 2) {
+        awaitInput = run.run_view.questions.length > 0;
+      } else if (stage === 3) {
+        const sources = draftSourceCatalog(run);
+        const result = await provider.generate(
+          run,
+          stepId,
+          draftProposalSchema,
+          draftingInstruction,
+          draftingInput(run),
+          signal,
+          (candidate) => {
+            const changes = resolveDraftProposals(candidate, run.resume_snapshot, sources);
+            validateChanges(run, changes);
+            validateDraftQuality(changes);
+          },
+        );
+        run.run_view.changes = validateChanges(
+          run,
+          resolveDraftProposals(result, run.resume_snapshot, sources),
+        );
+      } else {
+        run.run_view.changes = validateChanges(run, run.run_view.changes);
+        validateDraftQuality(run.run_view.changes);
+      }
+      const step = run.run_view.steps.find((s) => s.id === stepId)!;
+      step.status = "completed";
+      step.durationMs = Math.round(performance.now() - started);
+      step.summary = [
+        `识别 ${run.run_view.requirements.length} 项岗位要求`,
+        `完成 ${run.run_view.evidence.length} 项证据判断`,
+        awaitInput
+          ? `等待回答 ${run.run_view.questions.length} 个问题`
+          : "无需追问",
+        `生成 ${run.run_view.changes.length} 项有来源的修改建议`,
+        "字段、原文和来源校验通过",
+      ][stage];
+      await checkpoint(
+        stage + 1,
+        awaitInput ? "awaiting_input" : stage === 4 ? "completed" : "running",
+      );
+      if (awaitInput) return;
+    }
+  } catch (error) {
+    if (
+      signal.aborted ||
+      (error instanceof AgentError && error.code === "LEASE_LOST")
+    )
+      return;
+    const e = safeError(error);
+    if (error instanceof ToolResultError)
+      console.error(
+        JSON.stringify({
+          event: "tool_validation",
+          runId: run.id,
+          stepId: `step-${run.stage}`,
+          validation: {
+            kind: "semantic_validation",
+            issues: [{ path: error.path, code: error.rule }],
+          },
+        }),
+      );
+    const step = run.run_view.steps.find((s) => s.id === `step-${run.stage}`);
+    if (step) {
+      step.status = "failed";
+      step.summary = e.message;
+    }
+    run.run_view.error = {
+      code: e.code,
+      message: e.message,
+      retryable:
+        e.retryable &&
+        run.run_view.usage.calls < config.MAX_MODEL_CALLS_PER_RUN &&
+        run.retry_count < 3,
+    };
+    if (run.stage < 4) run.run_view.changes = [];
+    try {
+      await checkpoint(run.stage, "failed");
+    } catch {
+      console.error(
+        JSON.stringify({ runId: run.id, code: "CHECKPOINT_FAILED" }),
+      );
+    }
+  } finally {
+    stopped = true;
+    clearTimeout(heartbeat);
+  }
+}
+
+export function startScheduler(
+  store: Store,
+  provider: ModelProvider,
+  config: Config,
+) {
+  const control = new AbortController();
+  const active = new Set<Promise<void>>();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let stopped = false;
+  let polling: Promise<void> | undefined;
+  const tick = async () => {
+    try {
+      while (!stopped && active.size < config.MAX_CONCURRENT_RUNS) {
+        const run = await store.rpc<RunRecord | null>("agent_claim_run", {
+          p_seconds: 90,
+          p_max_concurrent: config.MAX_CONCURRENT_RUNS,
+        });
+        if (!run) break;
+        if (stopped) break;
+        const work = executeRun(run, store, provider, config, control.signal)
+          .catch(() => {
+            console.error(
+              JSON.stringify({ runId: run.id, code: "EXECUTOR_FAILED" }),
+            );
+          })
+          .finally(() => active.delete(work));
+        active.add(work);
+      }
+    } catch {
+      console.error(JSON.stringify({ code: "SCHEDULER_STORE_UNAVAILABLE" }));
+    }
+    if (!stopped)
+      timer = setTimeout(() => {
+        polling = tick();
+      }, 1000);
+  };
+  polling = tick();
+  return {
+    async stop() {
+      stopped = true;
+      clearTimeout(timer);
+      control.abort(new Error("Server shutting down"));
+      await polling;
+      await Promise.allSettled(active);
+    },
+  };
+}

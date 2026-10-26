@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePdfExport } from '../../hooks/usePdfExport';
 import { useResume } from '../../hooks/useResume';
 import PreviewToolbar from './PreviewToolbar';
@@ -15,7 +15,18 @@ interface PreviewPanelProps {
 }
 
 export function PreviewPanel({ previewRef: externalRef, isExporting: externalExporting, exportError: externalError, onExport: externalOnExport, onExportPdf: externalPdf, onExportDocx: externalDocx, hideToolbar }: PreviewPanelProps) {
-  const [scale, setScale] = useState(1.1);
+  const [scale, setScale] = useState(.85);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || hideToolbar) return;
+    const fit = () => { if (canvas.clientWidth) setScale(Math.min(1, Math.max(.4, (canvas.clientWidth - 64) / 794))); };
+    fit();
+    const observer = new ResizeObserver(fit); observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [hideToolbar]);
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+  useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
   const { previewRef: internalRef, exportPdf: internalExport, exportDocx: internalDocx, isExporting: internalExporting, error: internalError } = usePdfExport();
   const { resume, setFontSize, setLineHeight, setPageMargin } = useResume();
 
@@ -84,12 +95,12 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
       )}
 
       {/* 预览区域 */}
-      <div className={`flex-1 bg-gray-100 pt-2 ${hideToolbar ? 'overflow-x-auto overflow-y-auto' : 'overflow-auto flex justify-center'}`}>
-        <div style={hideToolbar ? { paddingLeft: 4, paddingRight: 4 } : { minWidth: '794px' }}>
+      <div ref={canvasRef} className={`preview-canvas flex-1 bg-gray-100 pt-2 ${hideToolbar ? 'overflow-x-hidden overflow-y-auto' : 'overflow-auto'}`}>
+        <div style={hideToolbar ? { paddingLeft: 8, paddingRight: 8 } : { width: 794 * scale, margin: '0 auto 28px', overflow: 'clip' }}>
           <TemplateRenderer
             previewRef={previewRef}
-            scale={hideToolbar ? Math.min(0.43, (window.innerWidth - 16) / 794) : scale}
-            transformOrigin={hideToolbar ? 'top left' : undefined}
+            scale={hideToolbar ? Math.min(1, (viewportWidth - 16) / 794) : scale}
+            transformOrigin="top left"
           />
         </div>
       </div>

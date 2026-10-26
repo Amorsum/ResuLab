@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-10-23T09:31:08.1433957Z",
+  "scope": "local Node API on localhost:8788",
+  "health": {
+    "version": "0.1.0",
+    "protocolVersion": "1.0.0",
+    "status": "degraded",
+    "dependencies": {
+      "databaseConfigured": false,
+      "modelConfigured": false
+    }
+  },
+  "listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 8788
+    }
+  ],
+  "supabaseProjectDns": "ENOTFOUND",
+  "controlDomain": "supabase.com",
+  "controlDnsResolved": true,
+  "databaseMigrationApplied": false,
+  "realModelInvoked": false,
+  "fullFlowAccepted": false,
+  "missingConfiguration": [
+    "test database management access or team-executed migration",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "MODEL_BASE_URL / MODEL_API_KEY / MODEL_ID",
+    "test user login credentials or access token"
+  ],
+  "publicEntryChanged": false,
+  "localTestsPassed": 16
+}

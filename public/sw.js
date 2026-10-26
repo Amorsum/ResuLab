@@ -1,18 +1,13 @@
-// ResuLab Service Worker — 离线缓存策略
-const CACHE_NAME = 'resulab-v1';
+// ResuLab Service Worker — 只缓存本站静态资源，页面联网优先。
+const CACHE_NAME = 'resulab-v2';
+const CORE_ASSETS = ['/', '/manifest.json', '/icon.svg'];
 
 // 安装时预缓存核心资源
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([
-        '/',
-        '/builder',
-        '/login',
-        '/register',
-        '/manifest.json',
-        '/icon.svg',
-      ]);
+      // GitHub Pages SPA routes can return HTTP 404; precache real files only.
+      return cache.addAll(CORE_ASSETS);
     })
   );
   // 立即激活，不等待旧 SW
@@ -24,7 +19,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.filter((key) => key.startsWith('resulab-') && key !== CACHE_NAME).map((key) => caches.delete(key))
       );
     })
   );
@@ -32,38 +27,39 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 请求拦截：缓存优先，网络回退
-self.addEventListener('fetch', (event) => {
-  // 跳过 Supabase API 请求
-  if (event.request.url.includes('supabase.co')) {
-    return;
+async function remember(cache, request, response) {
+  if (response.ok) {
+    try { await cache.put(request, response.clone()); } catch { /* Cache is optional. */ }
   }
+  return response;
+}
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      // 缓存命中，直接返回
-      if (cached) return cached;
+async function navigation(request) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    return await remember(cache, request, await fetch(request));
+  } catch {
+    return await cache.match(request) || await cache.match('/') || Response.error();
+  }
+}
 
-      // 否则走网络，成功后写入缓存
-      return fetch(event.request)
-        .then((response) => {
-          // 只缓存成功的 GET 请求
-          if (response.ok && event.request.method === 'GET') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // 网络失败：对于导航请求返回首页
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          // 图片/资源失败时静默忽略
-          return new Response('', { status: 204 });
-        });
-    })
-  );
+async function staticAsset(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  return remember(cache, request, await fetch(request));
+}
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  // Never intercept API calls, other origins or authenticated responses.
+  if (request.method !== 'GET' || url.origin !== self.location.origin
+      || request.headers.has('authorization') || /^\/api(?:\/|$)/.test(url.pathname)) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(navigation(request));
+  } else if (url.pathname.startsWith('/assets/') || CORE_ASSETS.includes(url.pathname)) {
+    event.respondWith(staticAsset(request));
+  }
 });

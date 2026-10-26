@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-10-23T08:56:22.1631015Z",
+  "scope": "local Docker Desktop; placeholder external config; idle resource snapshot only",
+  "health": {
+    "version": "0.1.0",
+    "protocolVersion": "1.0.0",
+    "status": "degraded",
+    "dependencies": {
+      "databaseConfigured": false,
+      "modelConfigured": false
+    }
+  },
+  "frontendStatus": 200,
+  "spaStatus": 200,
+  "unauthenticatedStatus": 401,
+  "containers": [
+    {
+      "Service": "api",
+      "State": "running",
+      "Health": "healthy",
+      "Image": "deploy-api"
+    },
+    {
+      "Service": "frontend",
+      "State": "running",
+      "Health": "",
+      "Image": "deploy-frontend"
+    },
+    {
+      "Service": "gateway",
+      "State": "running",
+      "Health": "",
+      "Image": "caddy:2-alpine"
+    }
+  ],
+  "idleSamples": [
+    {
+      "Name": "deploy-api-1",
+      "CPUPerc": "0.01%",
+      "MemUsage": "19.04MiB / 384MiB",
+      "MemPerc": "4.96%",
+      "PIDs": "8"
+    },
+    {
+      "Name": "deploy-frontend-1",
+      "CPUPerc": "0.00%",
+      "MemUsage": "17.77MiB / 128MiB",
+      "MemPerc": "13.88%",
+      "PIDs": "25"
+    },
+    {
+      "Name": "deploy-gateway-1",
+      "CPUPerc": "0.00%",
+      "MemUsage": "9.84MiB / 128MiB",
+      "MemPerc": "7.69%",
+      "PIDs": "7"
+    }
+  ],
+  "realModelValidated": false,
+  "cloudDeploymentValidated": false
+}

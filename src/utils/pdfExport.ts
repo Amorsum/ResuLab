@@ -33,18 +33,15 @@ function getTauriInvoke(): ((cmd: string, args?: Record<string, unknown>) => Pro
   return null;
 }
 
-export async function exportToPdf(
-  element: HTMLElement,
-  filename: string
-): Promise<void> {
+async function buildPdf(element: HTMLElement): Promise<jsPDF> {
   const A4_WIDTH_MM = 210;
   const A4_HEIGHT_MM = 297;
 
-  // 导出前确保元素裁剪到 A4 一页高度
+  // Capture the complete resume. Clipping to A4 here silently discarded later pages.
   const origMaxHeight = element.style.maxHeight;
   const origOverflow = element.style.overflow;
-  element.style.maxHeight = '1123px';
-  element.style.overflow = 'hidden';
+  element.style.maxHeight = 'none';
+  element.style.overflow = 'visible';
 
   try {
     // Step 1: 高清截图
@@ -53,7 +50,19 @@ export async function exportToPdf(
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
+      width: 794,
+      height: Math.max(1123, element.scrollHeight || 1123),
+      onclone: (_document, cloned) => {
+        cloned.style.transform = 'none';
+        cloned.style.maxHeight = 'none';
+        cloned.style.overflow = 'visible';
+        cloned.style.boxShadow = 'none';
+      },
     });
+
+    if (canvas.width <= 0 || canvas.height <= 0) {
+      throw new Error('预览截图尺寸无效，请打开预览后重试');
+    }
 
     // Step 2: 计算尺寸
     const imgWidth = A4_WIDTH_MM;
@@ -62,37 +71,72 @@ export async function exportToPdf(
     // Step 3: 创建 PDF
     const pdf = new jsPDF('portrait', 'mm', 'a4');
 
-    const pageHeight = A4_HEIGHT_MM;
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-    // 首页
-    pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-    let remainingHeight = imgHeight - pageHeight;
-    let position = -pageHeight;
-
-    // 后续页（内容超出 A4 一页时）
-    while (remainingHeight > 0) {
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      remainingHeight -= pageHeight;
-      position -= pageHeight;
-    }
-
-    // Step 4: 保存文件
-    if (isTauri) {
-      // Tauri 桌面/Android：通过原生保存对话框写入文件
-      // jsPDF 的 save() 在 Tauri WebView 中无法触发下载
-      // （WebView 不支持 Blob URL + anchor download 的浏览器下载机制）
-      await savePdfViaTauri(pdf, filename);
+    const context = canvas.getContext?.('2d');
+    if (imgHeight > A4_HEIGHT_MM + 0.5 && context && element.ownerDocument) {
+      // Break between text lines. Continuation pages keep a readable top/bottom margin.
+      const pixelsPerMm = canvas.width / A4_WIDTH_MM;
+      let offset = 0, page = 0;
+      while (offset < canvas.height) {
+        const topMm = page === 0 ? 0 : 10;
+        const capacity = Math.floor((A4_HEIGHT_MM - topMm - 10) * pixelsPerMm);
+        let end = Math.min(canvas.height, offset + capacity);
+        if (end < canvas.height) {
+          const scanHeight = Math.min(160, end - offset);
+          const start = end - scanHeight;
+          try {
+            const pixels = context.getImageData(0, start, canvas.width, scanHeight).data;
+            end = start + whitespaceBreak(pixels, canvas.width, scanHeight);
+          } catch { /* Cross-origin images can prevent pixel reads; keep complete content. */ }
+        }
+        const slice = element.ownerDocument.createElement('canvas');
+        slice.width = canvas.width; slice.height = end - offset;
+        const sliceContext = slice.getContext('2d');
+        if (!sliceContext) throw new Error('无法创建分页画布，请重试');
+        sliceContext.drawImage(canvas, 0, offset, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
+        if (page > 0) pdf.addPage();
+        pdf.addImage(slice.toDataURL('image/jpeg', 0.95), 'JPEG', 0, topMm, imgWidth, slice.height / pixelsPerMm);
+        offset = end; page++;
+      }
     } else {
-      // Web 浏览器：使用 jsPDF 内置下载
-      pdf.save(`${filename}.pdf`);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      for (let position = A4_HEIGHT_MM; imgHeight - position > 0.5; position += A4_HEIGHT_MM) {
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, -position, imgWidth, imgHeight);
+      }
     }
+
+    return pdf;
   } finally {
     // 恢复原始样式
     element.style.maxHeight = origMaxHeight;
     element.style.overflow = origOverflow;
   }
+}
+
+export async function createPdfBlob(element: HTMLElement): Promise<Blob> {
+  return (await buildPdf(element)).output('blob');
+}
+
+export async function exportToPdf(element: HTMLElement, filename: string): Promise<void> {
+  const pdf = await buildPdf(element);
+  if (isTauri) await savePdfViaTauri(pdf, filename);
+  else pdf.save(`${filename}.pdf`);
+}
+
+/** Find a two-row whitespace gap, moving a page break backwards instead of cutting glyphs. */
+export function whitespaceBreak(pixels: Uint8ClampedArray, width: number, height: number): number {
+  let clearRows = 0;
+  for (let y = height - 1; y > 0; y--) {
+    let ink = 0;
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      if (pixels[i] < 240 || pixels[i + 1] < 240 || pixels[i + 2] < 240) ink++;
+    }
+    clearRows = ink < width * 0.005 ? clearRows + 1 : 0;
+    if (clearRows >= 2) return y + 1;
+  }
+  return height;
 }
 
 /**
@@ -129,7 +173,7 @@ async function savePdfViaTauri(pdf: jsPDF, filename: string): Promise<void> {
 
   if (!base64Data) {
     const errMsg = 'PDF base64 编码失败：datauristring 格式异常';
-    console.error(`[PDF Export] ${errMsg}`, { prefix: pdfBase64.substring(0, 50) });
+    console.error('[PDF Export] Invalid PDF encoding');
     throw new Error(errMsg);
   }
 

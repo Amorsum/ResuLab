@@ -10,13 +10,13 @@ export function formatMonth(dateStr: string): string {
 
 /** 格式化日期范围 */
 export function formatDateRange(start: string, end: string, isCurrent: boolean): string {
-  const startFmt = formatMonth(start) || '至今';
+  const startFmt = formatMonth(start);
   if (isCurrent) {
-    return `${startFmt} - 至今`;
+    return startFmt ? `${startFmt} - 至今` : '至今';
   }
   const endFmt = formatMonth(end);
   if (!endFmt) return startFmt;
-  return `${startFmt} - ${endFmt}`;
+  return startFmt ? `${startFmt} - ${endFmt}` : endFmt;
 }
 
 /** 生成月份选项列表 */

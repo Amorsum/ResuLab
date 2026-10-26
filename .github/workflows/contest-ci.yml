@@ -1,0 +1,35 @@
+name: ResuLab checks
+on:
+  pull_request:
+    branches: [main, codex/contest-b, codex/b-agent-backend]
+  push:
+    branches: [main, codex/contest-b, codex/b-agent-backend, codex/career-library]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            workers/package-lock.json
+      - run: npm ci
+      - run: npm --prefix server ci
+      - run: npm --prefix workers ci
+      - run: npm run build
+      - run: node --test tests/aiImport.test.cjs tests/useAgent.test.cjs tests/pdfExport.test.cjs tests/resumeUndo.test.cjs tests/serviceWorker.test.cjs
+      - run: node server/node_modules/tsx/dist/cli.mjs --test tests/agent.test.ts
+      - run: npm --prefix workers run typecheck
+      - run: npm --prefix workers test
+      - run: node --test tests/aiApi.test.cjs
+      - run: node --test tests/careerLibrary.test.cjs
+      - run: npm --prefix server run typecheck
+      - run: npm --prefix server test
+      - run: npm --prefix server run build
+      - run: git diff --check

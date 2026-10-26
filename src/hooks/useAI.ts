@@ -3,18 +3,10 @@
  * 提供与 Cloudflare Workers 后端通信的方法
  */
 import { useAuth } from './useAuth';
+import { aiRequest } from '../utils/aiApi';
+import type { CareerInput, CareerResult } from '../../shared/career';
 
-const AI_API_BASE = 'https://api.amorsum.top';
-
-export interface MembershipStatus {
-  tier: 'free' | 'pro';
-  status: 'active' | 'cancelled' | 'expired';
-  usage: {
-    generate: { used: number; limit: number };
-    polish: { used: number; limit: number };
-    interview: { used: number; limit: number };
-  };
-}
+const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE?.trim() || 'https://api.amorsum.top').replace(/\/$/, '');
 
 export interface AIGenerateResult {
   personalInfo?: Record<string, string>;
@@ -72,69 +64,37 @@ export function useAI() {
   };
 
   /**
-   * 获取会员状态和用量
-   */
-  const getMembershipStatus = async (): Promise<MembershipStatus> => {
-    const res = await fetch(`${AI_API_BASE}/api/membership/status`, {
-      headers: headers(),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error((body as { message?: string }).message || '获取会员状态失败');
-    }
-    return res.json();
-  };
-
-  /**
    * 批量生成简历 - 粘贴原始经历文本，返回完整 ResumeData
    */
-  const generateResume = async (rawText: string): Promise<AIGenerateResult> => {
-    const res = await fetch(`${AI_API_BASE}/api/ai/generate`, {
+  const generateResume = async (rawText: string, purpose?: 'resume-import'): Promise<AIGenerateResult> => {
+    return aiRequest<AIGenerateResult>(AI_API_BASE, '/api/ai/generate', {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ rawText }),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (res.status === 429) {
-        throw new Error((body as { message?: string }).message || '本月使用次数已用完');
-      }
-      if (res.status === 401) {
-        throw new Error('请先登录后再使用');
-      }
-      throw new Error((body as { message?: string }).message || '生成失败，请重试');
-    }
-
-    return res.json();
+      body: JSON.stringify({ rawText, purpose }),
+    }, '生成失败，请重试');
   };
 
-  /**
-   * 润色单个字段 - 返回润色后的文本
-   */
+  const tailorResume = (input: CareerInput, signal?: AbortSignal): Promise<CareerResult> =>
+    aiRequest<CareerResult>(AI_API_BASE, '/api/ai/tailor', {
+      method: 'POST', headers: headers(), body: JSON.stringify(input), signal,
+    }, '岗位简历生成失败，请稍后重试');
+
+  const extractLibraryFacts = (rawText: string, signal?: AbortSignal): Promise<AIGenerateResult> =>
+    aiRequest<AIGenerateResult>(AI_API_BASE, '/api/ai/generate', {
+      method: 'POST', headers: headers(), body: JSON.stringify({ rawText, purpose: 'career-library' }), signal,
+    }, '经历提取失败，请稍后重试');
+
+  /** 润色单个字段 */
   const polishField = async (
     fieldLabel: string,
     currentValue: string,
     context: string = ''
   ): Promise<string> => {
-    const res = await fetch(`${AI_API_BASE}/api/ai/polish`, {
+    const data = await aiRequest<{ polished: string }>(AI_API_BASE, '/api/ai/polish', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({ fieldLabel, currentValue, context }),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (res.status === 429) {
-        throw new Error((body as { message?: string }).message || '本月润色次数已用完');
-      }
-      if (res.status === 401) {
-        throw new Error('请先登录后再使用');
-      }
-      throw new Error((body as { message?: string }).message || '润色失败，请重试');
-    }
-
-    const data = await res.json() as { polished: string };
+    }, '润色失败，请重试');
     return data.polished;
   };
 
@@ -142,24 +102,11 @@ export function useAI() {
    * 开始模拟面试
    */
   const startInterview = async (resumeData: unknown): Promise<InterviewStartResponse> => {
-    const res = await fetch(`${AI_API_BASE}/api/ai/interview/start`, {
+    return aiRequest<InterviewStartResponse>(AI_API_BASE, '/api/ai/interview/start', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({ resumeData }),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (res.status === 429) {
-        throw new Error((body as { message?: string }).message || '模拟面试功能需要 Pro 会员');
-      }
-      if (res.status === 401) {
-        throw new Error('请先登录后再使用');
-      }
-      throw new Error((body as { message?: string }).message || '开始面试失败');
-    }
-
-    return res.json();
+    }, '开始面试失败');
   };
 
   /**
@@ -170,22 +117,16 @@ export function useAI() {
     conversationHistory: string,
     userAnswer: string
   ): Promise<InterviewRespondResponse> => {
-    const res = await fetch(`${AI_API_BASE}/api/ai/interview/respond`, {
+    return aiRequest<InterviewRespondResponse>(AI_API_BASE, '/api/ai/interview/respond', {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({ resumeData, conversationHistory, userAnswer }),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error((body as { message?: string }).message || '处理失败, 请重试');
-    }
-
-    return res.json();
+    }, '处理失败，请重试');
   };
 
   return {
-    getMembershipStatus,
+    tailorResume,
+    extractLibraryFacts,
     generateResume,
     polishField,
     startInterview,

@@ -3,6 +3,18 @@ dist/
 .DS_Store
 *.local
 .env
+.env.*
+!.env.example
+!**/.env.example
+.dev.vars
+.dev.vars.*
+server/node_modules/
+server/dist/
+server/.env
+server/.local-agent/
+public/pdfjs-assets/
+deploy/.env
+docs/competition/results/private/
 
 # Cloudflare Workers local state
 workers/node_modules/
@@ -10,6 +22,7 @@ workers/.wrangler/
 
 # Build outputs (distributed via GitHub Releases, not committed)
 release-artifacts/
+public/downloads/
 
 # Android build cache
 src-tauri/gen/android/buildSrc/.kotlin/

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { useResume } from './useResume';
@@ -11,6 +11,8 @@ import type { CloudResumeMeta } from '../types/resume';
 export function useCloudResumes() {
   const { user } = useAuth();
   const { resume, loadResume } = useResume();
+  const current = useRef({ resume, userId: user?.id });
+  current.current = { resume, userId: user?.id };
 
   /** 获取当前用户的所有云端简历列表 */
   const listResumes = useCallback(async (): Promise<CloudResumeMeta[]> => {
@@ -22,7 +24,6 @@ export function useCloudResumes() {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('获取简历列表失败:', error);
       throw new Error('获取简历列表失败');
     }
 
@@ -49,7 +50,6 @@ export function useCloudResumes() {
         .eq('id', resume._cloudId);
 
       if (error) {
-        console.error('更新简历失败:', error);
         throw new Error('保存失败，请重试');
       }
 
@@ -67,12 +67,13 @@ export function useCloudResumes() {
         .single();
 
       if (error) {
-        console.error('保存简历失败:', error);
         throw new Error('保存失败，请重试');
       }
 
       // 将云端 ID 写回 state
-      loadResume({ ...resume, _cloudId: data.id });
+      // A delayed save must never replace edits made while the request was pending.
+      if (current.current.resume === resume && current.current.userId === user.id)
+        loadResume({ ...resume, _cloudId: data.id });
       return data.id;
     }
   }, [user, resume, loadResume]);
@@ -88,7 +89,6 @@ export function useCloudResumes() {
       .single();
 
     if (error) {
-      console.error('加载简历失败:', error);
       throw new Error('加载简历失败');
     }
 
@@ -106,7 +106,6 @@ export function useCloudResumes() {
       .eq('id', cloudId);
 
     if (error) {
-      console.error('删除简历失败:', error);
       throw new Error('删除失败，请重试');
     }
   }, [user]);
@@ -159,7 +158,6 @@ export async function importLocalResume(): Promise<boolean> {
       });
 
     if (error) {
-      console.error('导入本地数据失败:', error);
       return false;
     }
 

@@ -1,127 +1,114 @@
-# ResuLab — 智能简历制作平台
+# ResuLab — 简历与求职工作台
 
-> 🚀 在线体验：[resulab.amorsum.top](https://resulab.amorsum.top)
+在线入口：[resulab.amorsum.top](https://resulab.amorsum.top) · [浏览器扩展下载与安装](https://resulab.amorsum.top/extension)
 
-在线简历制作工具，支持实时预览、多套模板、一键导出 PDF。提供 Web、Windows 桌面版、Android 版三端使用。
+从真实经历出发，编辑简历、按岗位整理表达、核对事实来源并导出。服务由 **GitHub Pages 前端 + Cloudflare Worker AI API + Windows Server Agent + Supabase** 组成。部署步骤见 [生产部署说明](deploy/production.md)。
 
-## 功能
+## 比赛项目与技术材料
 
-- 📝 **表单录入** — 完整的中文简历信息采集（基本信息、教育、工作经历、技能等 10 个模块）
-- 👁️ **实时预览** — 左侧填写，右侧即时渲染，所见即所得；预览区显示 A4 页面边界
-- 🎨 **多套模板** — 经典 / 现代 / 极简三种风格，一键切换
-- 🎛️ **排版自定义** — 字体（宋体/微软雅黑/楷体/仿宋）、字号（12-18px）、行距（12-28px）、页边距（5 级可调）
-- 🌈 **主题色** — 9 种预设主题色，实时生效
-- 📄 **PDF 导出** — 一键导出高清 PDF，支持多页
-- 🪄 **智能一页** — 自动调整字号、页边距和行距，将内容压缩至一页
-- 🔄 **智能排序** — 教育/工作/项目经历按时间从远到近自动排序
-- 🏷️ **技能分类** — 支持技能按类别（编程语言/框架/工具等）分组，简历中可视化展示
-- 💾 **本地保存** — 数据自动存入 localStorage，刷新不丢失，旧版本数据自动迁移
-- ☁️ **云端存储** — 支持邮箱注册登录，简历云端保存，多设备同步（可选）
-- 👤 **账号管理** — 换绑邮箱、修改密码、注销账号
-- 📱 **全平台覆盖** — Web 版 / Windows 桌面版 (.exe) / Android 版 (.apk)
-- 📡 **PWA 支持** — 浏览器一键安装到桌面，离线可用
+比赛已结束，2026-10-26 起将 `codex/contest-b` 合入 `main`，后续产品开发与前端部署统一使用 `main`。以下比赛材料保留当时的分支与验收记录，当前部署以 [生产部署说明](deploy/production.md) 为准。
 
-## 技术栈
+AI Application 赛道作品重点是岗位优化 Agent：分析 JD、匹配简历事实、针对缺口追问、生成有来源的局部修改，由用户确认应用并支持整批撤销。模型负责内容判断，服务端控制执行阶段、可写字段与调用预算。
 
-| 层面 | 技术 |
-|------|------|
-| 框架 | React 18 + TypeScript |
-| 构建 | Vite 6 |
-| 样式 | Tailwind CSS 3 |
-| 路由 | React Router v6 |
-| 状态管理 | Context + useReducer |
-| PDF 导出 | html2canvas + jsPDF |
-| 后端服务 | Supabase（Auth + PostgreSQL + RLS） |
-| 桌面端 | Tauri v2（Rust + WebView2） |
-| 移动端 | Tauri Android（Rust + WebView） |
-| PWA | Service Worker + manifest.json |
-| 部署 | GitHub Pages + 自定义域名 |
-| 分发 | GitHub Releases（安装包下载） |
-| 持久化 | localStorage（300ms 防抖写入）+ Supabase 云端同步 |
+- [场景与价值](docs/competition/scenario-value.md) · [系统架构与选型](docs/competition/architecture.md)
+- [Agent 执行流程](docs/competition/agent-workflow.md) · [异常处理与可靠性](docs/competition/reliability.md)
+- [成本与性能证据](docs/competition/cost-performance.md) · [公网验收记录](docs/competition/split-services-release.md)
 
-## 快速开始
+## 功能与当前状态
 
-```bash
-# 安装依赖
-npm install
+| 功能 | 用法与条件 |
+| --- | --- |
+| 简历编辑、实时预览 | 本机可用，10 类信息、四种模板、字体、颜色、字号、行距和页边距 |
+| 导入、PDF / Word 导出 | PDF / DOCX / 文本在本地读取，AI 提取需登录并确认；导出支持中文多页 |
+| 经历库 | 课程、项目、校园及工作经历；确认事实、补充材料、备份和恢复；按账号隔离保存在本机 |
+| 定向写作 | 根据岗位名称或 JD 选材、生成独立简历，逐条核对改写与来源；需登录 |
+| 岗位优化 Agent | 基于当前简历分析岗位、回答追问、选择应用建议、撤销整批修改；需登录 |
+| 求职工作台 | 手动导入 JD、匹配证据、逐岗生成 PDF、审核和记录；AI 操作需登录 |
+| 云端简历、账号 | Supabase 邮箱登录、云端保存与打开、修改账号、注销本人账号；注册验证邮件依赖项目邮件服务 |
+| BOSS 浏览器扩展 | Windows Edge / Chrome、Manifest V3；搜索与读取待实站验收，自动沟通与附件发送仍禁用 |
 
-# 配置环境变量（云端存储功能需要）
-cp .env.example .env
-# 编辑 .env，填入 Supabase 项目 URL 和 anon key
+**BOSS 自动投递尚未验收完成。** 模拟页面测试不代表真实 BOSS 已接入；“已沟通”和“附件已发送”分别记录。未核实的发送能力不会通过上线自动启用。
 
-# 启动 Web 开发服务器（默认 http://localhost:3000）
-npm run dev
+首页集中展示功能及使用条件，所有主页面均可通过顶部“首页 · 全部功能”返回，包括手机端。经历库、岗位及本地版本不会自动跨设备同步；清理浏览器数据前请导出备份。
 
-# 构建 Web 生产版本
-npm run build
+## 浏览器扩展
+
+- [网页下载与安装说明](https://resulab.amorsum.top/extension)
+- [GitHub Release：0.1.2 ZIP](https://github.com/Amorsum/ResuLab/releases/tag/jobs-extension-v0.1.2)
+- [扩展源码、权限与能力边界](extension/README.md)
+
+下载 ZIP 后解压，在 `edge://extensions` 或 `chrome://extensions` 开启开发人员模式并加载文件夹；在同一浏览器打开本站 `/jobs`，点击连接。扩展弹窗默认打开在线工作台，保留本地开发入口。
+
+```sh
+npm ci
+npm run package:extension
+npm run test:jobs
+npm run test:jobs:search
+npm run test:extension:browser
 ```
 
-> 不配置 Supabase 环境变量也可以正常使用——本地编辑、预览、PDF 导出功能不受影响，仅云端存储不可用。
+构建产物位于 `release-artifacts/jobs-extension/` 和 `release-artifacts/ResuLab-Jobs-Extension-0.1.2.zip`。打包同步产生 `public/downloads/extension.json` 和 ZIP，随网页构建进入 `dist/downloads/`。JSON 包含版本、文件大小和 SHA-256；网页读取它提供下载。源码入库，生成的 ZIP 通过网站与 GitHub Release 分发。
 
-### 构建桌面端 / 移动端
+## 本地启动
 
-安装包通过 GitHub Releases 分发，不提交到仓库（文件过大）。
+需要 Node.js 22。使用与前端相同的 Supabase 项目，并准备支持 JSON 输出的 OpenAI-compatible 模型接口。
 
-```bash
-# 前置条件：安装 Rust、Android SDK、NDK
-# 详见 src-tauri/ 目录下的配置
-
-# Windows 桌面版
-build-desktop.cmd
-# 输出: src-tauri/target/release/bundle/nsis/ResuLab_1.0.3_x64-setup.exe
-
-# Android 版
-build-apk.cmd
-# 输出: release-artifacts/ResuLab_1.0.3.apk（已签名）
+```sh
+npm ci
+npm --prefix server ci
+npm --prefix workers ci
 ```
 
-## 项目结构
+从 `.env.example` 创建前端配置、从 `server/.env.example` 创建后端配置。公开的 Supabase URL / anon key 放前端；service role 与模型密钥仅放服务端。旧开发流程 `npm run dev:upgrade` 使用既有 `workers/.dev.vars` 并启动独立本地 Worker；详情见 [本机使用说明](docs/competition/personal-use.md)。
 
-详见 [项目框架.md](./项目框架.md)
+本地开发沿用 `npm run dev:upgrade`。生产前端由 GitHub Pages 工作流构建，AI 使用原 Worker，Agent 使用原服务器；本机构建不会自动发布任何服务。
 
-## 路线图
+## 生产部署
 
-- [x] 基础表单录入
-- [x] 实时预览
-- [x] 三套简历模板
-- [x] PDF 导出
-- [x] 字体/字号/行距/页边距自定义
-- [x] 主题色切换
-- [x] 智能一页
-- [x] 智能排序
-- [x] 技能分类展示
-- [x] 在线部署
-- [x] 用户账号系统
-- [x] 云端存储
-- [x] 账号管理（换绑/改密码/注销）
-- [x] Windows 桌面版
-- [x] Android 移动版
-- [ ] 更多模板
-- [ ] AI 简历优化建议
-- [ ] 应用内自动更新提示
+完整步骤、配置与回滚见 [deploy/production.md](deploy/production.md)。各服务独立发布：
 
-## 已知问题
+1. Cloudflare Worker：在 `workers/` 执行类型检查、测试和 `npm run deploy`，保留服务端 Secret。
+2. 前端：推送已验证的 `main` 提交后，GitHub Actions 构建并发布到 `gh-pages`，同时提供扩展 ZIP 下载。
+3. Agent：构建 `server/` 并按 [Windows 部署说明](deploy/windows/README.md) 发布，使用 HTTPS 入口访问。前端 push 不会更新服务器 Agent。
 
-### v1.0.3（当前）
+前端 `VITE_AI_API_BASE=https://api.amorsum.top`，`VITE_AGENT_API_BASE` 沿用仓库原 HTTPS 地址，生产固定 `VITE_AGENT_MOCK=false`。不要把生产 API 地址改为空或 localhost。
 
-| 问题 | 状态 | 说明 |
-|------|------|------|
-| Tauri PDF 导出无反应 | ✅ 已修复 | 改用 Rust 原生保存对话框（`tauri-plugin-dialog`），替代 jspdf 浏览器下载 |
-| Android 版启动闪退 | ✅ 已修复 | `tauri-plugin-dialog` Android 原生模块未注册，已在 Gradle 中补全 |
-| 导出失败无错误提示 | ✅ 已修复 | 桌面/移动端工具栏新增红色错误横幅 |
+- Worker：`/api/ai/generate`、`/api/ai/polish`、`/api/ai/tailor`、`/api/ai/job-match`、`/api/account/delete`；未登录仍返回 401。
+- Agent：服务器 `/api/health` 和 `/api/agent/*`，使用既有持久化任务表与 RPC。
+- 云简历直接通过 Supabase RLS 访问本人 `resumes`。数据库迁移位于 `supabase/migrations/`，发布前核对状态，不重复执行。
 
-### v1.0.2
+[2026-10-25 公网验收记录](docs/competition/split-services-release.md)分别保存 Worker、Agent、云端简历与下载检查结果。Docker Compose 是可选部署方案，不是当前线上拓扑。
 
-| 问题 | 状态 | 说明 |
-|------|------|------|
-| Rust 编译 corrupt rlib / OOM | ✅ 已修复 | 禁用 `tauri/custom-protocol`，分步构建（见 `build-desktop.cmd` / `build-apk.cmd`） |
-| GitHub 不支持 >100MB 文件 | ✅ 已解决 | 安装包改用 GitHub Releases 分发，仓库内不提交 |
+## 检查与构建
 
-### Supabase 配置清单
+```sh
+npm test
+npm --prefix server run typecheck
+npm --prefix server test
+npm --prefix workers run typecheck
+npm --prefix workers test
+npm run build:production
+npm run test:navigation
+npm run test:jobs:search
+npm run test:extension:browser
+```
 
-部署前需在 Supabase Dashboard 完成：
-- [x] 邮箱登录 Provider 已启用
-- [x] SQL 建表（profiles、resumes）+ RLS 策略已执行
-- [x] `delete_user_account()` 存储过程已创建（账号注销功能）
-- [x] Site URL 已设为 `https://resulab.amorsum.top`
-- [x] Redirect URLs 已添加本地和生产地址
+浏览器自动测试使用独立配置、合成招聘页面与用户，不操作日常浏览器账号或联系真实招聘者。真实模型验收仅使用合成经历，测试账号及所属记录在结束后清理。
+
+## 技术与目录
+
+React 18 / TypeScript / Vite / Tailwind，Hono / Node.js，Supabase Auth / PostgreSQL / RLS，html2canvas / jsPDF / DOCX，IndexedDB，Manifest V3；保留 Tauri 桌面与 Android 工程。
+
+| 目录 | 内容 |
+| --- | --- |
+| `src/` | 网页、编辑器、经历库、求职工作台与扩展下载页 |
+| `shared/` | 简历事实、选材、改写、Agent 和扩展通信协议 |
+| `server/` | Agent 调度、Node 部署与测试 |
+| `workers/` | Cloudflare AI API、岗位匹配/定制和本人注销 |
+| `extension/` | BOSS 内容脚本、通信桥、持久化后台及弹窗 |
+| `scripts/` | 构建、打包、浏览器回归和生产构建 |
+| `deploy/` | 现行 Pages / Worker / Windows Agent 发布、回滚与可选 Docker 方案 |
+| `supabase/migrations/` | Agent 与旧云端功能的数据库迁移 |
+| `src-tauri/` | Windows 桌面与 Android 工程 |
+
+Windows / Android 安装包继续通过 GitHub Releases 分发，构建方式见 `build-desktop.cmd`、`build-apk.cmd`。本次部署以 Web 完整服务和浏览器扩展为交付范围。

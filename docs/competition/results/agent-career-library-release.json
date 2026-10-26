@@ -1,0 +1,20 @@
+{
+  "deployedAt": "2026-10-24T10:51:55.7988107Z",
+  "sshAlias": "resulab-server",
+  "revision": "038571e2ca798afc88f9cdb05ac71299c6459b09",
+  "previousRevision": "90a6e470608c99da00b6b98275ef154b11dfe197",
+  "node": "v22.23.4",
+  "archiveSha256": "a73345899dbf3a94e7aa441dc40fcf0b17dca12db93557b46f1e9fb5165a2918",
+  "archiveVerifiedOnServer": true,
+  "listen": "127.0.0.1:8788",
+  "apiOrigin": "https://insert-discusses-stops-digital.trycloudflare.com",
+  "apiTaskRunning": true,
+  "httpsTaskRunning": true,
+  "serverConfigurationUnchanged": true,
+  "httpsTunnelRestarted": false,
+  "databaseMigrationExecuted": false,
+  "newCareerFrontendDeployed": false,
+  "newCareerWorkerDeployed": false,
+  "publicModelAcceptanceReport": "agent-career-library-deployment.json",
+  "retainedFirstFailureReport": "agent-career-library-deployment-attempt1.json"
+}

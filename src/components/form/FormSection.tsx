@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface FormSectionProps {
@@ -19,12 +19,15 @@ export default function FormSection({
   itemCount,
 }: FormSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentId = useId();
 
   return (
     <div className="section-card mb-3">
       {/* 标题栏 */}
       <button
         type="button"
+        aria-expanded={isOpen}
+        aria-controls={contentId}
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between group"
       >
@@ -56,7 +59,7 @@ export default function FormSection({
       </button>
 
       {/* 内容区 */}
-      {isOpen && <div className="mt-4">{children}</div>}
+      {isOpen && <div id={contentId} className="mt-4">{children}</div>}
     </div>
   );
 }
