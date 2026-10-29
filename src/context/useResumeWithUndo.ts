@@ -27,6 +27,7 @@ export function useResumeWithUndo(reducer: Reducer<ResumeData, ResumeAction>, in
       case 'DISPATCH': {
         const nextPresent = reducer(state.present, a.action);
         if (nextPresent === state.present) return state;
+        if (a.action.type === 'LOAD_RESUME') return { past: [], present: nextPresent, future: [] };
         if (a.skipHistory) {
           return { ...state, present: nextPresent };
         }
@@ -39,7 +40,7 @@ export function useResumeWithUndo(reducer: Reducer<ResumeData, ResumeAction>, in
         const prev = state.past[state.past.length - 1];
         return {
           past: state.past.slice(0, -1),
-          present: prev,
+          present: prev._cloudId === state.present._cloudId && prev._cloudUpdatedAt === state.present._cloudUpdatedAt ? prev : { ...prev, _cloudId: state.present._cloudId, _cloudUpdatedAt: state.present._cloudUpdatedAt },
           future: [state.present, ...state.future],
         };
       }
@@ -48,7 +49,7 @@ export function useResumeWithUndo(reducer: Reducer<ResumeData, ResumeAction>, in
         const next = state.future[0];
         return {
           past: [...state.past, state.present],
-          present: next,
+          present: next._cloudId === state.present._cloudId && next._cloudUpdatedAt === state.present._cloudUpdatedAt ? next : { ...next, _cloudId: state.present._cloudId, _cloudUpdatedAt: state.present._cloudUpdatedAt },
           future: state.future.slice(1),
         };
       }

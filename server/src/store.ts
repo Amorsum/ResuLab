@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { type RunView, type ResumeSnapshot } from "../../shared/agent.js";
 import { databaseError } from "./errors.js";
 export interface RunRecord {
+  kind?: 'resume_optimize' | 'career_tailor' | 'project_analysis';
+  project_context?: import('../../shared/project.js').ProjectRunContext;
+  career_context?: import('../../shared/careerEntries.js').CareerRunContext;
   id: string;
   owner_id: string;
   status: RunView["status"];

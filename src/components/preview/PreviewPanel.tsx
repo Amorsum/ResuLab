@@ -3,6 +3,7 @@ import { usePdfExport } from '../../hooks/usePdfExport';
 import { useResume } from '../../hooks/useResume';
 import PreviewToolbar from './PreviewToolbar';
 import TemplateRenderer from './TemplateRenderer';
+import { smartFitLayout } from '../../utils/exportChecks';
 
 interface PreviewPanelProps {
   previewRef?: React.RefObject<HTMLDivElement>;
@@ -28,7 +29,7 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
   const { previewRef: internalRef, exportPdf: internalExport, exportDocx: internalDocx, isExporting: internalExporting, error: internalError } = usePdfExport();
-  const { resume, setFontSize, setLineHeight, setPageMargin } = useResume();
+  const { resume, setLayout } = useResume();
 
   const previewRef = externalRef || internalRef;
   const isExporting = externalExporting ?? internalExporting;
@@ -42,43 +43,14 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
     const el = previewRef.current;
     if (!el) return;
 
-    const prevOverflow = el.style.overflow;
-    const prevMaxHeight = el.style.maxHeight;
-    el.style.overflow = 'visible';
-    el.style.maxHeight = 'none';
-
-    const inner = el.firstElementChild as HTMLElement | null;
-    const innerPrevOverflow = inner?.style.overflow;
-    const innerPrevMaxHeight = inner?.style.maxHeight;
-    if (inner) {
-      inner.style.overflow = 'visible';
-      inner.style.maxHeight = 'none';
-    }
-
-    const scrollH = el.scrollHeight;
-
-    el.style.overflow = prevOverflow;
-    el.style.maxHeight = prevMaxHeight;
-    if (inner) {
-      inner.style.overflow = innerPrevOverflow || '';
-      inner.style.maxHeight = innerPrevMaxHeight || '';
-    }
+    // Measure the complete source, excluding visual page gaps and continuation margins.
+    const scrollH = (el.querySelector('[data-resume-source]') as HTMLElement | null)?.scrollHeight || el.scrollHeight;
 
     const targetH = 1123;
     if (scrollH <= targetH + 10) return;
 
-    const ratio = targetH / scrollH;
-    const { fontSize, lineHeight, pageMargin } = resume;
-
-    if (pageMargin > 5 && ratio < 0.95) {
-      setPageMargin(Math.max(5, pageMargin - 5));
-    }
-    const newFontSize = Math.max(12, Math.round(fontSize * ratio * 0.95));
-    if (newFontSize < fontSize) setFontSize(newFontSize);
-    if (ratio < 0.85 && lineHeight > 12) {
-      setLineHeight(Math.max(12, Math.round(lineHeight * ratio)));
-    }
-  }, [previewRef, resume, setFontSize, setLineHeight, setPageMargin]);
+    setLayout(smartFitLayout(resume, scrollH));
+  }, [previewRef, resume, setLayout]);
 
   return (
     <div id="preview-panel" className="h-full flex flex-col">
@@ -95,8 +67,8 @@ export function PreviewPanel({ previewRef: externalRef, isExporting: externalExp
       )}
 
       {/* 预览区域 */}
-      <div ref={canvasRef} className={`preview-canvas flex-1 bg-gray-100 pt-2 ${hideToolbar ? 'overflow-x-hidden overflow-y-auto' : 'overflow-auto'}`}>
-        <div style={hideToolbar ? { paddingLeft: 8, paddingRight: 8 } : { width: 794 * scale, margin: '0 auto 28px', overflow: 'clip' }}>
+      <div ref={canvasRef} className="preview-canvas flex-1 min-h-0 overflow-auto bg-gray-100 pt-2 pb-6">
+        <div style={{ width: 794 * (hideToolbar ? Math.min(1, (viewportWidth - 16) / 794) : scale), margin: '0 auto 28px' }}>
           <TemplateRenderer
             previewRef={previewRef}
             scale={hideToolbar ? Math.min(1, (viewportWidth - 16) / 794) : scale}

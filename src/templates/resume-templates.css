@@ -1,0 +1,75 @@
+/* Document typography stays independent of the editor's viewport and UI fonts. */
+.resume-sheet {
+  color: #263244;
+  width: 794px;
+  min-height: 1123px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  font-variant-numeric: tabular-nums;
+  --resume-muted: #536174;
+}
+.resume-sheet *, .resume-sheet *::before, .resume-sheet *::after { box-sizing: border-box; }
+.resume-sheet h1, .resume-sheet h2, .resume-sheet h3 { line-height: 1.4; }
+.resume-sheet h1, .resume-sheet h2, .resume-sheet h3, .resume-sheet p { margin: 0; }
+.resume-sheet .resume-header { margin-bottom: 1.3em; }
+.resume-identity { display: flex; align-items: flex-start; gap: 1.5em; }
+.resume-identity-text { flex: 1; min-width: 0; }
+.resume-sheet .resume-name { font-size: 2.15em; font-weight: 700; letter-spacing: .05em; color: #172436; }
+.resume-sheet .resume-position { font-size: 1.07em; margin-top: .35em; color: var(--resume-accent); font-weight: 500; }
+.resume-photo { width: 81px; height: 108px; flex-shrink: 0; object-fit: cover; border: 1px solid #dce2e8; }
+.resume-contacts, .resume-intention { display: flex; flex-wrap: wrap; gap: .2em 1.2em; margin-top: .7em; color: var(--resume-muted); font-size: .88em; }
+.resume-contacts > span, .resume-intention > span { min-width: 0; max-width: 100%; }
+.resume-contacts-stacked { display: block; margin-top: 0; }
+.resume-contacts-stacked > span { display: block; margin-bottom: .45em; }
+.resume-sheet .resume-section { margin-bottom: .95em; }
+.resume-sheet .resume-section:last-child { margin-bottom: 0; }
+.resume-sheet .resume-section-title { font-size: 1em; font-weight: 700; letter-spacing: .1em; padding-bottom: .35em; margin-bottom: .45em; color: var(--resume-accent); border-bottom: 1px solid #d5dde6; }
+.resume-entry { margin-bottom: .95em; }
+.resume-entry:last-child { margin-bottom: 0; }
+/* Independent date column and zero minimum width keep long titles from colliding. */
+.resume-entry-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15em 1em; }
+.resume-entry-heading > h3 { flex: 1 1 11em; min-width: 0; font-size: 1.02em; font-weight: 650; color: #172436; }
+.resume-date { flex: 0 0 auto; max-width: 100%; margin-left: auto; font-size: .85em; color: var(--resume-muted); }
+.resume-sheet .resume-entry-subtitle { color: #465569; font-size: .94em; margin-top: .12em; }
+.resume-sheet .resume-description { white-space: pre-wrap; font-size: .94em; margin-top: .3em; }
+.resume-sheet .resume-meta { color: var(--resume-muted); font-size: .85em; margin-top: .3em; }
+.resume-sheet .resume-highlights { list-style: disc; padding-left: 1.2em; margin: .3em 0 0; font-size: .94em; }
+.resume-highlights li { padding-left: .15em; white-space: pre-wrap; }
+.resume-highlights li::marker { color: var(--resume-accent); }
+.resume-skill-groups { display: grid; gap: .6em; }
+.resume-skill-group { display: grid; grid-template-columns: minmax(0, 7em) minmax(0, 1fr); gap: .6em; }
+.resume-skill-group:not(:has(.resume-skill-category)) { display: block; }
+.resume-sheet .resume-skill-category { color: #465569; font-size: .88em; font-weight: 600; margin-bottom: .15em; }
+.resume-skill-list { display: flex; flex-wrap: wrap; gap: .2em 1.2em; font-size: .94em; }
+.resume-skill-list > span { min-width: 0; max-width: 100%; }
+.resume-skill-level { color: var(--resume-muted); font-size: .9em; }
+.resume-sheet .resume-detail { font-size: .94em; margin-bottom: .25em; }
+.resume-link { overflow-wrap: anywhere; }
+
+/* Classic: cap sidebar padding so the text column survives margin 25. */
+.resume-classic { display: flex; }
+.resume-sidebar { flex: 0 0 230px; min-width: 0; background: #f0f4f8; padding: var(--resume-margin-y) min(var(--resume-margin-x), 28px); }
+.resume-sidebar .resume-photo { display: block; margin: 0 auto 1.7em; width: 90px; height: 120px; }
+.resume-sidebar .resume-section-title { font-size: .92em; }
+.resume-sidebar .resume-skill-list { display: grid; gap: .35em; }
+.resume-sidebar .resume-skill-group { display: block; }
+.resume-main { flex: 1; min-width: 0; padding: var(--resume-margin-y) var(--resume-margin-x); }
+.resume-classic .resume-header { padding-bottom: 1.2em; border-bottom: 2px solid var(--resume-accent); }
+
+/* Modern: colour frames the identity; the experience stays on white paper. */
+.resume-modern { padding: var(--resume-margin-y) var(--resume-margin-x); border-top: 6px solid var(--resume-accent); }
+.resume-modern .resume-header { border-bottom: 2px solid var(--resume-accent); padding-bottom: 1.25em; }
+.resume-modern .resume-name { color: var(--resume-accent); }
+.resume-modern .resume-section-title { border-bottom: 0; border-left: 3px solid var(--resume-accent); padding: 0 0 0 .65em; letter-spacing: .04em; }
+
+/* Minimal: centred identity, fine rules, readable body contrast. */
+.resume-minimal { padding: var(--resume-margin-y) var(--resume-margin-x); }
+.resume-minimal .resume-identity-text { text-align: center; }
+.resume-minimal .resume-name { font-size: 2em; font-weight: 500; letter-spacing: .16em; }
+.resume-minimal .resume-contacts, .resume-minimal .resume-intention { justify-content: center; }
+.resume-minimal .resume-section-title { font-size: .95em; color: #344256; font-weight: 600; letter-spacing: .16em; }
+
+/* Professional: one column, sober rules, experience first. */
+.resume-professional { padding: var(--resume-margin-y) var(--resume-margin-x); }
+.resume-professional .resume-name { font-size: 1.85em; }
+.resume-professional .resume-section-title { color: #172436; border-bottom: 1.5px solid var(--resume-accent); letter-spacing: .04em; }

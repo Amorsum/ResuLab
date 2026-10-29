@@ -4,7 +4,7 @@ import UserMenu from './UserMenu';
 
 const destinations = [
   ['/', '首页 · 全部功能'], ['/builder', '简历编辑'], ['/library', '经历库'],
-  ['/jobs', '求职工作台'], ['/my-resumes', '云端简历'], ['/account', '账号设置'],
+  ['/jobs', '求职工作台'], ['/my-resumes', '我的简历'], ['/account', '账号设置'],
 ];
 
 export default function AppHeader() {

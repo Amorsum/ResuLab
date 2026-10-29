@@ -1,5 +1,5 @@
 import {
-  CAREER_SECTIONS, careerEnsure as ensure, careerObject as object, careerText as text, careerSources, careerRevision,
+  CAREER_SECTIONS, careerEnsure as ensure, careerObject as object, careerText as text, careerSources, careerRevision, careerStable,
   type CareerInput, type CareerPlan, type CareerFact, type CareerSource, type CareerSnapshot, type CareerResult, type CareerEdit,
   CareerValidationError,
 } from './career.js';
@@ -12,7 +12,7 @@ export const selectionInstruction = `${RESUME_WRITING_RULES}
 coverage只能是supported、partial、missing。最多15项要求，每项必须有JD原文引句；真实缺口用partial/missing并说明缺什么，不能把学习、迁移能力或关键词巧合算成直接经验。supported必须有入选材料支持，missing不能关联已入选材料；无相关证据可以selected为空。
 只从facts选择ID，不输出data或改写后的材料，不猜测ID。最多选4项工作、4项项目、3项教育、16项技能、3项证书、3项语言；每条至少对应一项要求。少而精，勿把所有经历照搬；对岗位无关且不能说明迁移价值的材料不入选。`;
 
-export function parseCareerPlan(value: unknown, input: CareerInput): CareerPlan {
+export function parseCareerPlan(value: unknown, input: CareerInput, manual = false): CareerPlan {
   const raw = object(value, '$', ['roleTitle', 'requirements', 'selected']);
   const roleTitle = text(raw.roleTitle, '$.roleTitle', 120, 1);
   ensure(Array.isArray(raw.requirements) && raw.requirements.length > 0 && raw.requirements.length <= 15, 'requirement_count', '$.requirements');
@@ -27,7 +27,7 @@ export function parseCareerPlan(value: unknown, input: CareerInput): CareerPlan 
   });
   const ids = new Set(requirements.map((req) => req.id));
   ensure(ids.size === requirements.length, 'duplicate_requirement', '$.requirements');
-  ensure(Array.isArray(raw.selected) && raw.selected.length <= 33, 'selection_count', '$.selected');
+  ensure(Array.isArray(raw.selected) && raw.selected.length <= (manual ? 160 : 33), 'selection_count', '$.selected');
   const known = new Map(input.facts.map((fact) => [fact.id, fact]));
   const counts: Record<string, number> = {}, limits: Record<string, number> = { workExperience: 4, projects: 4, education: 3, skills: 16, certificates: 3, languages: 3 };
   const selected = raw.selected.map((value, i) => {
@@ -35,8 +35,8 @@ export function parseCareerPlan(value: unknown, input: CareerInput): CareerPlan 
     const factId = text(item.factId, path + '.factId', 160, 1), fact = known.get(factId);
     ensure(fact, 'unknown_fact', path + '.factId');
     counts[fact.section] = (counts[fact.section] || 0) + 1;
-    ensure(counts[fact.section] <= limits[fact.section], 'section_budget', path + '.factId');
-    ensure(Array.isArray(item.requirementIds) && item.requirementIds.length > 0 && item.requirementIds.length <= 15, 'requirement_links', path + '.requirementIds');
+    ensure(counts[fact.section] <= (manual ? 160 : limits[fact.section]), 'section_budget', path + '.factId');
+    ensure(Array.isArray(item.requirementIds) && item.requirementIds.length >= (manual ? 0 : 1) && item.requirementIds.length <= 15, 'requirement_links', path + '.requirementIds');
     const links = item.requirementIds.map((id) => text(id, path + '.requirementIds', 100, 1));
     ensure(new Set(links).size === links.length && links.every((id) => ids.has(id)), 'unknown_requirement', path + '.requirementIds');
     ensure(links.every((id) => requirements.find((req) => req.id === id)!.coverage !== 'missing'), 'missing_cannot_have_evidence', path + '.requirementIds');
@@ -69,7 +69,7 @@ function checkNumbers(value: string | string[], sources: CareerSource[], path: s
   const known = new Set(numbers(sources.map((source) => source.quote).join('\n')));
   ensure(numbers(Array.isArray(value) ? value.join('\n') : value).every((number) => known.has(number)), 'unsupported_number', path);
 }
-export function assembleCareer(value: unknown, facts: CareerFact[], plan: CareerPlan) {
+export function assembleCareer(value: unknown, facts: CareerFact[], plan: CareerPlan, includeEducation = true) {
   const selected = plan.selected.map((item) => facts.find((fact) => fact.id === item.factId)!);
   const catalog = careerSources(selected);
   const raw = object(value, '$', ['edits', 'summary']);
@@ -110,7 +110,7 @@ export function assembleCareer(value: unknown, facts: CareerFact[], plan: Career
   }
   // Education is essential context for a student's first application, even when a JD
   // doesn't explicitly demand a degree. Retain only confirmed, included source records.
-  if (selected.length && !snapshot.education.length) {
+  if (includeEducation && selected.length && !snapshot.education.length) {
     snapshot.education = facts.filter(fact => fact.section === 'education')
       .map(fact => structuredClone(fact.data) as CareerSnapshot['education'][number])
       .sort((a, b) => b.startDate.localeCompare(a.startDate)).slice(0, 2);
@@ -145,14 +145,14 @@ export async function composeCareer(input: CareerInput, generate: (instruction: 
 }
 
 /** Rebuild the returned draft from local immutable facts before saving/opening it. */
-export async function verifyCareerResult(value: unknown, input: CareerInput): Promise<CareerResult> {
+export async function verifyCareerResult(value: unknown, input: CareerInput, reviewed = false): Promise<CareerResult> {
   const raw = object(value, '$', ['id', 'inputRevision', 'skillVersion', 'createdAt', 'plan', 'snapshot', 'edits', 'summarySources', 'modelCalls', 'needsMoreFacts']);
-  ensure(raw.inputRevision === await careerRevision(input), 'input_revision_mismatch', '$.inputRevision');
+  ensure(raw.inputRevision === await careerRevision(input, reviewed), 'input_revision_mismatch', '$.inputRevision');
   ensure(raw.skillVersion === RESUME_WRITER_VERSION, 'skill_version_mismatch', '$.skillVersion');
   ensure(typeof raw.id === 'string' && /^[0-9a-f-]{36}$/i.test(raw.id), 'invalid_id', '$.id');
   ensure(typeof raw.createdAt === 'number' && Number.isFinite(raw.createdAt), 'invalid_timestamp', '$.createdAt');
-  ensure(Number.isInteger(raw.modelCalls) && Number(raw.modelCalls) >= 1 && Number(raw.modelCalls) <= 3, 'call_budget', '$.modelCalls');
-  const plan = parseCareerPlan(raw.plan, input);
+  ensure(Number.isInteger(raw.modelCalls) && Number(raw.modelCalls) >= (reviewed ? 0 : 1) && Number(raw.modelCalls) <= (reviewed ? 6 : 3), 'call_budget', '$.modelCalls');
+  const plan = parseCareerPlan(raw.plan, input, reviewed);
   ensure(raw.needsMoreFacts === (plan.selected.length === 0), 'invalid_gap_state', '$.needsMoreFacts');
   const snapshot = object(raw.snapshot, '$.snapshot', [...CAREER_SECTIONS, 'selfEvaluation']);
   ensure(Array.isArray(raw.edits) && raw.edits.length <= 20 && Array.isArray(raw.summarySources), 'invalid_edits', '$.edits');
@@ -162,8 +162,8 @@ export async function verifyCareerResult(value: unknown, input: CareerInput): Pr
   }
   ensure(raw.summarySources.length <= 20, 'invalid_sources', '$.summarySources');
   const edits = raw.edits as CareerEdit[], summarySources = raw.summarySources as CareerSource[];
-  const assembled = assembleCareer({ edits: edits.map((edit) => ({ factId: edit.factId, field: edit.field, after: edit.after, reason: edit.reason, sourceIds: edit.sources.map((source) => source.id) })), summary: { text: snapshot.selfEvaluation, sourceIds: summarySources.map((source) => source.id) } }, input.facts, plan);
-  ensure(JSON.stringify(snapshot) === JSON.stringify(assembled.snapshot), 'snapshot_tampered', '$.snapshot');
-  ensure(JSON.stringify(edits) === JSON.stringify(assembled.edits) && JSON.stringify(summarySources) === JSON.stringify(assembled.summarySources), 'sources_tampered', '$.edits');
+  const assembled = assembleCareer({ edits: edits.map((edit) => ({ factId: edit.factId, field: edit.field, after: edit.after, reason: edit.reason, sourceIds: edit.sources.map((source) => source.id) })), summary: { text: snapshot.selfEvaluation, sourceIds: summarySources.map((source) => source.id) } }, input.facts, plan, !reviewed);
+  ensure(careerStable(snapshot) === careerStable(assembled.snapshot), 'snapshot_tampered', '$.snapshot');
+  ensure(careerStable(edits) === careerStable(assembled.edits) && careerStable(summarySources) === careerStable(assembled.summarySources), 'sources_tampered', '$.edits');
   return { id: raw.id, inputRevision: raw.inputRevision as string, skillVersion: raw.skillVersion as string, createdAt: raw.createdAt, plan, ...assembled, modelCalls: raw.modelCalls as number, needsMoreFacts: raw.needsMoreFacts as boolean };
 }

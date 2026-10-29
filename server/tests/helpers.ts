@@ -39,7 +39,7 @@ export async function database(directory?: string, initialize = true) {
   }
   const store: Store = {
     async rpc<T>(name: string, args: Record<string, unknown>) {
-      if (!/^agent_[a-z_]+$/.test(name)) throw new Error("Unknown function");
+      if (!/^(agent|career)_[a-z_]+$/.test(name)) throw new Error("Unknown function");
       const entries = Object.entries(args);
       try {
         const result = await db.query<{ value: T }>(

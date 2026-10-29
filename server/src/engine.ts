@@ -25,6 +25,8 @@ import {
 } from "./drafting.js";
 import { draftingInput, draftingInstruction } from "./drafting-instructions.js";
 import { validateDraftQuality } from "./draft-quality.js";
+import { executeCareerRun } from './career-engine.js';
+import { executeProjectRun } from './project-engine.js';
 
 const tools = toolSchema.options;
 function ensure(
@@ -224,6 +226,8 @@ export async function executeRun(
   config: Config,
   outerSignal: AbortSignal,
 ): Promise<void> {
+  if (initial.kind === 'project_analysis') return executeProjectRun(initial, store, provider, config, outerSignal);
+  if (initial.kind === 'career_tailor') return executeCareerRun(initial, store, provider, config, outerSignal);
   let run = initial;
   const control = new AbortController();
   const signal = AbortSignal.any([outerSignal, control.signal]);

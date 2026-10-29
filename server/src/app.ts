@@ -14,6 +14,8 @@ import { resumeRevision, sha256, type RunView } from "../../shared/agent.js";
 import { type Config } from "./config.js";
 import { AgentError, safeError } from "./errors.js";
 import { type Store, type RunRecord, publicView } from "./store.js";
+import { careerRoutes } from './career-routes.js';
+import { CareerValidationError } from '../../shared/career.js';
 
 export interface AppDependencies {
   config: Config;
@@ -34,24 +36,23 @@ export function createApp(deps: AppDependencies) {
       origin: deps.config.ALLOWED_ORIGINS.split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
       allowHeaders: ["Authorization", "Content-Type", "Idempotency-Key"],
       exposeHeaders: ["X-Request-Id"],
       maxAge: 600,
     }),
   );
   app.use(
-    "*",
-    bodyLimit({
-      maxSize: AGENT_LIMITS.bodyBytes,
+    "*", async (c, next) => bodyLimit({
+      maxSize: c.req.path === '/api/career/projects/materials/upload' ? 50 * 1024 * 1024 : c.req.path.startsWith('/api/career/versions') ? 3000000 : AGENT_LIMITS.bodyBytes,
       onError: () => {
         throw new AgentError("INPUT_TOO_LARGE", "请求内容过长", 400);
       },
-    }),
+    })(c, next),
   );
   app.onError((error, c) => {
     const e =
-      error instanceof z.ZodError
+      error instanceof z.ZodError || error instanceof CareerValidationError
         ? new AgentError("INVALID_INPUT", "请求字段或类型不合法", 400)
         : safeError(error);
     if (e.status >= 500)
@@ -84,6 +85,10 @@ export function createApp(deps: AppDependencies) {
         databaseConfigured: Boolean(deps.store),
         modelConfigured: deps.modelReady,
       },
+      model: {
+        configured: deps.modelReady,
+        id: deps.modelReady && /^[a-z\d][a-z\d._:/@+-]{0,127}$/i.test(deps.config.MODEL_ID || '') && !/^sk-/i.test(deps.config.MODEL_ID || '') ? deps.config.MODEL_ID : null,
+      },
     }),
   );
   app.use("/api/agent/*", async (c, next) => {
@@ -111,6 +116,11 @@ export function createApp(deps: AppDependencies) {
       throw new AgentError("INVALID_INPUT", "请求头与请求体幂等键不一致", 400);
   };
   const runId = (value: string) => z.string().uuid().parse(value);
+  async function legacyRun(owner: string, id: string) {
+    const run = await store().rpc<RunRecord>('agent_get_run', { p_owner: owner, p_run: id });
+    if (run.kind && run.kind !== 'resume_optimize') throw new AgentError('RUN_NOT_FOUND', '任务不存在', 404);
+    return run;
+  }
   app.post("/api/agent/runs", async (c) => {
     modelRequired();
     const input = createRunSchema.parse(await json(c));
@@ -159,13 +169,11 @@ export function createApp(deps: AppDependencies) {
     return c.json(result as object, 202);
   });
   app.get("/api/agent/runs/:id", async (c) => {
-    const run = await store().rpc<RunRecord>("agent_get_run", {
-      p_owner: c.get("userId"),
-      p_run: runId(c.req.param("id")),
-    });
+    const run = await legacyRun(c.get('userId'), runId(c.req.param('id')));
     return c.json(runViewSchema.parse(publicView(run)));
   });
   app.post("/api/agent/runs/:id/answers", async (c) => {
+    await legacyRun(c.get('userId'), runId(c.req.param('id')));
     modelRequired();
     const input = answerRunSchema.parse(await json(c));
     checkKey(c.req.header("Idempotency-Key"), input.idempotencyKey);
@@ -183,6 +191,7 @@ export function createApp(deps: AppDependencies) {
     return c.json(result as object, 202);
   });
   app.post("/api/agent/runs/:id/retry", async (c) => {
+    await legacyRun(c.get('userId'), runId(c.req.param('id')));
     modelRequired();
     const input = retryRunSchema.parse(await json(c));
     checkKey(c.req.header("Idempotency-Key"), input.idempotencyKey);
@@ -196,5 +205,6 @@ export function createApp(deps: AppDependencies) {
     });
     return c.json(result as object, 202);
   });
+  app.route('/api/career', careerRoutes(deps));
   return app;
 }

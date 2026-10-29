@@ -33,9 +33,64 @@ function getTauriInvoke(): ((cmd: string, args?: Record<string, unknown>) => Pro
   return null;
 }
 
+function restoreCanvasFontMetrics(document?: Document) {
+  // Tailwind's block image reset breaks html2canvas's 1×1 inline baseline probe,
+  // shifting glyphs down into page cuts. Leave resume photos unchanged.
+  const style = document?.createElement?.('style');
+  if (!style || !document?.head) return;
+  style.textContent = 'img[width="1"][height="1"] { display: inline-block !important; }';
+  document.head.appendChild(style);
+  return style;
+}
+
 async function buildPdf(element: HTMLElement): Promise<jsPDF> {
+  // html2canvas measures font baselines in the original document, not its clone.
+  const metricsStyle = restoreCanvasFontMetrics(element.ownerDocument);
+  try {
+    return await renderPdf(element);
+  } finally {
+    metricsStyle?.remove();
+  }
+}
+
+async function renderPdf(element: HTMLElement): Promise<jsPDF> {
   const A4_WIDTH_MM = 210;
   const A4_HEIGHT_MM = 297;
+
+  // Wait for layout-affecting resources before taking the same pages shown in preview.
+  await element.ownerDocument?.fonts?.ready;
+  const images = Array.from(element.querySelectorAll?.('img') ?? []);
+  await Promise.all(images.map(img => img.decode?.().catch(() => {})));
+  if (element.ownerDocument?.defaultView) {
+    await new Promise<void>(resolve => element.ownerDocument.defaultView!.requestAnimationFrame(() => resolve()));
+  }
+  const pages = Array.from(element.querySelectorAll?.<HTMLElement>('[data-resume-page]') ?? []);
+  if (pages.length) {
+    const pdf = new jsPDF('portrait', 'mm', 'a4');
+    for (let index = 0; index < pages.length; index++) {
+      const canvas = await html2canvas(pages[index], {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        onclone: (_document, cloned) => {
+          restoreCanvasFontMetrics(_document);
+          // A zoomed preview and its scrolling ancestors must not crop the export.
+          for (let parent: HTMLElement | null = cloned; parent; parent = parent.parentElement) {
+            if (parent !== cloned) { parent.style.overflow = 'visible'; parent.style.transform = 'none'; }
+            parent.style.boxShadow = 'none';
+          }
+          cloned.style.margin = '0';
+        },
+      });
+      if (canvas.width <= 0 || canvas.height <= 0) throw new Error('预览截图尺寸无效，请打开预览后重试');
+      if (index > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
+    }
+    return pdf;
+  }
 
   // Capture the complete resume. Clipping to A4 here silently discarded later pages.
   const origMaxHeight = element.style.maxHeight;
@@ -53,6 +108,7 @@ async function buildPdf(element: HTMLElement): Promise<jsPDF> {
       width: 794,
       height: Math.max(1123, element.scrollHeight || 1123),
       onclone: (_document, cloned) => {
+        restoreCanvasFontMetrics(_document);
         cloned.style.transform = 'none';
         cloned.style.maxHeight = 'none';
         cloned.style.overflow = 'visible';

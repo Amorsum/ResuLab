@@ -2,10 +2,16 @@ import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../ty
 import { generateId, createEmptyResume } from '../constants/defaultResume';
 import { applyAIImport, type AIImportPlan } from '../utils/aiImport';
 import { applyAgentChanges, type AgentApplication } from '../utils/agentChanges';
+import { applyCareerApplication } from '../utils/careerApplication';
+import type { CareerApplicationPlan } from '../../shared/careerEntries';
 
 // ===================== Action 类型 =====================
 
 export type ResumeAction =
+  | { type: 'ACK_CLOUD'; payload: { documentId: string; cloudId: string; updatedAt: string } }
+  | { type: 'SET_DOCUMENT_META'; payload: NonNullable<ResumeData['documentMeta']> }
+  | { type: 'SET_LAYOUT'; payload: Pick<ResumeData, 'fontSize' | 'lineHeight' | 'pageMargin'> }
+  | { type: 'APPLY_CAREER'; payload: CareerApplicationPlan }
   | { type: 'APPLY_AGENT_CHANGES'; payload: AgentApplication }
   | { type: 'IMPORT_AI_RESUME'; payload: AIImportPlan }
   | { type: 'SET_PERSONAL_INFO'; payload: Partial<ResumeData['personalInfo']> }
@@ -51,6 +57,11 @@ function createEmptyItem(section: ArraySectionName) {
 
 export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeData {
   switch (action.type) {
+    case 'ACK_CLOUD': return state.documentMeta?.id === action.payload.documentId ? { ...state, _cloudId: action.payload.cloudId, _cloudUpdatedAt: action.payload.updatedAt } : state;
+    case 'SET_DOCUMENT_META': return { ...state, documentMeta: action.payload, lastModified: Date.now() };
+    case 'SET_LAYOUT': return Object.entries(action.payload).every(([key, value]) => state[key as keyof ResumeData] === value) ? state : { ...state, ...action.payload, lastModified: Date.now() };
+    case 'APPLY_CAREER':
+      return applyCareerApplication(state, action.payload);
     case 'APPLY_AGENT_CHANGES':
       return applyAgentChanges(state, action.payload);
     case 'IMPORT_AI_RESUME':
@@ -160,7 +171,7 @@ export function resumeReducer(state: ResumeData, action: ResumeAction): ResumeDa
       return action.payload;
 
     case 'RESET_ALL':
-      return createEmptyResume();
+      return { ...createEmptyResume(), documentMeta: state.documentMeta, _cloudId: state._cloudId };
 
     default:
       return state;

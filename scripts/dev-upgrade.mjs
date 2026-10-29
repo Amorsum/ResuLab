@@ -10,7 +10,7 @@ const commands = [
   ['web', root, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '3000', '--strictPort', '--open', 'false']],
 ];
 const children = commands.map(([name, cwd, args]) => {
-  const child = spawn(process.execPath, args, { cwd, stdio: 'inherit', windowsHide: true, env: { ...process.env, VITE_AI_API_BASE: 'http://127.0.0.1:8787', VITE_AGENT_API_BASE: 'http://127.0.0.1:8788', VITE_AGENT_MOCK: 'false' } });
+  const child = spawn(process.execPath, args, { cwd, stdio: 'inherit', windowsHide: true, env: { ...process.env, CAREER_WEB_PORT: '3000', VITE_CAREER_STORAGE: 'local', VITE_AI_API_BASE: 'http://127.0.0.1:8787', VITE_AGENT_API_BASE: 'http://127.0.0.1:8788', VITE_AGENT_MOCK: 'false' } });
   child.on('error', () => console.error(`${name} failed to start`));
   return child;
 });

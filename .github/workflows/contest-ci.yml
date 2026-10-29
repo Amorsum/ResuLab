@@ -28,7 +28,8 @@ jobs:
       - run: npm --prefix workers run typecheck
       - run: npm --prefix workers test
       - run: node --test tests/aiApi.test.cjs
-      - run: node --test tests/careerLibrary.test.cjs
+      - run: node --test tests/careerLibrary.test.cjs tests/careerWorkspace.test.cjs
+      - run: node --test tests/resumeDocuments.test.cjs tests/cloudSaveRace.test.cjs
       - run: npm --prefix server run typecheck
       - run: npm --prefix server test
       - run: npm --prefix server run build

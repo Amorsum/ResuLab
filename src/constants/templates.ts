@@ -22,7 +22,7 @@ export const TEMPLATES: Record<TemplateId, TemplateMeta> = {
   modern: {
     id: 'modern',
     name: '现代模板',
-    description: '彩色头部，单栏排版，适合互联网和新兴行业',
+    description: '主题色标题，清晰单栏，适合互联网和新兴行业',
     component: lazy(() => import('../templates/modern/ModernTemplate')),
     color: '#4f46e5',
     hasPhoto: true,
@@ -30,7 +30,7 @@ export const TEMPLATES: Record<TemplateId, TemplateMeta> = {
   minimal: {
     id: 'minimal',
     name: '极简模板',
-    description: '纯文字排版，大量留白，适合设计和创意岗位',
+    description: '居中姓名，轻量分隔，适合偏好简洁排版的求职者',
     component: lazy(() => import('../templates/minimal/MinimalTemplate')),
     color: '#374151',
     hasPhoto: false,

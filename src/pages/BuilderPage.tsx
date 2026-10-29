@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useResume } from '../hooks/useResume';
 import { useAuth } from '../hooks/useAuth';
 import { useCloudResumes } from '../hooks/useCloudResumes';
@@ -11,12 +11,13 @@ import MobileBuilderBar from '../components/preview/MobileBuilderBar';
 import OnboardingOverlay from '../components/onboarding/OnboardingOverlay';
 import AppHeader from '../components/layout/AppHeader';
 import { AgentWorkspace } from '../components/agent/AgentWorkspace';
-import { libraryOwner, readLibrary, updateLibrary, cleanLibraryResume } from '../utils/careerLibrary';
-import { generateId } from '../constants/defaultResume';
+import { forkResume, persistResumeDocument } from '../utils/resumeDocuments';
+import { inspectResumeExport, smartFitLayout, type ExportIssue } from '../utils/exportChecks';
+import { ExportPreflight } from '../components/preview/ExportPreflight';
 
 export default function BuilderPage() {
   const { templateId } = useParams<{ templateId: string }>();
-  const { resume, setTemplate, setFontSize, setLineHeight, setPageMargin, undo, redo, saveStatus } = useResume();
+  const { resume, setTemplate, setLayout, undo, redo, saveStatus } = useResume();
   const navigate = useNavigate();
   const initialized = useRef(false);
   const [agentOpen, setAgentOpen] = useState(() => new URLSearchParams(window.location.search).get('agent') === '1');
@@ -52,11 +53,10 @@ export default function BuilderPage() {
   const saveVersion = async () => {
     if (versionLock.current || !versionTitle.trim()) return;
     versionLock.current = true; setSaving(true); setSaveMsg(null);
-    const owner = libraryOwner(user?.id), snapshot = cleanLibraryResume(resume);
+    const owner = user?.id || 'local-guest', snapshot = forkResume(resume, versionTitle.trim());
     try {
-      const current = await readLibrary(owner);
-      await updateLibrary(owner, current.revision, data => ({ ...data, drafts: [{ id: generateId(), title: versionTitle.trim(), jdText: '', createdAt: Date.now(), kind: 'saved', resume: snapshot }, ...data.drafts] }));
-      setVersionOpen(false); setSaveMsg('岗位版本已保存，可在经历库重新打开');
+      await persistResumeDocument(owner, snapshot, 0);
+      setVersionOpen(false); setSaveMsg('独立岗位副本已保存，可在“我的简历”打开');
     } catch (err) { setSaveMsg(err instanceof Error ? err.message : '版本保存失败，请重试'); }
     finally { versionLock.current = false; setSaving(false); }
   };
@@ -69,8 +69,8 @@ export default function BuilderPage() {
       await saveResume();
       setSaveMsg('已保存到云端');
       setTimeout(() => setSaveMsg(null), 2000);
-    } catch {
-      setSaveMsg('保存失败');
+    } catch (err) {
+      setSaveMsg(err instanceof Error ? err.message : '保存失败，本机内容仍保留');
     } finally {
       setSaving(false);
     }
@@ -78,7 +78,11 @@ export default function BuilderPage() {
 
   // PDF 导出
   const mobilePreviewRef = useRef<HTMLDivElement>(null);
-  const { previewRef, getPreviewElement, exportPdf, exportDocx, isExporting, error: exportError } = usePdfExport(mobilePreviewRef);
+  const { previewRef, getPreviewElement, exportPdf: writePdf, exportDocx: writeDocx, isExporting, error: exportError } = usePdfExport(mobilePreviewRef);
+  const [preflight, setPreflight] = useState<{ format: 'PDF' | 'Word'; pages: number; issues: ExportIssue[] } | null>(null);
+  const requestExport = (format: 'PDF' | 'Word') => { setMobileView('preview'); requestAnimationFrame(() => requestAnimationFrame(() => setPreflight({ format, ...inspectResumeExport(resume, getPreviewElement()) }))); };
+  const exportPdf = () => requestExport('PDF'), exportDocx = () => requestExport('Word');
+  const locate = (section: ExportIssue['section']) => { setPreflight(null); if (section === 'preview') { setMobileView('preview'); return; } setMobileView('form'); requestAnimationFrame(() => { const visible = [...document.querySelectorAll<HTMLElement>(`#resume-section-${section}`)].find(e => e.getClientRects().length); visible?.scrollIntoView({ block: 'start', behavior: 'smooth' }); const toggle = visible?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]'); toggle?.click(); requestAnimationFrame(() => visible?.querySelector<HTMLElement>('input, textarea, select')?.focus()); }); };
   const [pendingAgentExport, setPendingAgentExport] = useState(false);
 
   const previewAndExport = () => {
@@ -119,49 +123,14 @@ export default function BuilderPage() {
     const el = getPreviewElement();
     if (!el) return;
 
-    const prevOverflow = el.style.overflow;
-    const prevMaxHeight = el.style.maxHeight;
-    el.style.overflow = 'visible';
-    el.style.maxHeight = 'none';
-
-    const inner = el.firstElementChild as HTMLElement | null;
-    const innerPrevOverflow = inner?.style.overflow;
-    const innerPrevMaxHeight = inner?.style.maxHeight;
-    if (inner) {
-      inner.style.overflow = 'visible';
-      inner.style.maxHeight = 'none';
-    }
-
-    const scrollH = el.scrollHeight;
-
-    el.style.overflow = prevOverflow;
-    el.style.maxHeight = prevMaxHeight;
-    if (inner) {
-      inner.style.overflow = innerPrevOverflow || '';
-      inner.style.maxHeight = innerPrevMaxHeight || '';
-    }
+    // Measure the complete source, excluding visual page gaps and continuation margins.
+    const scrollH = (el.querySelector('[data-resume-source]') as HTMLElement | null)?.scrollHeight || el.scrollHeight;
 
     const targetH = 1123;
     if (scrollH <= targetH + 10) return;
 
-    const ratio = targetH / scrollH;
-    const { fontSize, lineHeight, pageMargin } = resume;
-
-    if (pageMargin > 5 && ratio < 0.95) {
-      const newMargin = Math.max(5, pageMargin - 5);
-      setPageMargin(newMargin);
-    }
-
-    const newFontSize = Math.max(12, Math.round(fontSize * ratio * 0.95));
-    if (newFontSize < fontSize) {
-      setFontSize(newFontSize);
-    }
-
-    if (ratio < 0.85 && lineHeight > 12) {
-      const newLineHeight = Math.max(12, Math.round(lineHeight * ratio));
-      setLineHeight(newLineHeight);
-    }
-  }, [getPreviewElement, resume, setFontSize, setLineHeight, setPageMargin]);
+    setLayout(smartFitLayout(resume, scrollH));
+  }, [getPreviewElement, resume, setLayout]);
 
   return (
     <div className={`builder-shell h-screen flex flex-col overflow-hidden bg-gray-100 ${agentOpen ? 'agent-background-hidden' : ''}`}>
@@ -170,7 +139,8 @@ export default function BuilderPage() {
       <div className="builder-actions" aria-label="简历操作">
         <span>编辑与导出</span>
         <div className="flex items-center gap-1 sm:gap-3">
-          <button onClick={() => setAgentOpen(true)} className="min-h-10 px-2 sm:px-3 rounded-md text-sm text-primary-700 bg-primary-50 hover:bg-primary-100"><span className="hidden sm:inline">针对岗位优化</span><span className="sm:hidden">岗位优化</span></button>
+          <Link className="career-button" to="/library/project">从项目生成经历</Link>
+          <Link to="/library#target" className="career-button">按岗位优化</Link>
           {user && (
             <button
               onClick={handleCloudSave}
@@ -182,7 +152,7 @@ export default function BuilderPage() {
           )}
         </div>
       </div>
-      <div className="builder-context"><div><strong>{resume.jobIntention.desiredPosition || '我的求职简历'}</strong><span role="status">{saveStatus === 'saved' ? '已自动保存到本机' : saveStatus === 'saving' ? '正在保存…' : '本机保存失败，请导出或保存到云端后再离开'}</span></div><button className="career-button" onClick={() => { setVersionTitle(resume.jobIntention.desiredPosition || '我的岗位简历'); setVersionOpen(!versionOpen); }}>另存岗位版本</button></div>
+      <div className="builder-context"><div><strong>{resume.documentMeta?.title || '我的求职简历'}</strong><span>{resume.jobIntention.desiredPosition ? `目标岗位：${resume.jobIntention.desiredPosition} · ` : ''}{resume.documentMeta?.kind === 'job' ? '独立岗位副本' : resume.documentMeta?.kind === 'base' ? '基础简历' : '未分类'}</span><span role="status">{saveStatus === 'saved' ? '已自动保存到本机' : saveStatus === 'saving' ? '正在保存…' : '本机保存失败或版本冲突，请在“我的简历”另存当前稿副本'}</span></div><div className="career-actions"><Link className="career-button" to="/my-resumes">管理简历</Link><button className="career-button" onClick={() => { setVersionTitle(resume.jobIntention.desiredPosition || '我的岗位简历'); setVersionOpen(!versionOpen); }}>另存岗位版本</button></div></div>
       {saveMsg && <p className="builder-feedback" role="status">{saveMsg}</p>}
       {versionOpen && <form className="version-save" onSubmit={event => { event.preventDefault(); void saveVersion(); }}><label>版本名称<input className="input-base" autoFocus value={versionTitle} maxLength={120} onChange={event => setVersionTitle(event.target.value)} placeholder="例如：前端实习 · A 公司" /></label><button className="btn-primary" disabled={saving || !versionTitle.trim()}>保存独立版本</button><button type="button" className="btn-secondary" onClick={() => setVersionOpen(false)}>取消</button></form>}
 
@@ -216,7 +186,7 @@ export default function BuilderPage() {
 
           {/* 预览视图 */}
           {mobileView === 'preview' && (
-            <div className="flex-1 overflow-y-auto pb-16 bg-gray-100">
+            <div className="flex-1 min-h-0 pb-20 bg-gray-100">
               <PreviewPanel
                 previewRef={mobilePreviewRef}
                 isExporting={isExporting}
@@ -244,6 +214,7 @@ export default function BuilderPage() {
       {/* ========== 首次使用引导 ========== */}
       <OnboardingOverlay />
       <AgentWorkspace open={agentOpen} onClose={() => setAgentOpen(false)} onPreview={previewAndExport} />
+      {preflight && <ExportPreflight {...preflight} close={() => setPreflight(null)} locate={locate} proceed={() => { const format = preflight.format; setPreflight(null); void (format === 'PDF' ? writePdf() : writeDocx()); }} />}
     </div>
   );
 }

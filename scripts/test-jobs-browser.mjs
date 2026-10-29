@@ -7,7 +7,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createServer as viteServer } from 'vite';
 import { createRequire } from 'node:module';
-const root = fileURLToPath(new URL('..', import.meta.url)), results = path.join(root, 'docs/competition/results/jobs');
+const root = fileURLToPath(new URL('..', import.meta.url)), results = path.join(root, '.cache/jobs-browser');
 const require = createRequire(import.meta.url);
 const composeCode = (await build({ entryPoints: [path.join(root, 'shared/careerComposer.ts')], bundle: true, write: false, format: 'cjs', platform: 'node' })).outputFiles[0].text;
 const composeModule = { exports: {} }; new Function('module', 'exports', 'require', composeCode)(composeModule, composeModule.exports, require);
@@ -17,12 +17,13 @@ const bundle = (await build({ stdin: { contents: source, resolveDir: root, loade
 const fixture = await readFile(path.join(root, 'tests/fixtures/jobs.html'));
 const server = httpServer((req, res) => { res.setHeader('Content-Type', req.url === '/test.js' ? 'text/javascript' : 'text/html'); res.end(req.url === '/test.js' ? bundle : fixture); });
 await new Promise(resolve => server.listen(3190, '127.0.0.1', resolve));
-const vite = await viteServer({ root, server: { host: '127.0.0.1', port: 3189, strictPort: true, open: false }, define: { 'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://fixture.supabase.co'), 'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('fixture'), 'import.meta.env.VITE_AI_API_BASE': JSON.stringify('http://127.0.0.1:3189') } });
+const vite = await viteServer({ root, cacheDir: '.cache/vite-jobs-browser', optimizeDeps: { entries: ['index.html'] }, server: { host: '127.0.0.1', port: 3189, strictPort: true, open: false, watch: { ignored: ['**/*'] } }, define: { 'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://fixture.supabase.co'), 'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('fixture'), 'import.meta.env.VITE_AI_API_BASE': JSON.stringify('http://127.0.0.1:3189'), 'import.meta.env.VITE_AGENT_API_BASE': JSON.stringify('http://127.0.0.1:3189') } });
 await vite.listen();
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 await context.route('**/*', route => { const url = new URL(route.request().url()); return ['127.0.0.1', 'localhost'].includes(url.hostname) || ['blob:', 'data:'].includes(url.protocol) ? route.continue() : route.abort(); });
 const page = await context.newPage(), report = { externalRequestsAllowed: false, fixtureOnly: true, checks: [] };
+page.setDefaultNavigationTimeout(90000);
 try {
   await page.goto('http://127.0.0.1:3190');
   const result = await page.evaluate(async () => {
@@ -50,8 +51,8 @@ try {
     document.querySelector('#unsafe').classList.remove('hidden'); return dom.sendAttachment(document, item, new Uint8Array(), p);
   });
   assert.equal(pending.kind, 'pending'); report.checks.push('global replacement/slot-limit UI never uploads or sends');
-  await page.goto('http://127.0.0.1:3189/jobs');
-  await expect(page.getByRole('heading', { name: '为每个机会，认真准备。' })).toBeVisible();
+  await page.goto('http://127.0.0.1:3189/jobs', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('heading', { name: '为每个机会，认真准备。' })).toBeVisible({ timeout: 30000 });
   await page.getByText('直接导入一个 BOSS 岗位 JD').click();
   await page.getByLabel('岗位链接', { exact: true }).fill('https://www.zhipin.com/job_detail/synthetic-a.html');
   await page.getByLabel('岗位名称', { exact: true }).fill('合成前端工程师');
@@ -93,6 +94,7 @@ try {
   const jwt = `${Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')}.${Buffer.from(JSON.stringify({ sub: userId, exp: Math.floor(Date.now() / 1000) + 3600, role: 'authenticated' })).toString('base64url')}.fixture`;
   await page.addInitScript(({ user, jwt }) => localStorage.setItem('sb-fixture-auth-token', JSON.stringify({ access_token: jwt, refresh_token: 'fixture', expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600, token_type: 'bearer', user })), { user: fakeUser, jwt });
   await page.route('https://fixture.supabase.co/**', route => route.fulfill({ json: fakeUser }));
+  await page.route('**/api/career/entries', route => route.fulfill({ json: [] }));
   await page.route('**/api/ai/*', async route => {
     const input = route.request().postDataJSON();
     const skill = input.jdText.includes('SQL') ? 'SQL' : 'TypeScript', fact = input.facts.find(f => f.section === 'skills' && f.data.skillName === skill);
@@ -111,11 +113,16 @@ try {
     const { createEmptyResume } = await import('/src/constants/defaultResume.ts');
     const { readLibrary, updateLibrary, newLibrarySource } = await import('/src/utils/careerLibrary.ts');
     const { readJobs, saveJobs } = await import('/src/utils/jobsStore.ts');
-    const resume = createEmptyResume(); resume.personalInfo.fullName = '合成求职者'; resume.personalInfo.email = 'synthetic@example.invalid';
+    const resume = createEmptyResume(); resume.personalInfo.fullName = '素材中的旧姓名'; resume.personalInfo.email = 'synthetic@example.invalid';
     resume.skills = ['TypeScript', 'SQL'].map((skillName, index) => ({ id: 's-' + index, skillName, category: '', level: '掌握' }));
     const library = await readLibrary(userId); await updateLibrary(userId, library.revision, value => ({ ...value, sources: [newLibrarySource(resume, '合成已确认经历', 'editor', true)] }));
     const workspace = await readJobs(userId); await saveJobs({ ...workspace, records: ['TypeScript', 'SQL'].map((skill, index) => ({ job: { id: `fixture-${index}`, source: 'boss', url: `https://www.zhipin.com/job_detail/fixture-${index}.html`, title: skill === 'SQL' ? '数据分析' : '前端开发', company: `合成公司 ${index}`, recruiter: '', recruiterKey: '', city: '上海', salary: '15-25K', experience: '', education: '', jobType: '', jdText: `熟练使用 ${skill} 完成业务工作并整理文档。`, collectedAt: Date.now() }, status: 'review', selected: false })) });
   }, userId);
+  await page.goto('http://127.0.0.1:3189/builder', { waitUntil: 'domcontentloaded' });
+  await page.locator('.builder-form-column').getByPlaceholder('请输入姓名').fill('当前简历的合成求职者');
+  await page.locator('.builder-form-column').getByPlaceholder('example@email.com').fill('synthetic@example.invalid');
+  await expect(page.locator('.builder-context')).toContainText('已自动保存到本机');
+  await page.goto('http://127.0.0.1:3189/jobs', { waitUntil: 'domcontentloaded' });
   await page.reload();
   await page.getByRole('button', { name: '智能匹配与排序' }).click();
   await expect(page.getByRole('button', { name: '为所选 2 个岗位生成简历' })).toBeEnabled({ timeout: 20000 });
@@ -124,9 +131,9 @@ try {
   const snapshot = await page.evaluate(async userId => {
     const { readJobs } = await import('/src/utils/jobsStore.ts'), { readLibrary } = await import('/src/utils/careerLibrary.ts');
     const data = await readJobs(userId), library = await readLibrary(userId);
-    return { skills: data.records.map(row => row.draft.resume.skills.map(skill => skill.skillName)), hashes: data.records.map(row => row.draft.hash), sourceSkills: library.sources[0].resume.skills.map(skill => skill.skillName) };
+    return { skills: data.records.map(row => row.draft.resume.skills.map(skill => skill.skillName)), names: data.records.map(row => row.draft.resume.personalInfo.fullName), hashes: data.records.map(row => row.draft.hash), sourceSkills: library.sources[0].resume.skills.map(skill => skill.skillName) };
   }, userId);
-  assert.deepEqual(snapshot.skills, [['TypeScript'], ['SQL']]); assert.notEqual(snapshot.hashes[0], snapshot.hashes[1]); assert.deepEqual(snapshot.sourceSkills, ['TypeScript', 'SQL']);
+  assert.deepEqual(snapshot.skills, [['TypeScript'], ['SQL']]); assert.deepEqual(snapshot.names, ['当前简历的合成求职者', '当前简历的合成求职者']); assert.notEqual(snapshot.hashes[0], snapshot.hashes[1]); assert.deepEqual(snapshot.sourceSkills, ['TypeScript', 'SQL']);
   await page.getByRole('button', { name: '核对专用简历与文案' }).first().click();
   await page.getByLabel('已核对公司、岗位、文案、事实来源与完整 PDF').click();
   await expect(page.getByLabel('已核对公司、岗位、文案、事实来源与完整 PDF')).toBeChecked();

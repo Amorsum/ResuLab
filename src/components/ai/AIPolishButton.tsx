@@ -30,6 +30,7 @@ export function AIPolishButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [proposal, setProposal] = useState<{ before: string; after: string } | null>(null);
 
   const accessError = checkAccess('polish');
 
@@ -52,9 +53,7 @@ export function AIPolishButton({
       ].filter(Boolean).join('\n');
 
       const polished = await polishField(fieldLabel, currentValue, ctx);
-      onPolished(polished);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      setProposal({ before: currentValue, after: polished });
     } catch (err) {
       setError(err instanceof Error ? err.message : '润色失败');
     } finally {
@@ -98,6 +97,7 @@ export function AIPolishButton({
       {error && (
         <span className="text-[10px] text-red-500">{error}</span>
       )}
+      {proposal && <span className="ai-polish-proposal" role="group" aria-label={`${fieldLabel}润色对比`}><span><strong>原文</strong><span>{proposal.before}</span></span><span><strong>候选改写</strong><span>{proposal.after}</span></span><button type="button" className="career-button" onClick={() => { if (currentValue !== proposal.before) { setError('原文已修改，请重新生成，避免覆盖新内容'); return; } onPolished(proposal.after); setProposal(null); setSuccess(true); setTimeout(() => setSuccess(false), 2000); }}>采用改写</button><button type="button" className="career-button" onClick={() => setProposal(null)}>保留原文</button></span>}
     </span>
   );
 }

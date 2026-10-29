@@ -114,6 +114,9 @@ export interface SocialLink {
 // ===================== 聚合 Resume 类型 =====================
 
 export interface ResumeData {
+  documentMeta?: import('../../shared/resumeDocument.js').ResumeDocumentMeta;
+  /** Immutable experience provenance; never sent to the model as resume content. */
+  careerOrigins?: Record<string, import('../../shared/careerEntries.js').CareerOrigin>;
   templateId: TemplateId;
   accentColor: string;
   fontFamily: FontFamily;
@@ -133,12 +136,14 @@ export interface ResumeData {
   socialLinks: SocialLink[];
   /** 云端简历 ID（已保存到云端时有值） */
   _cloudId?: string;
+  _cloudUpdatedAt?: string;
 }
 
 // ===================== 云端简历元数据 =====================
 
 /** 云端简历列表项（不含完整 data） */
 export interface CloudResumeMeta {
+  documentMeta?: import('../../shared/resumeDocument.js').ResumeDocumentMeta;
   id: string;
   title: string;
   created_at: string;

@@ -27,6 +27,10 @@ function removeCrossorigin() {
 }
 
 export default defineConfig({
+  // Keep source/config resolution stable for local entrypoints launched from server/.
+  root: __dirname,
+  // Avoid treating generated Tauri/Android HTML and test fixtures as application entrypoints.
+  optimizeDeps: { entries: ['index.html'] },
   plugins: [react(), removeCrossorigin(), pdfTextAssets()],
   base: '/',
   server: {

@@ -1,4 +1,5 @@
 import type { ResumeData, SkillLevel } from '../types/resume';
+import { resumeDocumentMetaSchema } from '../../shared/resumeDocument';
 import { createEmptyResume, generateId } from '../constants/defaultResume';
 import { CAREER_SECTIONS, parseCareerFact, parseCareerInput, type CareerFact, type CareerInput, type CareerResult } from '../../shared/career';
 
@@ -46,6 +47,16 @@ export function approveLibrarySkills(resume: ResumeData, review: LibrarySkillRev
 export function cleanLibraryResume(value: unknown): ResumeData {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('简历数据格式不正确');
   const raw = value as Record<string, unknown>, result = createEmptyResume();
+  const documentMeta = resumeDocumentMetaSchema.safeParse(raw.documentMeta);
+  if (documentMeta.success) result.documentMeta = documentMeta.data;
+  if (raw.careerOrigins && typeof raw.careerOrigins === 'object' && !Array.isArray(raw.careerOrigins)) {
+    result.careerOrigins = {};
+    for (const [key, origin] of Object.entries(raw.careerOrigins).slice(0, 960)) {
+      const v = origin as Record<string, unknown> | null;
+      if (v && typeof v.entryId === 'string' && v.entryId.length <= 160 && typeof v.factId === 'string' && v.factId.length <= 160 && typeof v.revision === 'number' && Number.isSafeInteger(v.revision) && v.revision > 0)
+        result.careerOrigins[key] = { entryId: v.entryId, factId: v.factId, revision: v.revision, ...(v.unverified === true ? { unverified: true } : {}) };
+    }
+  }
   const readStrings = (section: 'personalInfo' | 'jobIntention') => {
     const data = raw[section];
     if (!data || typeof data !== 'object' || Array.isArray(data)) return;

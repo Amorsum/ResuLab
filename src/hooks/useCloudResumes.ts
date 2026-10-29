@@ -5,12 +5,15 @@ import { useResume } from './useResume';
 import { STORAGE_KEY } from '../context/ResumeContext';
 import type { ResumeData } from '../types/resume';
 import type { CloudResumeMeta } from '../types/resume';
+import { identifyResume } from '../utils/resumeDocuments';
+import { cleanLibraryResume } from '../utils/careerLibrary';
+import { resumeDocumentMetaSchema } from '../../shared/resumeDocument';
 
 // ===================== Cloud CRUD =====================
 
 export function useCloudResumes() {
   const { user } = useAuth();
-  const { resume, loadResume } = useResume();
+  const { resume, loadResume, markCloudSaved } = useResume();
   const current = useRef({ resume, userId: user?.id });
   current.current = { resume, userId: user?.id };
 
@@ -20,38 +23,42 @@ export function useCloudResumes() {
 
     const { data, error } = await supabase
       .from('resumes')
-      .select('id, title, created_at, updated_at')
+      .select('id, title, created_at, updated_at, documentMeta:data->documentMeta')
       .order('updated_at', { ascending: false });
 
     if (error) {
       throw new Error('获取简历列表失败');
     }
 
-    return data as CloudResumeMeta[];
+    return (data as unknown as CloudResumeMeta[]).map(row => { const meta = resumeDocumentMetaSchema.safeParse(row.documentMeta); return { ...row, documentMeta: meta.success ? meta.data : undefined }; });
   }, [user]);
 
   /** 保存当前简历到云端（有 _cloudId 则更新，无则新建） */
   const saveResume = useCallback(async (title?: string): Promise<string | null> => {
     if (!user) return null;
 
-    const resumeTitle = title || resume.personalInfo.fullName || '未命名简历';
+    const resumeTitle = title || resume.documentMeta?.title || resume.personalInfo.fullName || '未命名简历';
     // 保存时移除 _cloudId，避免循环嵌套
-    const { _cloudId, ...resumeData } = resume as ResumeData & { _cloudId?: string };
+    const { _cloudId, _cloudUpdatedAt, ...resumeData } = resume;
+    const expectedUser = user.id;
 
     if (resume._cloudId) {
       // 更新已有记录
-      const { error } = await supabase
+      if (!_cloudUpdatedAt) throw new Error('缺少云端版本基准，请从“我的简历”核对云端内容后重新打开；本机内容已保留');
+      const { data: saved, error } = await supabase
         .from('resumes')
         .update({
           title: resumeTitle,
           data: resumeData as unknown as Record<string, unknown>,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', resume._cloudId);
+        .eq('id', resume._cloudId).eq('user_id', user.id).eq('updated_at', _cloudUpdatedAt).select('id, updated_at').maybeSingle();
 
       if (error) {
         throw new Error('保存失败，请重试');
       }
+      if (!saved) throw new Error('云端已有新版本，本机内容已保留。请在“我的简历”对照云端，或另存副本后同步');
+      if (current.current.userId === expectedUser && resume.documentMeta) markCloudSaved({ documentId: resume.documentMeta.id, cloudId: saved.id, updatedAt: saved.updated_at });
 
       return resume._cloudId;
     } else {
@@ -63,7 +70,7 @@ export function useCloudResumes() {
           title: resumeTitle,
           data: resumeData as unknown as Record<string, unknown>,
         })
-        .select('id')
+        .select('id, updated_at')
         .single();
 
       if (error) {
@@ -72,29 +79,33 @@ export function useCloudResumes() {
 
       // 将云端 ID 写回 state
       // A delayed save must never replace edits made while the request was pending.
-      if (current.current.resume === resume && current.current.userId === user.id)
-        loadResume({ ...resume, _cloudId: data.id });
+      if (current.current.userId === user.id && resume.documentMeta)
+        markCloudSaved({ documentId: resume.documentMeta.id, cloudId: data.id, updatedAt: data.updated_at });
       return data.id;
     }
   }, [user, resume, loadResume]);
 
-  /** 从云端加载指定简历到当前 state */
-  const loadCloudResume = useCallback(async (cloudId: string) => {
-    if (!user) return;
+  const fetchCloudResume = useCallback(async (cloudId: string): Promise<ResumeData> => {
+    if (!user) throw new Error('请先登录');
+    const expectedUser = user.id;
 
     const { data, error } = await supabase
       .from('resumes')
-      .select('data')
+      .select('data, title, updated_at')
       .eq('id', cloudId)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
       throw new Error('加载简历失败');
     }
 
-    const cloudData = data.data as ResumeData;
-    loadResume({ ...cloudData, _cloudId: cloudId, lastModified: Date.now() });
-  }, [user, loadResume]);
+    if (current.current.userId !== expectedUser) throw new Error('账号已变化，请重新打开');
+    const cloudData = identifyResume(cleanLibraryResume(data.data));
+    if (!(data.data as ResumeData).documentMeta) cloudData.documentMeta = { id: cloudId, title: data.title, kind: 'unclassified' };
+    return { ...cloudData, _cloudId: cloudId, _cloudUpdatedAt: data.updated_at, lastModified: Date.now() };
+  }, [user]);
+  const loadCloudResume = useCallback(async (cloudId: string) => { await loadResume(await fetchCloudResume(cloudId)); }, [fetchCloudResume, loadResume]);
 
   /** 删除云端简历 */
   const deleteResume = useCallback(async (cloudId: string) => {
@@ -110,7 +121,7 @@ export function useCloudResumes() {
     }
   }, [user]);
 
-  return { listResumes, saveResume, loadCloudResume, deleteResume };
+  return { listResumes, saveResume, loadCloudResume, fetchCloudResume, deleteResume };
 }
 
 // ===================== Local ↔ Cloud Helpers =====================

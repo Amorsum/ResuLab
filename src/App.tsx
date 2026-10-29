@@ -7,12 +7,13 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import UpdatePasswordPage from './pages/UpdatePasswordPage';
-import MyResumesPage from './pages/MyResumesPage';
+import MyResumesPage from './pages/ResumeDocumentsPage';
 import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import CareerLibraryPage from './pages/CareerLibraryPage';
 import JobsPage from './pages/JobsPage';
 import ExtensionPage from './pages/ExtensionPage';
+import ProjectExperiencePage from './pages/ProjectExperiencePage';
 
 export default function App() {
   const { pathname, hash } = useLocation();
@@ -39,14 +40,13 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route path="/library" element={<CareerLibraryPage />} />
+      <Route path="/library/project" element={<ProjectExperiencePage key={pathname} />} />
       <Route path="/jobs" element={<JobsPage />} />
       <Route path="/extension" element={<ExtensionPage />} />
       <Route
         path="/my-resumes"
         element={
-          <ProtectedRoute>
-            <MyResumesPage />
-          </ProtectedRoute>
+          <MyResumesPage />
         }
       />
       <Route

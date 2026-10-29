@@ -22,7 +22,7 @@ export default function FormSection({
   const contentId = useId();
 
   return (
-    <div className="section-card mb-3">
+    <div id={title === '基本信息' ? 'resume-section-personalInfo' : title === '教育背景' ? 'resume-section-education' : title === '项目 / 校园实践' ? 'resume-section-projects' : undefined} className="section-card mb-3">
       {/* 标题栏 */}
       <button
         type="button"

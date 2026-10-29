@@ -1,3 +1,4 @@
+import { forkResume } from '../utils/resumeDocuments';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/layout/AppHeader';
@@ -5,7 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useResume } from '../hooks/useResume';
 import { useAI } from '../hooks/useAI';
 import { aiRequest } from '../utils/aiApi';
-import { libraryInput, libraryOwner, readLibrary, resumeFromCareer } from '../utils/careerLibrary';
+import { libraryInput, libraryOwner, resumeFromCareer } from '../utils/careerLibrary';
+import { readUnifiedLibrary as readLibrary } from '../utils/careerStore';
 import { verifyCareerResult } from '../../shared/careerComposer';
 import { verifyJobMatch } from '../../shared/jobMatch';
 import { careerRevision } from '../../shared/career';
@@ -162,7 +164,7 @@ export default function JobsPage() {
         if (filterJob(row.job, current.current.search).excluded.length) throw new Error('岗位不符合当前筛选范围');
         const input = libraryInput(library, row.job.jdText), result = await verifyCareerResult(await tailorResume(input, abort.signal), input);
         if (result.needsMoreFacts) throw new Error('现有事实不足以支持此岗位，请补充经历后重试');
-        const snapshot = resumeFromCareer(source.resume || resume, result), snapshotHash = await sha256(JSON.stringify(snapshot));
+        const snapshot = forkResume(resumeFromCareer(resume, result), `${row.job.company} · ${row.job.title}`), snapshotHash = await sha256(JSON.stringify(snapshot));
         const pdf = await renderJobPdf(snapshot); if (pdf.size > MAX_PDF_BYTES) throw new Error('PDF 超过 8 MiB，请缩小头像或简化排版后重试');
         const hash = await sha256(pdf), filename = `${safeName(snapshot.personalInfo.fullName || '简历')}_${safeName(row.job.company)}_${safeName(row.job.title)}_${row.job.id.slice(0, 6)}_${snapshotHash.slice(0, 8)}.pdf`;
         const greeting = `您好，我希望应聘贵公司的${row.job.title}岗位。${result.snapshot.selfEvaluation || '已根据岗位要求整理了相关经历，期待与您进一步交流。'}`.slice(0, 1000);
@@ -227,6 +229,7 @@ export default function JobsPage() {
         setManual({ url: '', title: '', company: '', jdText: '' });
       })}>加入岗位列表</button></fieldset></details></section>
       <section className="jobs-panel"><div className="jobs-section-title"><span>02 / MATCH</span><h2>选值得投入的机会 <small>{workspace.records.length} 个岗位</small></h2></div>
+        <p className="job-muted">使用经历库中本次选定的已确认经历；尚无选材记录时使用全部已确认经历。岗位简历沿用当前编辑器的个人信息和排版。<Link to="/library#target">查看本次选材</Link></p>
         <div className="jobs-actions"><button disabled={busy || lockedBatch || !ready} onClick={() => void run(analyze)}>智能匹配与排序</button><button className="jobs-primary" disabled={busy || lockedBatch || !selected.length} onClick={() => void run(generate)}>为所选 {selected.length} 个岗位生成简历</button>{busy && <button onClick={() => controller.current?.abort()}>停止等待 AI</button>}</div>
         {!workspace.records.length && <div className="jobs-empty"><span>从一个真实岗位开始</span><p>连接扩展搜索，或粘贴岗位 JD。匹配理由会引用你已确认的经历。</p></div>}
         <div className="job-list">{rankJobs(workspace.records).map(row => { const filter = filterJob(row.job, workspace.search); return <article className={`job-card ${filter.excluded.length ? 'job-excluded' : ''}`} key={row.job.id}>

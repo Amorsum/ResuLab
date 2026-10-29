@@ -101,6 +101,20 @@ test('zero-sized canvas fails before constructing PDF and restores preview style
   assert.deepEqual(element.style, { maxHeight: 'none', overflow: 'visible' });
 });
 
+test('the baseline probe fix covers the original document and is removed after export failure', async () => {
+  let installed, removed = false;
+  const { createPdfBlob } = compile('src/utils/pdfExport.ts', {
+    html2canvas: { default: async () => { assert.match(installed.textContent, /display: inline-block/); throw new Error('capture failed'); } },
+    jspdf: {}, '@tauri-apps/api/core': {},
+  }, { window: {} });
+  const element = { style: {}, ownerDocument: {
+    createElement: () => ({ remove() { removed = true; } }),
+    head: { appendChild(style) { installed = style; } },
+  } };
+  await assert.rejects(createPdfBlob(element), /capture failed/);
+  assert.equal(removed, true);
+});
+
 test('multi-page export captures full unscaled content and does not create a rounding-only blank page', async () => {
   let options, pages = 1, saved = false;
   const { exportToPdf } = compile('src/utils/pdfExport.ts', {
@@ -113,6 +127,9 @@ test('multi-page export captures full unscaled content and does not create a rou
   assert.equal(options.height, 2246); assert.equal(options.width, 794);
   const clone = { style: {} }; options.onclone({}, clone);
   assert.equal(clone.style.transform, 'none'); assert.equal(clone.style.maxHeight, 'none');
+  let metricsRule;
+  options.onclone({ createElement: () => ({}), head: { appendChild(style) { metricsRule = style.textContent; } } }, clone);
+  assert.match(metricsRule, /img\[width="1"\]\[height="1"\].*display: inline-block !important/);
   assert.equal(pages, 2); assert.equal(saved, true);
   assert.deepEqual(element.style, { maxHeight: '', overflow: '' });
 });
@@ -124,4 +141,27 @@ test('page boundary moves to whitespace before glyphs and has a safe fallback fo
   assert.equal(whitespaceBreak(pixels, 100, 20), 14);
   pixels.fill(0);
   assert.equal(whitespaceBreak(pixels, 100, 20), 20);
+});
+
+test('paginated previews export each visible A4 sheet once in order, excluding page gaps', async () => {
+  const sheets = [{ page: 1 }, { page: 2 }, { page: 3 }], captured = [], inserted = [];
+  let pages = 1;
+  const { createPdfBlob } = compile('src/utils/pdfExport.ts', {
+    html2canvas: { default: async (element, options) => {
+      captured.push(element.page);
+      assert.equal(options.width, 794); assert.equal(options.height, 1123);
+      return { width: 1588, height: 2246, toDataURL: () => `sheet-${element.page}` };
+    } },
+    jspdf: { jsPDF: class {
+      addPage() { pages++; }
+      addImage(data, type, x, y, width, height) { inserted.push(data); assert.deepEqual([x, y, width, height], [0, 0, 210, 297]); }
+      output() { return 'pdf-blob'; }
+    } },
+    '@tauri-apps/api/core': {},
+  }, { window: {} });
+  const element = { querySelectorAll: selector => selector === 'img' ? [] : sheets };
+  assert.equal(await createPdfBlob(element), 'pdf-blob');
+  assert.deepEqual(captured, [1, 2, 3]);
+  assert.deepEqual(inserted, ['sheet-1', 'sheet-2', 'sheet-3']);
+  assert.equal(pages, 3);
 });

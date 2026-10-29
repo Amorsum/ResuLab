@@ -36,6 +36,23 @@ test('initializing or reselecting the current template adds no undo entry', () =
   assert.equal(h.render().state, h.initial);
   assert.equal(h.render().canUndo, false);
 });
+test('opening another document clears history and smart-fit stays within a single undo entry', () => {
+  const h = harness();
+  h.render().dispatch({ type: 'SET_LAYOUT', payload: { fontSize: 12, lineHeight: 14, pageMargin: 5 } });
+  h.render().undo(); assert.equal(h.render().state, h.initial);
+  h.render().dispatch(h.application); assert.equal(h.render().canUndo, true);
+  h.render().dispatch({ type: 'LOAD_RESUME', payload: { ...h.initial, selfEvaluation: '另一份简历' } }, true);
+  assert.equal(h.render().canUndo, false); assert.equal(h.render().canRedo, false);
+});
+
+test('a whole career application is exactly one undo and redo entry', () => {
+  const h = harness(), initial = h.initial;
+  const row = id => ({ fact: { id, section: 'certificates', sourceTitle: '奖项', doNotClaim: '', data: { id, name: '竞赛奖项', issuer: '学校', date: '' } }, origin: { entryId: 'entry', revision: 1, factId: id }, action: 'append' });
+  h.render().dispatch({ type: 'APPLY_CAREER', payload: { base: JSON.stringify(initial), rows: [row('award-1'), row('award-2')] } });
+  assert.equal(h.render().state.certificates.length, 2);
+  h.render().undo(); assert.equal(h.render().state, initial); assert.equal(h.render().canUndo, false);
+  h.render().redo(); assert.equal(h.render().state.certificates.length, 2);
+});
 
 test('a duplicate template selection after Agent apply does not intercept one-batch undo', () => {
   const h = harness();

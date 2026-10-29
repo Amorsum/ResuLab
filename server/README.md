@@ -4,6 +4,12 @@
 
 Node.js 22 + Hono + Supabase。与原 `workers/` 独立，旧 AI 接口继续走旧服务。本目录不实现前端写回或撤销。
 
+经历库 v2 的 `/api/career/*` 同样由本服务提供，包含云端条目、持久选材与写作任务、来源校验和岗位版本保存。先执行增量迁移 `supabase/migrations/202610260001_career_library.sql`，再更新服务和前端；协议与迁移见 [经历库说明](../docs/career-library.md)。旧 Worker 接口继续兼容。
+
+当前按用户要求仅本地联调：根目录 `npm run dev:career` 自动创建隔离数据库并运行新迁移，无需原 Agent 服务器在线，也不执行远程迁移。缺模型时手动功能可用，Agent 返回明确的未配置提示；完整说明见上述经历库文档。
+
+Windows 本地启动默认沿用启用的系统 HTTP 代理，显式环境代理配置优先，仅影响开发进程。认证网络故障提示检查网络 / 代理，不要求用户反复重新登录；无效会话才返回 401。共享认证逻辑位于 `src/auth.ts`，生产仍只使用显式代理配置。
+
 本地开发使用 `http://localhost:8788`；默认 `HOST=127.0.0.1` 仅接受本机连接。生产运行在 Windows Server，通过 HTTPS 隧道供前端访问，见 [部署步骤](../deploy/windows/README.md)。Docker 内显式设 `HOST=0.0.0.0` 供同网络代理访问。本地验收步骤见 `../docs/competition/local-acceptance.md`。
 
 从仓库根执行：

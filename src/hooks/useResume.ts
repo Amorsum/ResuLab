@@ -4,6 +4,7 @@ import type { ResumeData, ArraySectionName, TemplateId, FontFamily } from '../ty
 import { generateId } from '../constants/defaultResume';
 import type { AIImportPlan } from '../utils/aiImport';
 import type { AgentApplication } from '../utils/agentChanges';
+import type { CareerApplicationPlan } from '../../shared/careerEntries';
 
 export function useResume() {
   const ctx = useContext(ResumeContext);
@@ -15,7 +16,14 @@ export function useResume() {
 
   return {
     saveStatus: ctx.saveStatus,
+    persistCurrent: ctx.persistCurrent,
+    acceptDocumentRevision: ctx.acceptDocumentRevision,
+    saveCurrentCopy: ctx.saveCurrentCopy,
+    markCloudSaved: (payload: { documentId: string; cloudId: string; updatedAt: string }) => dispatch({ type: 'ACK_CLOUD', payload }, true),
+    setDocumentMeta: (payload: NonNullable<ResumeData['documentMeta']>) => dispatch({ type: 'SET_DOCUMENT_META', payload }),
+    setLayout: (payload: Pick<ResumeData, 'fontSize' | 'lineHeight' | 'pageMargin'>) => dispatch({ type: 'SET_LAYOUT', payload }),
     resume: state,
+    applyCareer: (payload: CareerApplicationPlan) => dispatch({ type: 'APPLY_CAREER', payload }),
     applyAgentChanges: (payload: AgentApplication) => dispatch({ type: 'APPLY_AGENT_CHANGES', payload }),
     importAIResume: (payload: AIImportPlan) => dispatch({ type: 'IMPORT_AI_RESUME', payload }),
 
@@ -66,7 +74,7 @@ export function useResume() {
     smartSort: () => dispatch({ type: 'SMART_SORT' }),
 
     loadResume: (payload: ResumeData) =>
-      dispatch({ type: 'LOAD_RESUME', payload }, true),
+      ctx.switchResume(payload),
 
     resetAll: () => dispatch({ type: 'RESET_ALL' }, true),
 

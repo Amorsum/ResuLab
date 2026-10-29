@@ -18,6 +18,9 @@ export class ToolResultError extends AgentError {
   }
 }
 const dbErrors: Record<string, [string, number, boolean]> = {
+  ENTRY_NOT_FOUND: ['经历不存在或不可访问', 404, false],
+  REVISION_CONFLICT: ['经历已在其他设备更新，本机输入已保留，请重新核对', 409, false],
+  SOURCE_CHANGED: ['经历已修改、撤回确认或归档，请重新核对选材', 409, false],
   RUN_NOT_FOUND: ["任务不存在或不可访问", 404, false],
   IDEMPOTENCY_CONFLICT: ["相同幂等键对应的内容不同", 409, false],
   STATE_CONFLICT: ["当前任务状态不允许此操作，请刷新", 409, false],

@@ -3,6 +3,12 @@ import type { ResumeData } from '../src/types/resume.js';
 export const CAREER_SECTIONS = ['education', 'workExperience', 'projects', 'skills', 'certificates', 'languages'] as const;
 export type CareerSection = typeof CAREER_SECTIONS[number];
 export type CareerItem = ResumeData[CareerSection][number];
+/** Canonical comparison survives Postgres jsonb object-key reordering. */
+export function careerStable(value: unknown): string {
+  if (Array.isArray(value)) return '[' + value.map(careerStable).join(',') + ']';
+  if (value && typeof value === 'object') return '{' + Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => JSON.stringify(key) + ':' + careerStable(item)).join(',') + '}';
+  return JSON.stringify(value);
+}
 export interface CareerFact { id: string; section: CareerSection; data: CareerItem; sourceTitle: string; doNotClaim: string }
 export interface CareerInput { jdText: string; facts: CareerFact[] }
 export interface CareerRequirement { id: string; text: string; jdQuote: string; required: boolean; coverage: 'supported' | 'partial' | 'missing'; gap: string }
@@ -86,7 +92,7 @@ export function careerSources(facts: CareerFact[]): CareerSource[] {
   }
   return sources;
 }
-export async function careerRevision(input: CareerInput): Promise<string> {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(input)));
+export async function careerRevision(input: CareerInput, canonical = false): Promise<string> {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical ? careerStable(input) : JSON.stringify(input)));
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
