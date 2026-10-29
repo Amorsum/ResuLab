@@ -1,6 +1,6 @@
 import { chromium, expect as baseExpect } from '@playwright/test';
 import { fork } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 import path from 'node:path';
@@ -127,6 +127,25 @@ try {
   await expect(page).toHaveURL(/\/builder/);
   await expect(page.locator('.builder-context')).toContainText('后端开发实习生');
   if (await page.getByRole('button', { name: '关闭引导', exact: true }).isVisible()) await page.getByRole('button', { name: '关闭引导', exact: true }).click();
+  await page.evaluate(() => { const original = Storage.prototype.setItem; window.__restoreStorage = () => { Storage.prototype.setItem = original; }; Storage.prototype.setItem = function(key, value) { if (this === localStorage && key.startsWith('resulab.current:')) throw new DOMException('storage full', 'QuotaExceededError'); return original.call(this, key, value); }; });
+  await page.locator('input[placeholder="请输入姓名"]:visible').fill('备份测试姓名');
+  await expect(page.locator('.builder-context').getByRole('alert')).toContainText('本机存储不可用');
+  const [backupDownload] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '导出当前简历备份' }).click()]);
+  const backupText = await readFile(await backupDownload.path(), 'utf8');
+  assert.equal(JSON.parse(backupText).documents[0].resume.personalInfo.fullName, '备份测试姓名');
+  await page.evaluate(() => window.__restoreStorage());
+  await page.getByRole('button', { name: '重试本机保存' }).click();
+  await expect(page.locator('.builder-context')).toContainText('已自动保存到本机');
+  await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => { const request = indexedDB.open('resulab-resume-documents', 1); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    await new Promise((resolve, reject) => { const tx = db.transaction('documents', 'readwrite'), store = tx.objectStore('documents'), request = store.getAll(); request.onsuccess = () => { const row = request.result.find(item => item.resume.personalInfo.fullName === '备份测试姓名'); if (!row) { tx.abort(); return; } row.revision++; store.put(row); }; tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error || new Error('missing fixture document')); });
+    db.close();
+  });
+  await page.locator('input[placeholder="请输入姓名"]:visible').fill('冲突保留姓名');
+  await expect(page.locator('.builder-context').getByRole('alert')).toContainText('其他页面已更新');
+  await expect(page.getByRole('button', { name: '重试本机保存' })).toHaveCount(0);
+  const [conflictDownload] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '导出当前简历备份' }).click()]);
+  assert.equal(JSON.parse(await readFile(await conflictDownload.path(), 'utf8')).documents[0].resume.personalInfo.fullName, '冲突保留姓名');
   await page.getByRole('navigation', { name: '主导航', exact: true }).getByRole('link', { name: '经历库', exact: true }).click();
   await expect(page.locator('#materials article.career-source')).toHaveCount(1);
   const beforeImport = await page.locator('#materials article.career-source').count();

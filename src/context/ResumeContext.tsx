@@ -6,7 +6,7 @@ import { resumeReducer } from './resumeReducer';
 import { useResumeWithUndo } from './useResumeWithUndo';
 import { DEFAULT_RESUME } from '../constants/defaultResume';
 import { useAuth } from '../hooks/useAuth';
-import { identifyResume, forkResume, persistResumeDocument, readResumeDocuments } from '../utils/resumeDocuments';
+import { identifyResume, forkResume, persistResumeDocument, readResumeDocuments, ResumeDocumentConflictError } from '../utils/resumeDocuments';
 
 export const STORAGE_KEY = 'resulab_data';
 
@@ -20,6 +20,8 @@ interface ResumeContextValue {
   canUndo: boolean;
   canRedo: boolean;
   saveStatus: 'saving' | 'saved' | 'error';
+  saveError: 'conflict' | 'storage' | null;
+  retrySave: () => Promise<void>;
   switchResume: (resume: ResumeData) => Promise<void>;
   persistCurrent: () => Promise<void>;
   acceptDocumentRevision: (id: string, revision: number) => void;
@@ -63,8 +65,10 @@ function loadFromStorage(): ResumeData | null {
 export function ResumeProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const ownerId = user?.id || 'local-guest';
-  const [stateOwner, setStateOwner] = useState(() => localStorage.getItem('resulab.current-owner') || 'legacy');
+  const [stateOwner, setStateOwner] = useState(() => { try { return localStorage.getItem('resulab.current-owner') || 'legacy'; } catch { return 'legacy'; } });
   const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'error'>('saved');
+  const [saveError, setSaveError] = useState<'conflict' | 'storage' | null>(null);
+  const reportSaveError = (error: unknown) => { setSaveError(error instanceof ResumeDocumentConflictError ? 'conflict' : 'storage'); setSaveStatus('error'); };
   const [loaded] = useState(() => identifyResume(loadFromStorage() || DEFAULT_RESUME));
   const {
     state,
@@ -95,6 +99,14 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
     io.current = work; return work;
   };
   const persistCurrent = async () => { clearTimeout(timerRef.current); const current = live.current; await write(current.state, current.stateOwner, '切换前的简历'); };
+  const retrySave = async () => {
+    clearTimeout(timerRef.current); const current = live.current; setSaveStatus('saving');
+    try {
+      saveLocalRecovery(current.state, current.stateOwner, revisions.current.get(`${current.stateOwner}:${current.state.documentMeta!.id}`) ?? 0);
+      await write(current.state, current.stateOwner);
+      if (live.current.state === current.state && live.current.stateOwner === current.stateOwner) { setSaveError(null); setSaveStatus('saved'); }
+    } catch (error) { if (live.current.state === current.state && live.current.stateOwner === current.stateOwner) reportSaveError(error); }
+  };
   const saveCurrentCopy = async (title: string) => {
     clearTimeout(timerRef.current); const current = live.current, next = forkResume(current.state, title, 'unclassified');
     await io.current.catch(() => {}); const saved = await persistResumeDocument(current.stateOwner, next, 0);
@@ -137,13 +149,13 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
       revisions.current.set(`${ownerId}:${next.documentMeta!.id}`, recovery && hasBaseline ? baseline : stored?.revision || 0);
       dispatch({ type: 'LOAD_RESUME', payload: next }, true); setStateOwner(ownerId); localStorage.setItem('resulab.current-owner', ownerId);
     };
-    void prepare().catch(() => { if (!disposed) { if (live.current.stateOwner !== 'legacy' && live.current.stateOwner !== ownerId) dispatch({ type: 'LOAD_RESUME', payload: identifyResume(structuredClone(DEFAULT_RESUME)) }, true); setSaveStatus('error'); setStateOwner(ownerId); } });
+    void prepare().catch((error) => { if (!disposed) { if (live.current.stateOwner !== 'legacy' && live.current.stateOwner !== ownerId) dispatch({ type: 'LOAD_RESUME', payload: identifyResume(structuredClone(DEFAULT_RESUME)) }, true); reportSaveError(error); setStateOwner(ownerId); } });
     return () => { disposed = true; };
   }, [ownerId, authLoading]);
 
   const value = useMemo(
-    () => ({ state, dispatch, undo, redo, canUndo, canRedo, saveStatus, switchResume, persistCurrent, acceptDocumentRevision, saveCurrentCopy }),
-    [state, dispatch, undo, redo, canUndo, canRedo, saveStatus]
+    () => ({ state, dispatch, undo, redo, canUndo, canRedo, saveStatus, saveError, retrySave, switchResume, persistCurrent, acceptDocumentRevision, saveCurrentCopy }),
+    [state, dispatch, undo, redo, canUndo, canRedo, saveStatus, saveError]
   );
 
   // 防抖写入 localStorage
@@ -154,9 +166,9 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
     const persist = () => {
       try {
         saveLocalRecovery(state, stateOwner, revisions.current.get(`${stateOwner}:${state.documentMeta!.id}`) ?? 0);
-        void write(state, stateOwner).then(() => { if (live.current.state === state) setSaveStatus('saved'); }).catch(() => { if (live.current.state === state) setSaveStatus('error'); });
-      } catch {
-        setSaveStatus('error');
+        void write(state, stateOwner).then(() => { if (live.current.state === state && live.current.stateOwner === stateOwner) { setSaveError(null); setSaveStatus('saved'); } }).catch((error) => { if (live.current.state === state && live.current.stateOwner === stateOwner) reportSaveError(error); });
+      } catch (error) {
+        if (live.current.state === state && live.current.stateOwner === stateOwner) reportSaveError(error);
       }
     };
     timerRef.current = setTimeout(persist, 300);

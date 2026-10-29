@@ -1,5 +1,8 @@
 import type { ResumeData } from '../types/resume';
 import { resumeDocumentMetaSchema } from '../../shared/resumeDocument';
+export class ResumeDocumentConflictError extends Error {
+  constructor(message: string) { super(message); this.name = 'ResumeDocumentConflictError'; }
+}
 export interface ResumeDocumentRecord { ownerId: string; id: string; revision: number; resume: ResumeData; archived: boolean; updatedAt: number; history: { id: string; title: string; createdAt: number; resume: ResumeData }[]; cloudUpdatedAt?: string; syncError?: string }
 export function identifyResume(resume: ResumeData, kind: 'base' | 'job' | 'unclassified' = 'unclassified'): ResumeData {
   const parsed = resumeDocumentMetaSchema.safeParse(resume.documentMeta);
@@ -18,7 +21,7 @@ export async function readResumeDocuments(ownerId: string): Promise<ResumeDocume
 export async function mutateResumeDocument(ownerId: string, id: string, expected: number | undefined, change: (value?: ResumeDocumentRecord) => ResumeDocumentRecord): Promise<ResumeDocumentRecord> {
   const db = await database(); return new Promise((resolve, reject) => {
     const tx = db.transaction('documents', 'readwrite'), store = tx.objectStore('documents'), req = store.get([ownerId, id]); let next: ResumeDocumentRecord, error: unknown;
-    req.onsuccess = () => { try { if (expected !== undefined && (req.result?.revision || 0) !== expected) throw new Error('这份简历已在其他页面更新，当前内容仍保留，请另存副本或重新打开'); next = change(req.result); next.ownerId = ownerId; next.id = id; next.revision = (req.result?.revision || 0) + 1; store.put(next); } catch (e) { error = e; tx.abort(); } };
+    req.onsuccess = () => { try { if (expected !== undefined && (req.result?.revision || 0) !== expected) throw new ResumeDocumentConflictError('这份简历已在其他页面更新，当前内容仍保留，请另存副本或重新打开'); next = change(req.result); next.ownerId = ownerId; next.id = id; next.revision = (req.result?.revision || 0) + 1; store.put(next); } catch (e) { error = e; tx.abort(); } };
     tx.oncomplete = () => { db.close(); resolve(next); }; tx.onerror = tx.onabort = () => { db.close(); reject(error || new Error('本机简历保存失败，请先导出备份')); };
   });
 }
@@ -30,7 +33,7 @@ export async function persistResumeDocument(ownerId: string, resume: ResumeData,
     let result: ResumeDocumentRecord, error: unknown;
     req.onsuccess = () => { try {
       const old = req.result as ResumeDocumentRecord | undefined;
-      if (expected !== undefined && (old?.revision || 0) !== expected) throw new Error('这份简历已在其他页面更新，请保留当前内容并另存副本');
+      if (expected !== undefined && (old?.revision || 0) !== expected) throw new ResumeDocumentConflictError('这份简历已在其他页面更新，请保留当前内容并另存副本');
       if (old && content(old.resume) === content(next) && (!checkpoint || old.history.some((item, index) => index === 0 && content(item.resume) === content(next)))) { result = old; return; }
       const history = old?.history || [];
       if (checkpoint && old) history.unshift({ id: crypto.randomUUID(), title: checkpoint, createdAt: Date.now(), resume: structuredClone(old.resume) });

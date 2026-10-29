@@ -14,10 +14,11 @@ import { AgentWorkspace } from '../components/agent/AgentWorkspace';
 import { forkResume, persistResumeDocument } from '../utils/resumeDocuments';
 import { inspectResumeExport, smartFitLayout, type ExportIssue } from '../utils/exportChecks';
 import { ExportPreflight } from '../components/preview/ExportPreflight';
+import { exportDocumentBackup } from '../utils/resumeDocumentBackup';
 
 export default function BuilderPage() {
   const { templateId } = useParams<{ templateId: string }>();
-  const { resume, setTemplate, setLayout, undo, redo, saveStatus } = useResume();
+  const { resume, setTemplate, setLayout, undo, redo, saveStatus, saveError, retrySave } = useResume();
   const navigate = useNavigate();
   const initialized = useRef(false);
   const [agentOpen, setAgentOpen] = useState(() => new URLSearchParams(window.location.search).get('agent') === '1');
@@ -67,13 +68,22 @@ export default function BuilderPage() {
     setSaveMsg(null);
     try {
       await saveResume();
-      setSaveMsg('已保存到云端');
+      setSaveMsg('已将提交时的版本保存到云端；之后的修改需再次同步。');
       setTimeout(() => setSaveMsg(null), 2000);
     } catch (err) {
       setSaveMsg(err instanceof Error ? err.message : '保存失败，本机内容仍保留');
     } finally {
       setSaving(false);
     }
+  };
+
+  const backupCurrent = () => {
+    try {
+      const text = exportDocumentBackup([{ ownerId: user?.id || 'local-guest', id: resume.documentMeta!.id, revision: 0, resume, archived: false, updatedAt: Date.now(), history: [] }]);
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = 'ResuLab-当前简历备份.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setSaveMsg('当前简历备份已生成，可在“我的简历”导入。');
+    } catch (error) { setSaveMsg(error instanceof Error ? error.message : '备份生成失败，请复制当前内容'); }
   };
 
   // PDF 导出
@@ -152,7 +162,7 @@ export default function BuilderPage() {
           )}
         </div>
       </div>
-      <div className="builder-context"><div><strong>{resume.documentMeta?.title || '我的求职简历'}</strong><span>{resume.jobIntention.desiredPosition ? `目标岗位：${resume.jobIntention.desiredPosition} · ` : ''}{resume.documentMeta?.kind === 'job' ? '独立岗位副本' : resume.documentMeta?.kind === 'base' ? '基础简历' : '未分类'}</span><span role="status">{saveStatus === 'saved' ? '已自动保存到本机' : saveStatus === 'saving' ? '正在保存…' : '本机保存失败或版本冲突，请在“我的简历”另存当前稿副本'}</span></div><div className="career-actions"><Link className="career-button" to="/my-resumes">管理简历</Link><button className="career-button" onClick={() => { setVersionTitle(resume.jobIntention.desiredPosition || '我的岗位简历'); setVersionOpen(!versionOpen); }}>另存岗位版本</button></div></div>
+      <div className="builder-context"><div><strong>{resume.documentMeta?.title || '我的求职简历'}</strong><span>{resume.jobIntention.desiredPosition ? `目标岗位：${resume.jobIntention.desiredPosition} · ` : ''}{resume.documentMeta?.kind === 'job' ? '独立岗位副本' : resume.documentMeta?.kind === 'base' ? '基础简历' : '未分类'}</span><span role={saveStatus === 'error' ? 'alert' : 'status'}>{saveStatus === 'saved' ? '已自动保存到本机 · 云端需手动同步' : saveStatus === 'saving' ? '正在保存到本机…' : saveError === 'conflict' ? '版本冲突：其他页面已更新此简历。当前编辑内容仍在此页面，请先导出备份或到“我的简历”另存副本。' : '本机存储不可用或保存失败。请检查浏览器存储权限和空间，并先导出当前简历备份。'}</span></div><div className="career-actions">{saveStatus === 'error' && <><button className="career-button" onClick={backupCurrent}>导出当前简历备份</button>{saveError !== 'conflict' && <button className="career-button" onClick={() => void retrySave()}>重试本机保存</button>}</>}<Link className="career-button" to="/my-resumes">管理简历</Link><button className="career-button" onClick={() => { setVersionTitle(resume.jobIntention.desiredPosition || '我的岗位简历'); setVersionOpen(!versionOpen); }}>另存岗位版本</button></div></div>
       {saveMsg && <p className="builder-feedback" role="status">{saveMsg}</p>}
       {versionOpen && <form className="version-save" onSubmit={event => { event.preventDefault(); void saveVersion(); }}><label>版本名称<input className="input-base" autoFocus value={versionTitle} maxLength={120} onChange={event => setVersionTitle(event.target.value)} placeholder="例如：前端实习 · A 公司" /></label><button className="btn-primary" disabled={saving || !versionTitle.trim()}>保存独立版本</button><button type="button" className="btn-secondary" onClick={() => setVersionOpen(false)}>取消</button></form>}
 

@@ -52,3 +52,5 @@ ResuLab 源码样例的真实模型验收通过：两次分块理解、一次成
 接口前缀 `/api/career/projects`：`materials/upload` 接收 ZIP 二进制（Idempotency-Key 请求头），`materials/repository` 接收公开根链接；`sessions` 创建/列出任务，`sessions/:id` 读取/修改草稿；`analyze`、`draft`、`rewrite` 入队；`cancel` 撤销执行权，`confirm` 确认入库。所有操作按账号隔离；修改携带 expectedRevision 和幂等键。ZIP 仅在受限内存中解析，不保存原始归档；保留筛选文本。删除材料同时清除会话引文、任务分块和幂等响应中的原文。
 
 本地迁移位于 `server/migrations/project-workspace.sql`，由 `dev:career` 启动时应用。材料和会话进入独立 PGlite；模型任务复用 Agent 队列、调用预算和租约，通过同一事务保存检查点。取消撤销租约，旧执行器不能迟到写入。其他启动方式不自动变更数据库。
+
+编辑器区分本机存储失败和跨页面版本冲突。存储失败可重试；两种情况都可直接从当前页面导出内存中的简历备份，避免依赖故障存储。云端仍为手动同步。

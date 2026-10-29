@@ -16,6 +16,8 @@ export function useResume() {
 
   return {
     saveStatus: ctx.saveStatus,
+    saveError: ctx.saveError,
+    retrySave: ctx.retrySave,
     persistCurrent: ctx.persistCurrent,
     acceptDocumentRevision: ctx.acceptDocumentRevision,
     saveCurrentCopy: ctx.saveCurrentCopy,
