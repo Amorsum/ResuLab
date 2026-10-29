@@ -41,13 +41,17 @@ try {
   page.setDefaultTimeout(15000);
   page.on('console', m => { if (m.type() === 'error') console.error('browser:', m.text()); });
   await page.goto('http://127.0.0.1:3196/library', { waitUntil: 'commit' });
-  await expect(page.getByRole('heading', { name: '经历工作台', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '把项目经历写进对的简历', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '02 选择岗位与项目' }).click();
+  await page.getByText('Agent 选材设置', { exact: true }).click();
   const modelStatus = page.getByRole('region', { name: 'Agent 模型状态', exact: true });
   await expect(modelStatus).toContainText('尚未配置模型服务');
   await modelStatus.getByRole('button', { name: '模型配置说明', exact: true }).click();
   await expect(modelStatus).toContainText('server/.env');
   await expect(modelStatus).toContainText('MODEL_API_KEY');
   await modelStatus.getByRole('button', { name: '收起配置说明', exact: true }).click();
+  await page.getByRole('button', { name: '01 项目经历' }).click();
+  await page.getByText('从已有简历导入', { exact: true }).click();
   await page.getByRole('button', { name: '从当前简历拆分导入', exact: true }).click();
   const importPreview = page.getByRole('region', { name: '当前简历拆分预览', exact: true });
   await expect(importPreview).toBeInViewport();
@@ -57,15 +61,17 @@ try {
   await expect(page.locator('#materials')).toContainText('当前简历暂无可导入的经历');
   await page.screenshot({ path: path.join(results, 'import-empty.png') });
   await importPreview.getByRole('button', { name: '关闭预览', exact: true }).click();
-  await page.getByRole('button', { name: '记一笔 / 完整填写', exact: true }).click();
+  await page.getByRole('button', { name: '添加项目经历', exact: true }).click();
   const editor = page.locator('section[aria-label="经历录入"]');
-  const editorDialog = page.getByRole('dialog', { name: '记录新经历' });
+  const editorDialog = page.getByRole('dialog', { name: '添加项目经历' });
   await expect(editorDialog).toBeVisible();
-  await expect(editorDialog.getByRole('heading', { name: '记录新经历' })).toBeFocused();
-  await editor.getByLabel('名称', { exact: true }).fill('校园课程平台');
+  await expect(editorDialog.getByRole('heading', { name: '添加项目经历' })).toBeFocused();
+  await editor.getByLabel('上传项目经历文档（PDF、Word、TXT、Markdown）').setInputFiles({ name: '校园课程平台.txt', mimeType: 'text/plain', buffer: Buffer.from('校园课程平台，个人使用 TypeScript 实现查询接口并交付可演示项目。') });
+  await expect(editor.getByRole('textbox', { name: '原始记录', exact: true })).toHaveValue(/TypeScript/);
+  await editor.getByLabel('项目名称', { exact: true }).fill('校园课程平台');
   await editor.getByRole('textbox', { name: '原始记录', exact: true }).fill('参与竞赛，使用 TypeScript 实现查询接口，提交可演示项目');
   await page.reload({ waitUntil: 'commit' });
-  await page.getByRole('button', { name: '记一笔 / 完整填写', exact: true }).click();
+  await page.getByRole('button', { name: '添加项目经历', exact: true }).click();
   await expect(page.getByRole('textbox', { name: '原始记录', exact: true })).toHaveValue(/TypeScript/);
   await editor.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect(page.locator('#materials')).toContainText('草稿 · 待核对');
@@ -90,18 +96,20 @@ try {
   await editor.getByRole('button', { name: '将完整填写整理为事实', exact: true }).click();
   await editor.getByRole('button', { name: '我已核对事实，确认保存', exact: true }).click();
   await expect(page.locator('#materials')).toContainText('已确认');
+  await page.getByRole('button', { name: '02 选择岗位与项目' }).click();
   await page.getByLabel('目标岗位名称', { exact: true }).fill('后端开发实习生');
-  await page.locator('#target').getByRole('checkbox', { name: '校园课程平台 · 项目', exact: true }).check();
-  await expect(page.getByRole('button', { name: 'Agent 分析并推荐经历', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: '原文填入当前简历 · 预览', exact: true })).toBeEnabled();
+  await page.locator('#target').getByRole('checkbox', { name: '校园课程平台', exact: true }).check();
+  await expect(page.getByRole('button', { name: 'Agent 推荐项目', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '预览填入当前简历', exact: true })).toBeEnabled();
   modelConfigured = true;
+  await page.getByText('Agent 选材设置', { exact: true }).click();
   await modelStatus.getByRole('button', { name: '刷新模型状态', exact: true }).click();
   await expect(modelStatus).toContainText('fixture-writer');
-  await expect(page.getByRole('button', { name: 'Agent 分析并推荐经历', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: '原文填入当前简历 · 预览', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Agent 推荐项目', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '预览填入当前简历', exact: true }).click();
   await page.getByRole('button', { name: '确认整批填入', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '已整批填入' })).toBeVisible();
-  await page.getByRole('button', { name: '原文填入当前简历 · 预览', exact: true }).click();
+  await page.getByRole('button', { name: '预览填入当前简历', exact: true }).click();
   await expect(page.getByRole('region', { name: '填入简历预览' }).getByLabel('应用方式')).toHaveValue('skip');
   await page.getByRole('button', { name: '取消预览', exact: true }).click();
   await page.getByRole('button', { name: '撤销上一批简历修改', exact: true }).click();
@@ -115,6 +123,7 @@ try {
     if ([1440,390].includes(size.width)) await page.screenshot({ path: path.join(results, `guest-${size.width}.png`), fullPage: true });
   }
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: '01 项目经历' }).click();
   await editButton.click();
   await expect(page.getByRole('dialog', { name: '编辑与核对 · 校园课程平台' })).toBeVisible();
   const mobileBox = await editDialog.boundingBox();
@@ -123,7 +132,8 @@ try {
   await editor.getByRole('button', { name: '关闭', exact: true }).click();
   await expect(editButton).toBeFocused();
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.getByRole('button', { name: '确认选材并创建岗位版本', exact: true }).click();
+  await page.getByRole('button', { name: '02 选择岗位与项目' }).click();
+  await page.getByRole('button', { name: '创建岗位简历副本', exact: true }).click();
   await expect(page).toHaveURL(/\/builder/);
   await expect(page.locator('.builder-context')).toContainText('后端开发实习生');
   if (await page.getByRole('button', { name: '关闭引导', exact: true }).isVisible()) await page.getByRole('button', { name: '关闭引导', exact: true }).click();
@@ -149,6 +159,7 @@ try {
   await page.getByRole('navigation', { name: '主导航', exact: true }).getByRole('link', { name: '经历库', exact: true }).click();
   await expect(page.locator('#materials article.career-source')).toHaveCount(1);
   const beforeImport = await page.locator('#materials article.career-source').count();
+  await page.getByText('从已有简历导入', { exact: true }).click();
   await page.getByRole('button', { name: '从当前简历拆分导入', exact: true }).click();
   await expect(importPreview).toBeInViewport();
   await expect(importPreview).toContainText('找到 1 段经历');
@@ -162,12 +173,33 @@ try {
   await expect(page.locator('#materials article.career-source')).toHaveCount(beforeImport + 1);
   await context.close();
 
+  const quickContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await quickContext.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
+  const quick = await quickContext.newPage(); activePage = quick; quick.on('pageerror', e => errors.push(e.message));
+  await quick.goto('http://127.0.0.1:3196/library');
+  await quick.getByRole('button', { name: '添加项目经历' }).click();
+  const quickEditor = quick.getByRole('dialog', { name: '添加项目经历' });
+  await quickEditor.getByLabel('上传项目经历文档（PDF、Word、TXT、Markdown）').setInputFiles({ name: '实习项目.txt', mimeType: 'text/plain', buffer: Buffer.from('参与实习项目，使用 TypeScript 实现数据查询接口，完成内部演示。') });
+  await expect(quickEditor.getByLabel('项目名称', { exact: true })).toHaveValue('实习项目');
+  await quickEditor.getByLabel('公司 / 团队（可选）').fill('示例公司');
+  await quickEditor.getByLabel('你的角色（可选）').fill('实习开发');
+  await quickEditor.getByRole('button', { name: '我已核对事实，确认保存' }).click();
+  await expect(quick.locator('#materials')).toContainText('已确认');
+  await quick.getByRole('button', { name: '02 选择岗位与项目' }).click();
+  await quick.getByLabel('岗位输入方式').selectOption('jd');
+  await quick.getByLabel('招聘 JD').fill('招聘 TypeScript 开发实习生，需要实现数据查询接口。');
+  await quick.locator('#target').getByRole('checkbox', { name: '实习项目', exact: true }).check();
+  await quick.getByRole('button', { name: '预览填入当前简历' }).click();
+  await expect(quick.getByRole('region', { name: '填入简历预览' })).toContainText('保留当前简历中的目标岗位');
+  await quickContext.close();
+
   const auth = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const user = { id: '00000000-0000-4000-8000-000000000888', aud: 'authenticated', role: 'authenticated', email: 'career@example.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
   const jwt = `${Buffer.from('{}').toString('base64url')}.${Buffer.from(JSON.stringify({ sub: user.id, exp: Math.floor(Date.now()/1000)+3600 })).toString('base64url')}.fixture`;
   await auth.addInitScript(({ user, jwt }) => localStorage.setItem('sb-fixture-auth-token', JSON.stringify({ access_token: jwt, refresh_token: 'fixture', expires_at: Math.floor(Date.now()/1000)+3600, token_type: 'bearer', user })), { user, jwt });
   const fact = { id: 'primary', section: 'projects', sourceTitle: '竞赛平台', doNotClaim: '', data: { id: 'primary', projectName: '竞赛平台', role: '竞赛成员', startDate: '', endDate: '', isCurrent: false, description: '使用 TypeScript 实现查询接口并交付竞赛演示项目', techStack: ['TypeScript'], url: '' } };
-  let cloud = [{ ...entriesModule.entryInputSchema.parse({ id: '10000000-0000-4000-8000-000000000001', title: '竞赛平台', kind: 'competition', rawText: fact.data.description, details: {}, facts: [fact], status: 'confirmed', doNotClaim: '', groupId: '', migrationKey: null, relatedEntryId: null }), ownerId: user.id, revision: 1, createdAt: 1, updatedAt: 1 }];
+  const unrelatedFact = { id: 'award', section: 'certificates', sourceTitle: '竞赛平台', doNotClaim: '', data: { id: 'award', name: '非项目奖项', issuer: '', date: '' } };
+  let cloud = [{ ...entriesModule.entryInputSchema.parse({ id: '10000000-0000-4000-8000-000000000001', title: '竞赛平台', kind: 'competition', rawText: fact.data.description, details: {}, facts: [fact, unrelatedFact], status: 'confirmed', doNotClaim: '', groupId: '', migrationKey: null, relatedEntryId: null }), ownerId: user.id, revision: 1, createdAt: 1, updatedAt: 1 }];
   let task = null, writes = 0, versions = 0, failUpload = false;
   await auth.route('**/*', async route => {
     const url = new URL(route.request().url()), method = route.request().method(), body = route.request().postDataJSON();
@@ -184,6 +216,7 @@ try {
     }
     if (p === '/runs' && method === 'GET') return route.fulfill({ json: [] });
     if (p === '/runs' && method === 'POST') {
+      assert.ok(body.selection.excludedIds.includes(`${cloud[0].id}:award`), 'non-project facts are excluded from Agent recommendation');
       const facts = entriesModule.entryFacts(cloud), plan = { roleTitle: '后端开发实习生', requirements: [{ id: 'r', text: '接口开发', jdQuote: '后端开发实习生', required: false, coverage: 'supported', gap: '' }], selected: [{ factId: facts[0].id, requirementIds: ['r'], reason: '真实查询接口贡献' }] };
       task = { runId: '20000000-0000-4000-8000-000000000001', status: 'awaiting_input', usage: { calls: 1, elapsedMs: 1, inputTokens: 100, outputTokens: 100 }, context: { version: 2, target: body.target, entries: cloud, phase: 'selection', plan, selection: { ...body.selection, selectedIds: [facts[0].id] } } };
       return route.fulfill({ json: { runId: task.runId } });
@@ -213,8 +246,9 @@ try {
   await signed.locator('#materials').getByRole('button', { name: '编辑 / 核对', exact: true }).click();
   await signed.getByRole('textbox', { name: '原始记录', exact: true }).fill('尚未提交的个人修改');
   await signed.getByRole('button', { name: '关闭', exact: true }).click();
+  await signed.getByRole('button', { name: '02 选择岗位与项目' }).click();
   await signed.getByLabel('目标岗位名称', { exact: true }).fill('后端开发实习生');
-  await signed.getByRole('button', { name: 'Agent 分析并推荐经历', exact: true }).click();
+  await signed.getByRole('button', { name: 'Agent 推荐项目', exact: true }).click();
   await expect(signed.locator('#review')).toContainText('等待确认选材'); assert.equal(writes, 0);
   await signed.reload({ waitUntil: 'commit' }); await expect(signed.locator('#review')).toContainText('等待确认选材'); assert.equal(writes, 0);
   await signed.getByText('补充某段经历的事实（可跳过）', { exact: true }).click();
@@ -223,9 +257,11 @@ try {
   await signed.getByRole('button', { name: '将补充放入待核对草稿' }).click();
   await expect(signed.getByRole('textbox', { name: '原始记录', exact: true })).toHaveValue('新的补充事实');
   await signed.getByRole('button', { name: '关闭', exact: true }).click();
+  await signed.getByRole('button', { name: '01 项目经历' }).click();
   await signed.locator('#materials').getByRole('button', { name: '编辑 / 核对', exact: true }).click();
   await expect(signed.getByRole('textbox', { name: '原始记录', exact: true })).toHaveValue('尚未提交的个人修改');
   await signed.getByRole('button', { name: '关闭', exact: true }).click();
+  await signed.getByRole('button', { name: '02 选择岗位与项目' }).click();
   await signed.getByRole('button', { name: '确认选材，按岗位写作', exact: true }).click();
   await expect(signed.getByRole('button', { name: '确认并创建独立岗位版本', exact: true })).toBeEnabled(); assert.equal(writes, 1);
   await signed.screenshot({ path: path.join(results, 'agent-review.png'), fullPage: true });
@@ -233,9 +269,9 @@ try {
   await expect(signed).toHaveURL(/\/builder/); assert.equal(versions, 1);
   await signed.goto('http://127.0.0.1:3196/library', { waitUntil: 'commit' });
   failUpload = true;
-  await signed.getByRole('button', { name: '记一笔 / 完整填写', exact: true }).click();
+  await signed.getByRole('button', { name: '添加项目经历', exact: true }).click();
   const signedEditor = signed.locator('section[aria-label="经历录入"]');
-  await signedEditor.getByLabel('名称', { exact: true }).fill('网络失败时的材料'); await signedEditor.getByRole('textbox', { name: '原始记录', exact: true }).fill('这个记录必须留在本机');
+  await signedEditor.getByLabel('项目名称', { exact: true }).fill('网络失败时的材料'); await signedEditor.getByRole('textbox', { name: '原始记录', exact: true }).fill('这个记录必须留在本机');
   await signedEditor.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect(signed.locator('#materials')).toContainText('待上传'); await signed.reload({ waitUntil: 'commit' }); await expect(signed.locator('#materials')).toContainText('这个记录必须留在本机');
   assert.deepEqual(errors, []);

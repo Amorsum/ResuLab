@@ -1,6 +1,6 @@
 import type { ResumeData } from '../types/resume';
 import { forkResume } from './resumeDocuments';
-import { CAREER_SECTIONS, type CareerFact } from '../../shared/career';
+import type { CareerFact } from '../../shared/career';
 import { factOrigin, type CareerEntry, type CareerApplicationPlan } from '../../shared/careerEntries';
 
 const signature = (row: object) => JSON.stringify(Object.entries(row).filter(([key]) => key !== 'id').sort(([a], [b]) => a.localeCompare(b)));
@@ -36,8 +36,9 @@ export function applyCareerApplication(resume: ResumeData, plan: CareerApplicati
   next.lastModified = Date.now(); return next;
 }
 export function careerVersion(base: ResumeData, entries: CareerEntry[], facts: CareerFact[], roleTitle: string, summary = ''): ResumeData {
-  const next = structuredClone(base); delete next._cloudId; delete next.careerOrigins;
-  for (const section of CAREER_SECTIONS) Object.assign(next, { [section]: [] });
-  const plan = prepareCareerApplication(next, entries, facts, roleTitle); plan.summary = summary;
+  const next = structuredClone(base); delete next._cloudId;
+  next.projects = [];
+  if (next.careerOrigins) next.careerOrigins = Object.fromEntries(Object.entries(next.careerOrigins).filter(([key]) => !key.startsWith('projects:')));
+  const plan = prepareCareerApplication(next, entries, facts, roleTitle); if (summary) plan.summary = summary;
   return forkResume(applyCareerApplication(next, plan), roleTitle);
 }

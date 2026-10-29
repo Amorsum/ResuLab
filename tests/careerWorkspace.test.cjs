@@ -42,7 +42,7 @@ test('manual application preserves unrelated content, tracks origins, skips dupl
   const replace = application.prepareCareerApplication(next, [source], facts); replace.rows[0].action = 'replace'; replace.rows[0].fact.data.description = '修正后的真实贡献';
   const replaced = application.applyCareerApplication(next, replace); assert.equal(replaced.projects.length, 1); assert.equal(replaced.projects[0].description, '修正后的真实贡献');
   const version = application.careerVersion({ ...next, _cloudId: 'old' }, [source], facts, '新岗位');
-  assert.equal(version._cloudId, undefined); assert.equal(version.education.length, 0); assert.equal(version.personalInfo.phone, 'private');
+  assert.equal(version._cloudId, undefined); assert.equal(version.education.length, 1); assert.equal(version.education[0].schoolName, '原学校'); assert.equal(version.projects.length, 1); assert.equal(version.personalInfo.phone, 'private');
 });
 
 test('drafts survive refresh, remain isolated, increment guest versions and never claim upload success', async () => {
