@@ -98,9 +98,10 @@ try {
   await editor.getByRole('button', { name: '确认保存项目', exact: true }).click();
   await expect(page.locator('#materials')).toContainText('已确认');
   await page.getByRole('button', { name: '02 选择岗位与项目' }).click();
-  await page.getByLabel('目标岗位名称', { exact: true }).fill('后端开发实习生');
+  await page.getByRole('textbox', { name: '目标岗位名称', exact: true }).fill('后端开发实习生');
   await page.locator('#target').getByRole('checkbox', { name: '校园课程平台', exact: true }).check();
   await expect(page.getByRole('button', { name: 'Agent 推荐项目', exact: true })).toBeDisabled();
+  await page.getByText('更新当前简历', { exact: true }).click();
   await expect(page.getByRole('button', { name: '预览填入当前简历', exact: true })).toBeEnabled();
   modelConfigured = true;
   await page.getByText('Agent 选材设置', { exact: true }).click();
@@ -135,6 +136,15 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.getByRole('button', { name: '02 选择岗位与项目' }).click();
   await page.getByRole('button', { name: '创建岗位简历副本', exact: true }).click();
+  const versionPreview = page.getByRole('region', { name: '岗位副本创建预览' });
+  await expect(versionPreview).toContainText('校园课程平台');
+  await expect(page).toHaveURL(/library/);
+  await page.getByRole('textbox', { name: '目标岗位名称', exact: true }).fill('后端开发工程师');
+  await expect(versionPreview).toHaveCount(0);
+  await page.getByRole('textbox', { name: '目标岗位名称', exact: true }).fill('后端开发实习生');
+  await page.getByRole('button', { name: '创建岗位简历副本', exact: true }).click();
+  await page.screenshot({ path: path.join(results, 'version-preview-mobile.png'), fullPage: true });
+  await versionPreview.getByRole('button', { name: '确认创建并打开编辑器' }).click();
   await expect(page).toHaveURL(/\/builder/);
   await expect(page.locator('.builder-context')).toContainText('后端开发实习生');
   if (await page.getByRole('button', { name: '关闭引导', exact: true }).isVisible()) await page.getByRole('button', { name: '关闭引导', exact: true }).click();
@@ -211,6 +221,7 @@ try {
   await quick.getByLabel('岗位输入方式').selectOption('jd');
   await quick.getByLabel('招聘 JD').fill('招聘 TypeScript 开发实习生，需要实现数据查询接口。');
   await quick.locator('#target').getByRole('checkbox', { name: '实习项目', exact: true }).check();
+  await quick.getByText('更新当前简历', { exact: true }).click();
   await quick.getByRole('button', { name: '预览填入当前简历' }).click();
   await expect(quick.getByRole('region', { name: '填入简历预览' })).toContainText('保留当前简历中的目标岗位');
   await quick.getByText('查看将填入的内容', { exact: true }).click();
@@ -276,6 +287,13 @@ try {
   await signed.getByRole('button', { name: 'Agent 推荐项目', exact: true }).click();
   await expect(signed.locator('#review')).toContainText('等待确认选材'); assert.equal(writes, 0);
   await signed.reload({ waitUntil: 'commit' }); await expect(signed.locator('#review')).toContainText('等待确认选材'); assert.equal(writes, 0);
+  const recommendedProject = signed.locator('.project-choice').first();
+  await expect(recommendedProject).toContainText('推荐理由：真实查询接口贡献');
+  await expect(recommendedProject).toContainText('对应要求：接口开发');
+  await expect(recommendedProject.getByRole('checkbox', { name: '必须保留' })).toBeHidden();
+  await recommendedProject.getByText('更多选材设置', { exact: true }).click();
+  await recommendedProject.getByRole('checkbox', { name: '必须保留' }).check();
+  await expect(recommendedProject.getByRole('checkbox', { name: '必须保留' })).toBeChecked();
   await signed.getByText('补充某段经历的事实（可跳过）', { exact: true }).click();
   await signed.getByLabel('补充到哪段经历').selectOption(cloud[0].id);
   await signed.getByLabel('实际行动、方法或交付物').fill('新补充的内容');
@@ -293,6 +311,8 @@ try {
   await expect(signed.getByRole('button', { name: '确认并创建独立岗位版本', exact: true })).toBeEnabled(); assert.equal(writes, 1);
   await signed.screenshot({ path: path.join(results, 'agent-review.png'), fullPage: true });
   await signed.getByRole('button', { name: '确认并创建独立岗位版本', exact: true }).click();
+  assert.equal(versions, 0);
+  await signed.getByRole('button', { name: '确认创建并打开编辑器' }).click();
   await expect(signed).toHaveURL(/\/builder/); assert.equal(versions, 1);
   await signed.goto('http://127.0.0.1:3196/library', { waitUntil: 'commit' });
   failUpload = true;
