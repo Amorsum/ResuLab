@@ -19,3 +19,15 @@ export function factsFromDetails(entry: CareerEntryInput): CareerFact[] {
   }
   return facts;
 }
+
+/** Replace only project facts; old education, awards and other facts remain intact. */
+export function replaceProjectFacts(existing: CareerFact[], projects: CareerFact[]): CareerFact[] {
+  const retained = existing.filter(fact => fact.section !== 'projects');
+  const ids = new Set(retained.map(fact => fact.id));
+  const next = projects.filter(fact => fact.section === 'projects').map(fact => {
+    const id = ids.has(fact.id) ? crypto.randomUUID() : fact.id;
+    ids.add(id);
+    return parseCareerFact({ ...fact, id, data: { ...fact.data, id } });
+  });
+  return [...retained, ...next];
+}

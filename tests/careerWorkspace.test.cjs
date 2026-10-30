@@ -9,6 +9,7 @@ function load(file) {
   const module = { exports: {} }; new Function('module', 'exports', 'require', code)(module, module.exports, require); return module.exports;
 }
 const shared = load('shared/careerEntries.ts'), store = load('src/utils/careerStore.ts'), application = load('src/utils/careerApplication.ts');
+const entryForm = load('src/utils/careerEntryForm.ts');
 const defaults = load('src/constants/defaultResume.ts'), reducer = load('src/context/resumeReducer.ts'), legacy = load('src/utils/careerLibrary.ts');
 beforeEach(() => { global.indexedDB = new IDBFactory(); });
 const entry = (ownerId = 'local-guest') => ({ ...store.blankCareerEntry(), ownerId, revision: 1, createdAt: 1, updatedAt: 1, title: '竞赛演示平台', kind: 'competition', status: 'confirmed',
@@ -43,6 +44,17 @@ test('manual application preserves unrelated content, tracks origins, skips dupl
   const replaced = application.applyCareerApplication(next, replace); assert.equal(replaced.projects.length, 1); assert.equal(replaced.projects[0].description, '修正后的真实贡献');
   const version = application.careerVersion({ ...next, _cloudId: 'old' }, [source], facts, '新岗位');
   assert.equal(version._cloudId, undefined); assert.equal(version.education.length, 1); assert.equal(version.education[0].schoolName, '原学校'); assert.equal(version.projects.length, 1); assert.equal(version.personalInfo.phone, 'private');
+});
+
+test('replacing project facts preserves other facts and avoids ID collisions', () => {
+  const project = entry().facts[0];
+  const award = { id: 'project', section: 'certificates', sourceTitle: '旧材料', doNotClaim: '', data: { id: 'project', name: '原奖项', issuer: '', date: '' } };
+  const next = entryForm.replaceProjectFacts([award], [project]);
+  assert.equal(next.length, 2);
+  assert.deepEqual(next[0], award);
+  assert.equal(next[1].section, 'projects');
+  assert.notEqual(next[1].id, award.id);
+  assert.equal(next[1].data.id, next[1].id);
 });
 
 test('drafts survive refresh, remain isolated, increment guest versions and never claim upload success', async () => {
